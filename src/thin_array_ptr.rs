@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use core::mem::ManuallyDrop;
 
 pub struct ThinPtrArray<'a, L, E>
 where
