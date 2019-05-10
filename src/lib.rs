@@ -11,9 +11,9 @@ pub trait LabelledArray<L, E>: containers::Array<E> {
 }
 
 mod alloc;
-pub mod fat_array_ptr;
+mod fat_array_ptr;
 mod memory_block;
-pub mod thin_array_ptr;
+mod thin_array_ptr;
 
 mod prelude {
     pub(crate) use super::memory_block::*;
