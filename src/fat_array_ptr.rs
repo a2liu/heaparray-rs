@@ -196,14 +196,7 @@ impl<'a, E, L> CopyMap<usize, E> for FatPtrArray<'a, E, L> {
         if key > self.len() {
             None
         } else {
-            // This took so long to figure out but it was totally worth it to
-            // mimic java functionality
-            let ret = unsafe { std::mem::transmute_copy::<E, E>(&self[key]) };
-            let value_ref = (&mut self[key]) as *mut E as *mut ManuallyDrop<E>;
-            unsafe {
-                *value_ref = ManuallyDrop::new(value);
-            }
-            Some(ret)
+            Some(std::mem::replace(&self[key], value))
         }
     }
 }
