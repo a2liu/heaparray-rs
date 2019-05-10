@@ -196,7 +196,7 @@ impl<'a, E, L> CopyMap<usize, E> for FatPtrArray<'a, E, L> {
         if key > self.len() {
             None
         } else {
-            Some(std::mem::replace(&self[key], value))
+            Some(std::mem::replace(&mut self[key], value))
         }
     }
 }
