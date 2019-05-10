@@ -66,8 +66,10 @@ pub trait LabelledArray<E, L>: containers::Array<E> {
 
 mod alloc;
 mod fat_array_ptr;
-mod memory_block;
+mod fat_rc_array_ptr;
+pub mod memory_block;
 mod thin_array_ptr;
+mod thin_rc_array_ptr;
 
 mod prelude {
     pub(crate) use super::memory_block::*;

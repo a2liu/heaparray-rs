@@ -64,3 +64,5 @@ let mut array = HeapArray::new_labelled(
     });
 ```
 
+## Future Plans
+Iteration, allocator customization, reference counting (`RcArray`), and atomic reference counting (`ArcArray`).
