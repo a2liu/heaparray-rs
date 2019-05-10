@@ -16,7 +16,7 @@ Creating an array:
 use heaparray::*;
 let len = 10;
 let label = ();
-let generator = |_label, _idx| 12;
+let generator = |_label, idx| idx + 3;
 let array = HeapArray::new(label, len, generator);
 ```
 
