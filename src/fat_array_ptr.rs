@@ -120,6 +120,9 @@ impl<'a, L, E> CopyMap<usize, E> for FatPtrArray<'a, L, E> {
     #[inline]
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
         let ret = Some(unsafe { std::mem::transmute_copy::<E, E>(&self[key]) });
+
+        // TODO Need to check that this doesn't drop the value after
+        // assigning
         self[key] = value;
         ret
     }
