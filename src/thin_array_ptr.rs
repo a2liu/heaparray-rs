@@ -7,10 +7,22 @@ where
     data: ManuallyDrop<&'a mut TPArrayBlock<E, L>>,
 }
 
-impl<'a, E, L> ThinPtrArray<'a, E, L> {
+impl<'a, E> ThinPtrArray<'a, E> {
     /// Create a new array, with values initialized using a provided function.
     #[inline]
-    pub fn new<F>(label: L, len: usize, func: F) -> Self
+    pub fn new<F>(len: usize, mut func: F) -> Self
+    where
+        F: FnMut(usize) -> E,
+    {
+        Self::new_labelled((), len, |_, idx| func(idx))
+    }
+}
+
+impl<'a, E, L> ThinPtrArray<'a, E, L> {
+    /// Create a new array, with values initialized using a provided function, and label
+    /// initialized to a provided value.
+    #[inline]
+    pub fn new_labelled<F>(label: L, len: usize, func: F) -> Self
     where
         F: FnMut(&mut L, usize) -> E,
     {
@@ -21,7 +33,7 @@ impl<'a, E, L> ThinPtrArray<'a, E, L> {
 
     /// Create a new array, without initializing the values in it.
     #[inline]
-    pub unsafe fn new_unsafe(label: L, len: usize) -> Self {
+    pub unsafe fn new_labelled_unsafe(label: L, len: usize) -> Self {
         let new_ptr = TPArrayBlock::<E, L>::new_ptr_unsafe(label, len);
         Self {
             data: ManuallyDrop::new(new_ptr),
@@ -35,13 +47,24 @@ impl<'a, E, L> ThinPtrArray<'a, E, L> {
     }
 }
 
+impl<'a, E> ThinPtrArray<'a, E>
+where
+    E: Default,
+{
+    /// Get a new array, initialized to default values.
+    #[inline]
+    pub fn new_default(len: usize) -> Self {
+        Self::new_default_labelled((), len)
+    }
+}
+
 impl<'a, E, L> ThinPtrArray<'a, E, L>
 where
     E: Default,
 {
     /// Get a new array, initialized to default values.
     #[inline]
-    pub fn new_default(label: L, len: usize) -> Self {
+    pub fn new_default_labelled(label: L, len: usize) -> Self {
         Self {
             data: ManuallyDrop::new(TPArrayBlock::new_ptr_default(label, len)),
         }

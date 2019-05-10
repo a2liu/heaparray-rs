@@ -34,29 +34,51 @@ mod prelude {
 /// ```rust
 /// use heaparray::*;
 /// let len = 10;
-/// let label = ();
-/// let array = HeapArray::new(label, len, |_label, idx| idx + 3);
+/// let array = HeapArray::new(len, |idx| idx + 3);
 /// ```
 ///
 /// Indexing works as you would expect:
 /// ```rust
 /// # use heaparray::*;
-/// # let mut array = HeapArray::new((), 10, |_label, idx| idx + 3);
+/// # let mut array = HeapArray::new(10, |idx| idx + 3);
 /// array[3] = 2;
 /// assert!(array[3] == 2);
 /// ```
-///
 ///
 /// Notably, you can take ownership of objects back from the container:
 ///
 /// ```rust
 /// # use heaparray::*;
-/// let mut array = HeapArray::new((), 10, |_,_| Vec::<u8>::new());
+/// let mut array = HeapArray::new(10, |_| Vec::<u8>::new());
 /// let replacement_object = Vec::new();
 /// let owned_object = array.insert(0, replacement_object);
 /// ```
 ///
 /// but you need to give the array a replacement object to fill its slot with.
+///
+/// Additionally, you can customize what information should be stored alongside the elements in
+/// the array using the HeapArray::new_labelled function:
+///
+/// ```rust
+/// # use heaparray::*;
+/// struct MyLabel {
+///     pub even: usize,
+///     pub odd: usize,
+/// }
+///
+/// let mut array = HeapArray::new_labelled(
+///     MyLabel { even: 0, odd: 0 },
+///     100,
+///     |label, index| {
+///         if index % 2 == 0 {
+///             label.even += 1;
+///             index
+///         } else {
+///             label.odd += 1;
+///             index
+///         }
+///     });
+/// ```
 pub use fat_array_ptr::FatPtrArray as HeapArray;
 
 pub use fat_array_ptr::*;
