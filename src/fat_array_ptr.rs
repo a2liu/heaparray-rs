@@ -1,6 +1,4 @@
 use crate::prelude::*;
-use core::mem::ManuallyDrop;
-use core::ops::{Index, IndexMut};
 
 pub struct FatPtrArray<'a, L, E>
 where
@@ -123,6 +121,8 @@ impl<'a, L, E> CopyMap<usize, E> for FatPtrArray<'a, L, E> {
         if key > self.len() {
             None
         } else {
+            // This took so long to figure out but it was totally worth it to
+            // mimic java functionality
             let ret = unsafe { std::mem::transmute_copy::<E, E>(&self[key]) };
             let value_ref = (&mut self[key]) as *mut E as *mut ManuallyDrop<E>;
             unsafe {

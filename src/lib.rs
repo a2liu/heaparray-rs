@@ -19,6 +19,7 @@ mod prelude {
     pub use super::memory_block::*;
     pub use super::LabelledArray;
     pub use containers::*;
+    pub(crate) use core::mem::ManuallyDrop;
     pub use core::ops::{Index, IndexMut};
 }
 
