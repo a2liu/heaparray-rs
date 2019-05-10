@@ -1,7 +1,10 @@
+//! This crate holds a struct, HeapArray, that internally points to a
+//! contiguous block of memory. It also supports storing arbitrary data
+//! adjacent to the block of memory.
 extern crate containers_rs as containers;
 
 /// Array with an optional label struct stored next to the data.
-pub trait LabelledArray<L, E>: containers::Array<E> {
+pub trait LabelledArray<E, L>: containers::Array<E> {
     /// Get immutable access to the label. Causes undefined behavior if
     /// L is a zero-sized type.
     fn get_label(&self) -> &L;
@@ -17,7 +20,7 @@ mod thin_array_ptr;
 
 mod prelude {
     pub(crate) use super::memory_block::*;
-    pub use super::LabelledArray;
+    pub(crate) use super::LabelledArray;
     pub use containers::{Array, Container, CopyMap};
     pub(crate) use core::mem::ManuallyDrop;
     pub use core::ops::{Index, IndexMut};

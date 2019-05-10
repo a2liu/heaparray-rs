@@ -1,13 +1,13 @@
 use crate::prelude::*;
 
-pub struct ThinPtrArray<'a, L, E>
+pub struct ThinPtrArray<'a, E, L = ()>
 where
     Self: 'a,
 {
-    data: ManuallyDrop<&'a mut TPArrayBlock<L, E>>,
+    data: ManuallyDrop<&'a mut TPArrayBlock<E, L>>,
 }
 
-impl<'a, L, E> ThinPtrArray<'a, L, E> {
+impl<'a, E, L> ThinPtrArray<'a, E, L> {
     /// Create a new array, with values initialized using a provided function.
     #[inline]
     pub fn new<F>(label: L, len: usize, func: F) -> Self
@@ -15,14 +15,14 @@ impl<'a, L, E> ThinPtrArray<'a, L, E> {
         F: FnMut(&mut L, usize) -> E,
     {
         Self {
-            data: ManuallyDrop::new(TPArrayBlock::<L, E>::new_ptr(label, len, func)),
+            data: ManuallyDrop::new(TPArrayBlock::<E, L>::new_ptr(label, len, func)),
         }
     }
 
     /// Create a new array, without initializing the values in it.
     #[inline]
     pub unsafe fn new_unsafe(label: L, len: usize) -> Self {
-        let new_ptr = TPArrayBlock::<L, E>::new_ptr_unsafe(label, len);
+        let new_ptr = TPArrayBlock::<E, L>::new_ptr_unsafe(label, len);
         Self {
             data: ManuallyDrop::new(new_ptr),
         }
@@ -35,7 +35,7 @@ impl<'a, L, E> ThinPtrArray<'a, L, E> {
     }
 }
 
-impl<'a, L, E> ThinPtrArray<'a, L, E>
+impl<'a, E, L> ThinPtrArray<'a, E, L>
 where
     E: Default,
 {
@@ -48,7 +48,7 @@ where
     }
 }
 
-impl<'a, L, E> LabelledArray<L, E> for ThinPtrArray<'a, L, E> {
+impl<'a, E, L> LabelledArray<E, L> for ThinPtrArray<'a, E, L> {
     /// Get a reference to the label of the array.
     #[inline]
     fn get_label(&self) -> &L {
@@ -62,7 +62,7 @@ impl<'a, L, E> LabelledArray<L, E> for ThinPtrArray<'a, L, E> {
     }
 }
 
-impl<'a, L, E> Index<usize> for ThinPtrArray<'a, L, E> {
+impl<'a, E, L> Index<usize> for ThinPtrArray<'a, E, L> {
     type Output = E;
     #[inline]
     fn index(&self, idx: usize) -> &E {
@@ -70,14 +70,14 @@ impl<'a, L, E> Index<usize> for ThinPtrArray<'a, L, E> {
     }
 }
 
-impl<'a, L, E> IndexMut<usize> for ThinPtrArray<'a, L, E> {
+impl<'a, E, L> IndexMut<usize> for ThinPtrArray<'a, E, L> {
     #[inline]
     fn index_mut(&mut self, idx: usize) -> &mut E {
         &mut self.data[idx]
     }
 }
 
-impl<'a, L, E> Clone for ThinPtrArray<'a, L, E>
+impl<'a, E, L> Clone for ThinPtrArray<'a, E, L>
 where
     L: Clone,
     E: Clone,
@@ -90,7 +90,7 @@ where
     }
 }
 
-impl<'a, L, E> Drop for ThinPtrArray<'a, L, E> {
+impl<'a, E, L> Drop for ThinPtrArray<'a, E, L> {
     #[inline]
     fn drop(&mut self) {
         let mut_ref = &mut self.data;
@@ -99,7 +99,7 @@ impl<'a, L, E> Drop for ThinPtrArray<'a, L, E> {
     }
 }
 
-impl<'a, L, E> Container<(usize, E)> for ThinPtrArray<'a, L, E> {
+impl<'a, E, L> Container<(usize, E)> for ThinPtrArray<'a, E, L> {
     #[inline]
     fn add(&mut self, elem: (usize, E)) {
         self[elem.0] = elem.1;
@@ -110,7 +110,7 @@ impl<'a, L, E> Container<(usize, E)> for ThinPtrArray<'a, L, E> {
     }
 }
 
-impl<'a, L, E> CopyMap<usize, E> for ThinPtrArray<'a, L, E> {
+impl<'a, E, L> CopyMap<usize, E> for ThinPtrArray<'a, E, L> {
     #[inline]
     fn get(&self, key: usize) -> Option<&E> {
         if key > self.len() {
@@ -142,4 +142,4 @@ impl<'a, L, E> CopyMap<usize, E> for ThinPtrArray<'a, L, E> {
     }
 }
 
-impl<'a, L, E> Array<E> for ThinPtrArray<'a, L, E> {}
+impl<'a, E, L> Array<E> for ThinPtrArray<'a, E, L> {}

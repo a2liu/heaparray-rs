@@ -13,7 +13,7 @@ use core::ops::{Index, IndexMut};
 ///
 /// TP stands for Thin Pointer, as the pointer to this block is a single pointer.
 #[repr(C)]
-pub struct TPArrayBlock<L, E> {
+pub struct TPArrayBlock<E, L = ()> {
     /// Metadata about the block
     pub label: L,
     /// Capacity of the block
@@ -22,7 +22,7 @@ pub struct TPArrayBlock<L, E> {
     elements: E,
 }
 
-impl<L, E> TPArrayBlock<L, E> {
+impl<E, L> TPArrayBlock<E, L> {
     /// Get size and alignment of the memory that this struct uses.
     pub fn memory_layout(len: usize) -> (usize, usize) {
         let l_layout = size_align::<L>();
@@ -32,7 +32,7 @@ impl<L, E> TPArrayBlock<L, E> {
 
     /// Deallocates a reference to this struct.
     pub unsafe fn dealloc<'a>(&'a mut self) {
-        let (size, align) = TPArrayBlock::<L, E>::memory_layout(self.len());
+        let (size, align) = TPArrayBlock::<E, L>::memory_layout(self.len());
         deallocate(self, size, align);
     }
 
@@ -90,7 +90,7 @@ impl<L, E> TPArrayBlock<L, E> {
     }
 }
 
-impl<L, E> TPArrayBlock<L, E>
+impl<E, L> TPArrayBlock<E, L>
 where
     E: Default,
 {
@@ -102,7 +102,7 @@ where
     }
 }
 
-impl<L, E> Index<usize> for TPArrayBlock<L, E> {
+impl<E, L> Index<usize> for TPArrayBlock<E, L> {
     type Output = E;
     #[inline]
     fn index(&self, index: usize) -> &E {
@@ -111,7 +111,7 @@ impl<L, E> Index<usize> for TPArrayBlock<L, E> {
     }
 }
 
-impl<L, E> IndexMut<usize> for TPArrayBlock<L, E> {
+impl<E, L> IndexMut<usize> for TPArrayBlock<E, L> {
     #[inline]
     fn index_mut(&mut self, index: usize) -> &mut E {
         assert!(index < self.len());
@@ -119,7 +119,7 @@ impl<L, E> IndexMut<usize> for TPArrayBlock<L, E> {
     }
 }
 
-impl<L, E> Clone for &mut TPArrayBlock<L, E>
+impl<E, L> Clone for &mut TPArrayBlock<E, L>
 where
     L: Clone,
     E: Clone,
@@ -139,14 +139,14 @@ where
 /// FP stands for Fat Pointer, as the pointer to this block is a pointer and an
 /// associated capacity.
 #[repr(C)]
-pub struct FPArrayBlock<L, E> {
+pub struct FPArrayBlock<E, L = ()> {
     /// Metadata about the block
     pub label: L,
     /// Slice of elememnts in the block
     pub elements: [E],
 }
 
-impl<L, E> FPArrayBlock<L, E> {
+impl<E, L> FPArrayBlock<E, L> {
     /// Get a mutable reference to a new block. Array elements are initialized to
     /// garbage (i.e. they are not initialized).
     pub unsafe fn new_ptr_unsafe<'a>(label: L, len: usize) -> &'a mut Self {
@@ -201,7 +201,7 @@ impl<L, E> FPArrayBlock<L, E> {
     }
 }
 
-impl<L, E> FPArrayBlock<L, E>
+impl<E, L> FPArrayBlock<E, L>
 where
     E: Default,
 {
@@ -213,7 +213,7 @@ where
     }
 }
 
-impl<L, E> Index<usize> for FPArrayBlock<L, E> {
+impl<E, L> Index<usize> for FPArrayBlock<E, L> {
     type Output = E;
     #[inline]
     fn index(&self, index: usize) -> &E {
@@ -222,14 +222,14 @@ impl<L, E> Index<usize> for FPArrayBlock<L, E> {
     }
 }
 
-impl<L, E> IndexMut<usize> for FPArrayBlock<L, E> {
+impl<E, L> IndexMut<usize> for FPArrayBlock<E, L> {
     #[inline]
     fn index_mut(&mut self, index: usize) -> &mut E {
         self.get_mut(index)
     }
 }
 
-impl<L, E> Clone for &mut FPArrayBlock<L, E>
+impl<E, L> Clone for &mut FPArrayBlock<E, L>
 where
     L: Clone,
     E: Clone,

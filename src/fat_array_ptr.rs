@@ -1,13 +1,13 @@
 use crate::prelude::*;
 
-pub struct FatPtrArray<'a, L, E>
+pub struct FatPtrArray<'a, E, L = ()>
 where
     Self: 'a,
 {
-    data: &'a mut FPArrayBlock<L, E>,
+    data: &'a mut FPArrayBlock<E, L>,
 }
 
-impl<'a, L, E> FatPtrArray<'a, L, E> {
+impl<'a, E, L> FatPtrArray<'a, E, L> {
     /// Create a new array, with values initialized using a provided function.
     #[inline]
     pub fn new<F>(label: L, len: usize, func: F) -> Self
@@ -15,14 +15,14 @@ impl<'a, L, E> FatPtrArray<'a, L, E> {
         F: FnMut(&mut L, usize) -> E,
     {
         Self {
-            data: FPArrayBlock::<L, E>::new_ptr(label, len, func),
+            data: FPArrayBlock::<E, L>::new_ptr(label, len, func),
         }
     }
 
     /// Create a new array, without initializing the values in it.
     #[inline]
     pub unsafe fn new_unsafe(label: L, len: usize) -> Self {
-        let new_ptr = FPArrayBlock::<L, E>::new_ptr_unsafe(label, len);
+        let new_ptr = FPArrayBlock::<E, L>::new_ptr_unsafe(label, len);
         Self { data: new_ptr }
     }
 
@@ -33,7 +33,7 @@ impl<'a, L, E> FatPtrArray<'a, L, E> {
     }
 }
 
-impl<'a, L, E> FatPtrArray<'a, L, E>
+impl<'a, E, L> FatPtrArray<'a, E, L>
 where
     E: Default,
 {
@@ -46,7 +46,7 @@ where
     }
 }
 
-impl<'a, L, E> LabelledArray<L, E> for FatPtrArray<'a, L, E> {
+impl<'a, E, L> LabelledArray<E, L> for FatPtrArray<'a, E, L> {
     /// Get a reference to the label of the array.
     #[inline]
     fn get_label(&self) -> &L {
@@ -60,7 +60,7 @@ impl<'a, L, E> LabelledArray<L, E> for FatPtrArray<'a, L, E> {
     }
 }
 
-impl<'a, L, E> Index<usize> for FatPtrArray<'a, L, E> {
+impl<'a, E, L> Index<usize> for FatPtrArray<'a, E, L> {
     type Output = E;
     #[inline]
     fn index(&self, idx: usize) -> &E {
@@ -68,14 +68,14 @@ impl<'a, L, E> Index<usize> for FatPtrArray<'a, L, E> {
     }
 }
 
-impl<'a, L, E> IndexMut<usize> for FatPtrArray<'a, L, E> {
+impl<'a, E, L> IndexMut<usize> for FatPtrArray<'a, E, L> {
     #[inline]
     fn index_mut(&mut self, idx: usize) -> &mut E {
         &mut self.data[idx]
     }
 }
 
-impl<'a, L, E> Clone for FatPtrArray<'a, L, E>
+impl<'a, E, L> Clone for FatPtrArray<'a, E, L>
 where
     L: Clone,
     E: Clone,
@@ -88,7 +88,7 @@ where
     }
 }
 
-impl<'a, L, E> Container<(usize, E)> for FatPtrArray<'a, L, E> {
+impl<'a, E, L> Container<(usize, E)> for FatPtrArray<'a, E, L> {
     #[inline]
     fn add(&mut self, elem: (usize, E)) {
         self[elem.0] = elem.1;
@@ -99,7 +99,7 @@ impl<'a, L, E> Container<(usize, E)> for FatPtrArray<'a, L, E> {
     }
 }
 
-impl<'a, L, E> CopyMap<usize, E> for FatPtrArray<'a, L, E> {
+impl<'a, E, L> CopyMap<usize, E> for FatPtrArray<'a, E, L> {
     #[inline]
     fn get(&self, key: usize) -> Option<&E> {
         if key > self.len() {
@@ -133,4 +133,4 @@ impl<'a, L, E> CopyMap<usize, E> for FatPtrArray<'a, L, E> {
     }
 }
 
-impl<'a, L, E> Array<E> for FatPtrArray<'a, L, E> {}
+impl<'a, E, L> Array<E> for FatPtrArray<'a, E, L> {}
