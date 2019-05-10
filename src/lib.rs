@@ -48,7 +48,7 @@ mod prelude {
 ///
 /// ```rust
 /// # use heaparray::*;
-/// # let mut array = HeapArray::new((), 10, |_,_| Vec::<u8>::new());
+/// let mut array = HeapArray::new((), 10, |_,_| Vec::<u8>::new());
 /// let replacement_object = Vec::new();
 /// let owned_object = array.insert(0, replacement_object);
 /// ```
