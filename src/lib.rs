@@ -58,11 +58,9 @@ extern crate containers_rs as containers;
 
 /// Array with an optional label struct stored next to the data.
 pub trait LabelledArray<E, L>: containers::Array<E> {
-    /// Get immutable access to the label. Causes undefined behavior if
-    /// L is a zero-sized type.
+    /// Get immutable access to the label.
     fn get_label(&self) -> &L;
-    /// Get mutable reference to the label. Causes undefined behavior if
-    /// L is a zero-sized type.
+    /// Get mutable reference to the label.
     fn get_label_mut(&mut self) -> &mut L;
 }
 
