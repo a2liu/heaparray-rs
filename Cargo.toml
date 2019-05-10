@@ -1,0 +1,9 @@
+[package]
+name = "heaparray"
+version = "0.1.0"
+authors = ["Albert Liu <albertymliu@gmail.com>"]
+edition = "2018"
+description = "Heap-allocated array with optional metadata field"
+license-file = "LICENSE"
+
+[dependencies]
