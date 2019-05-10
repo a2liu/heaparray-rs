@@ -16,16 +16,16 @@ mod memory_block;
 pub mod thin_array_ptr;
 
 mod prelude {
-    pub use super::memory_block::*;
+    pub(crate) use super::memory_block::*;
     pub use super::LabelledArray;
     pub use containers::{Array, Container, CopyMap};
     pub(crate) use core::mem::ManuallyDrop;
     pub use core::ops::{Index, IndexMut};
 }
 
-pub use containers::*;
 pub use fat_array_ptr::FatPtrArray as HeapArray;
 pub use fat_array_ptr::*;
+pub use prelude::*;
 pub use thin_array_ptr::*;
 
 #[cfg(test)]

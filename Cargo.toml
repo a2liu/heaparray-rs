@@ -1,6 +1,6 @@
 [package]
 name = "heaparray"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Albert Liu <albertymliu@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/A1Liu/heaparray-rs"

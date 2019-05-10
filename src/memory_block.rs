@@ -42,6 +42,7 @@ impl<L, E> TPArrayBlock<L, E> {
         let (size, align) = Self::memory_layout(len);
         let new_ptr = allocate::<Self>(size, align);
         new_ptr.label = label;
+        new_ptr.len = len;
         new_ptr
     }
 

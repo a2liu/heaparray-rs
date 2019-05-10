@@ -95,6 +95,7 @@ impl<'a, L, E> Drop for ThinPtrArray<'a, L, E> {
     fn drop(&mut self) {
         let mut_ref = &mut self.data;
         unsafe { mut_ref.dealloc() };
+        core::mem::forget(mut_ref);
     }
 }
 
