@@ -9,4 +9,4 @@ readme = "README.md"
 license = "MIT"
 
 [dependencies]
-containers-rs = "0.1.3"
+containers-rs = "= 0.1.4"

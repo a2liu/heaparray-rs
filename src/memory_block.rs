@@ -2,7 +2,9 @@
 //! of data.
 //!
 //! *NOTE:* `TPArrayBlock` is marked by the compiler as "Sized". This is incorrect,
-//! and thus it's not suggested that you use this type directly.
+//! and thus it's not suggested that you use this type directly. It's suggested
+//! that you use one of either `FatPtrArray` or `ThinPtrArray`, cooresponding to
+//! `FPArrayBlock` and `TPArrayBlock` respectively.
 //!
 use super::alloc::*;
 use core::ops::{Index, IndexMut};
@@ -133,7 +135,7 @@ where
 }
 
 /// An array block that keeps size information in the pointer to the block.
-/// Can additionally hold arbitrary information about this elements in the container,
+/// Can additionally hold arbitrary information about the elements in the container,
 /// through the `L` generic type.
 ///
 /// FP stands for Fat Pointer, as the pointer to this block is a pointer and an
