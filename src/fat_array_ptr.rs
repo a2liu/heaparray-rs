@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use core::mem::ManuallyDrop;
 use core::ops::{Index, IndexMut};
 
 pub struct FatPtrArray<'a, L, E>
@@ -119,12 +120,16 @@ impl<'a, L, E> CopyMap<usize, E> for FatPtrArray<'a, L, E> {
     }
     #[inline]
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
-        let ret = Some(unsafe { std::mem::transmute_copy::<E, E>(&self[key]) });
-
-        // TODO Need to check that this doesn't drop the value after
-        // assigning
-        self[key] = value;
-        ret
+        if key > self.len() {
+            None
+        } else {
+            let ret = unsafe { std::mem::transmute_copy::<E, E>(&self[key]) };
+            let value_ref = (&mut self[key]) as *mut E as *mut ManuallyDrop<E>;
+            unsafe {
+                *value_ref = ManuallyDrop::new(value);
+            }
+            Some(ret)
+        }
     }
 }
 
