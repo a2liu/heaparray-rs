@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Albert Liu <albertymliu@gmail.com>"]
 edition = "2018"
 description = "Heap-allocated array with optional metadata field"
+readme = "README.md"
 license-file = "LICENSE"
 
 [dependencies]
