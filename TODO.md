@@ -3,10 +3,13 @@
 # TODO
 - [X] Write pointer types to arrays that are easier to use than raw references
    - [X] Write tests
-- [ ] Write structs that are explicity reference counted, with some exposed unsafe
-      methods for altering reference count directly.
+- [ ] Write naive reference counting structs (only strong references) and naive
+      atomic reference counting structs
    - [ ] Write tests
-- [ ] Write methods to correctly create Arc versions
+- [ ] Write structs that are explicity reference counted, with some exposed unsafe
+      methods for altering reference count directly. Use naive Rc structs as weak-pointers
+   - [ ] Write tests
+- [ ] Write methods to correctly create Arc versions, same strategy as before
    - [ ] Write tests
 - [ ] Allow the user to customize allocator
    - [ ] Write tests
