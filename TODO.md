@@ -1,19 +1,22 @@
 # TODO
 - [X] Write pointer types to arrays that are easier to use than raw references
-   - [ ] `clone_from` for both
-   - [ ] Write a modified global allocator to handle allocations during testing
-   - [ ] Write tests
+  - [ ] `clone_from` for both
+  - [ ] Write a modified global allocator to handle allocations during testing
+  - [ ] Write tests
 - [ ] Write naive reference counting structs (only strong references) and naive
       atomic reference counting structs
-   - [ ] `Ref::clone()` and `AtomicRef::clone()` to be more idiomatic
-   - [ ] Write tests
+  - [ ] `Ref::clone()` and `AtomicRef::clone()` to be more idiomatic
+  - [ ] Write tests
 - [ ] Write structs that are explicity reference counted, with some exposed unsafe
       methods for altering reference count directly. Use naive Rc structs as weak-pointers
-   - [ ] Write tests
+  - [ ] Write tests
 - [ ] Write methods to correctly create Arc versions, same strategy as before
-   - [ ] Write tests
+  - [ ] Write tests
 - [ ] Allow the user to customize allocator
-   - [ ] Write tests
+  - [ ] Write tests
+- [ ] Constant-sized arrays whose size is known at compile time.
+  - [ ] Write tests
+
 
 ## Brainstorming
 -  `HeapArray`, `FatPtrArray`, and `ThinPtrArray` are references that are tied to

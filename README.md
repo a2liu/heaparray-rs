@@ -7,8 +7,9 @@ It's suggested that you import the contents of this crate with `use heaparray::*
 implemented through traits.
 
 ## Features
--  Arrays are allocated on the heap
--  Swap owned objects in and out with `array.insert()`
+- Arrays are allocated on the heap, with optional extra space allocated for metadata
+- Swap owned objects in and out with `array.insert()`
+- Arbitrarily sized objects using label and an array of bytes (`u8`)
 
 ## Examples
 
@@ -63,4 +64,7 @@ let mut array = HeapArray::new_labelled(
 ```
 
 ## Future Plans
-Iteration, allocator customization, reference counting (`RcArray`), and atomic reference counting (`ArcArray`).
+Iteration, allocator customization, reference counting (`RcArray`),
+and atomic reference counting (`ArcArray`).  Constant-sized array of arbitrary size,
+i.e. `CArray`, with sizes managed by the type system (waiting on const generics for this one).
+See `TODO.md` in the repository for a full list of planned features.
