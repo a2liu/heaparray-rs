@@ -121,22 +121,6 @@ where
         }
     }
 }
-impl<'a, E, L> LabelledArray<'a, E, L> for FatPtrArray<'a, E, L>
-where
-    E: 'a,
-{
-    /// Get a reference to the label of the array.
-    #[inline]
-    fn get_label(&self) -> &L {
-        &self.data.label
-    }
-
-    /// Get a mutable reference to the label of the array.
-    #[inline]
-    fn get_label_mut(&mut self) -> &mut L {
-        &mut self.data.label
-    }
-}
 
 impl<'a, E, L> Index<usize> for FatPtrArray<'a, E, L> {
     type Output = E;
@@ -208,3 +192,20 @@ where
 }
 
 impl<'a, E, L> Array<'a, E> for FatPtrArray<'a, E, L> where E: 'a {}
+
+impl<'a, E, L> LabelledArray<'a, E, L> for FatPtrArray<'a, E, L>
+where
+    E: 'a,
+{
+    /// Get a reference to the label of the array.
+    #[inline]
+    fn get_label(&self) -> &L {
+        &self.data.label
+    }
+
+    /// Get a mutable reference to the label of the array.
+    #[inline]
+    fn get_label_mut(&mut self) -> &mut L {
+        &mut self.data.label
+    }
+}
