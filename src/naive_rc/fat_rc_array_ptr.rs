@@ -1,6 +1,7 @@
 use crate::naive_rc::prelude::*;
 
-type DataType<'a, E, L> = ManuallyDrop<FatPtrArray<'a, E, RcStruct<L>>>;
+type PtrType<'a, E, L> = FatPtrArray<'a, E, RcStruct<L>>;
+type DataType<'a, E, L> = ManuallyDrop<PtrType<'a, E, L>>;
 
 pub struct FpRcArray<'a, E, L = ()> {
     data: DataType<'a, E, L>,
@@ -25,11 +26,9 @@ impl<'a, E, L> FpRcArray<'a, E, L> {
     where
         F: FnMut(&mut L, usize) -> E,
     {
-        let new_ptr = FatPtrArray::<E, RcStruct<L>>::new_labelled(
-            RcStruct::new(label),
-            len,
-            |rc_struct, idx| func(&mut rc_struct.data, idx),
-        );
+        let new_ptr = PtrType::new_labelled(RcStruct::new(label), len, |rc_struct, idx| {
+            func(&mut rc_struct.data, idx)
+        });
         Self {
             data: ManuallyDrop::new(new_ptr),
         }
@@ -38,7 +37,7 @@ impl<'a, E, L> FpRcArray<'a, E, L> {
     /// Create a new reference-counted array, without initializing the values in it.
     #[inline]
     pub unsafe fn new_labelled_unsafe(label: L, len: usize) -> Self {
-        let new_ptr = FatPtrArray::<E, RcStruct<L>>::new_labelled_unsafe(RcStruct::new(label), len);
+        let new_ptr = PtrType::new_labelled_unsafe(RcStruct::new(label), len);
 
         Self {
             data: ManuallyDrop::new(new_ptr),
@@ -109,8 +108,7 @@ impl<'a, E, L> Drop for FpRcArray<'a, E, L> {
             #[cfg(test)]
             println!("heaparray::naive_rc::FpRcArray called self.drop()");
 
-            let to_drop: FatPtrArray<'a, E, RcStruct<L>> =
-                unsafe { std::mem::transmute_copy(&*self.data) };
+            let to_drop: PtrType<'a, E, L> = unsafe { std::mem::transmute_copy(&*self.data) };
             std::mem::drop(to_drop);
         }
     }
