@@ -76,7 +76,7 @@ mod prelude {
 
     pub(crate) use super::memory_block::*;
     pub use containers::{Array, Container, CopyMap};
-    pub(crate) use core::mem::ManuallyDrop;
+    pub(crate) use core::mem::{transmute_copy, ManuallyDrop};
     pub(crate) use core::ops::{Index, IndexMut};
 }
 

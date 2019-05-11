@@ -91,10 +91,31 @@ impl<'a, E, L> FatPtrArray<'a, E, L> {
         Self { data: new_ptr }
     }
 
+    /// Creates a new array from a raw pointer to a memory block.
+    #[inline]
+    pub unsafe fn from_raw_parts(ptr: &'a mut FPArrayBlock<E, L>) -> Self {
+        Self { data: ptr }
+    }
+
     /// Unsafe access to an element at an index in the array.
     #[inline]
     pub unsafe fn unchecked_access(&'a self, idx: usize) -> &'a mut E {
         self.data.unchecked_access(idx)
+    }
+
+    /// Sets the internal pointer to null, without deallocating it, and returns
+    /// reference to the associated memory block.
+    /// Causes all sorts of undefined behavior, use with caution.
+    pub unsafe fn to_null(&mut self) -> &mut FPArrayBlock<E, L> {
+        let block = transmute_copy(&self.data);
+        self.data = &mut *(FPArrayBlock::null_ptr());
+        block
+    }
+
+    /// Returns whether the internal pointer of this struct is null. Should always
+    /// return false unless you use the unsafe API.
+    pub fn is_null(&self) -> bool {
+        self.data.is_null()
     }
 }
 

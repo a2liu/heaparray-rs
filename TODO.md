@@ -4,7 +4,7 @@
 - [X] Write pointer types to arrays that are easier to use than raw references
    - [ ] `clone_from` for both
    - [ ] Write a modified global allocator to handle allocations during testing
-   - [X] Write tests
+   - [ ] Write tests
 - [ ] Write naive reference counting structs (only strong references) and naive
       atomic reference counting structs
    - [ ] `Ref::clone()` and `AtomicRef::clone()` to be more idiomatic

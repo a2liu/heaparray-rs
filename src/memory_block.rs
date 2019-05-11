@@ -6,8 +6,37 @@
 //! that you use one of either `FatPtrArray` or `ThinPtrArray`, cooresponding to
 //! `FPArrayBlock` and `TPArrayBlock` respectively.
 //!
+//! # Invariants
+//! These are assumptions that safe code follows, and are maintained by the safe
+//! subset of the API to this struct. Please note that the unsafe API does NOT
+//! maintain these invariants, but still assumes them to be true.
+//!
+//! -  A valid memory block cannot have a `len` of `core::usize::MAX`.
+//! -  A valid memory block cannot have an valid index that overflows a `usize`
+//! -  A valid reference to a memory block cannot have the value of `core::usize::MAX`
+//! -  A valid memory block will not be zero-sized
+//!
+//! The invariants above are used to reduce the number of checks in the safe API,
+//! as well as to have consistent definitions for null pointers. Again, note that
+//! calls to unsafe functions do *NOT* check these invariants for you when doing
+//! things like constructing new types.
+//!
 use super::alloc::*;
 use core::ops::{Index, IndexMut};
+pub const NULL: usize = core::usize::MAX;
+
+// TODO Make this function a const function when if statements are stabilized in
+// const functions
+pub fn block_max_len<E, L>() -> usize {
+    use core::mem::size_of;
+    let elem_size = size_of::<E>();
+    let label_size = size_of::<L>();
+    if elem_size == 0 {
+        core::usize::MAX - 1
+    } else {
+        (core::usize::MAX - label_size) / elem_size - 1
+    }
+}
 
 /// An array block that keeps size information in the block itself.
 /// Can additionally hold arbitrary information about the elements in the container,
@@ -48,12 +77,26 @@ impl<E, L> TPArrayBlock<E, L> {
         new_ptr
     }
 
+    /// Returns a null pointer to a memory block. Dereferencing it is undefined
+    /// behavior.
+    pub unsafe fn null_ptr() -> *mut Self {
+        NULL as *mut Self
+    }
+
+    /// Uses the invariants discussed above to check whether a reference to a
+    /// memory block is null or not. Shouldn't be necessary unless you're using
+    /// the unsafe API.
+    pub fn is_null(&self) -> bool {
+        self as *const Self as usize == NULL
+    }
+
     /// Create a new pointer to an array, using a function to initialize all the
     /// elements.
     pub fn new_ptr<'a, F>(label: L, len: usize, mut func: F) -> &'a mut Self
     where
         F: FnMut(&mut L, usize) -> E,
     {
+        assert!(len <= block_max_len::<E, L>());
         let new_ptr = unsafe { Self::new_ptr_unsafe(label, len) };
         for i in 0..new_ptr.len() {
             new_ptr[i] = func(&mut new_ptr.label, i);
@@ -81,7 +124,7 @@ impl<E, L> TPArrayBlock<E, L> {
         let element = &self.elements as *const E as *mut E;
 
         // TODO what if I make a buffer of u8 whose size overflows an isize?
-        let element = element.offset(idx as isize);
+        let element = element.add(idx);
         &mut *element
     }
 
@@ -162,12 +205,27 @@ impl<E, L> FPArrayBlock<E, L> {
         new_ptr
     }
 
+    /// Returns a null pointer to a memory block. Dereferencing it is undefined
+    /// behavior.
+    pub unsafe fn null_ptr() -> *mut Self {
+        let new_ptr = std::slice::from_raw_parts(NULL as *const E, NULL);
+        &mut *(new_ptr as *const [E] as *mut [E] as *mut Self)
+    }
+
+    /// Uses the invariants discussed above to check whether a reference to a
+    /// memory block is null or not. Shouldn't be necessary unless you're using
+    /// the unsafe API.
+    pub fn is_null(&self) -> bool {
+        self.len() == NULL || (&self.label as *const L as usize) == NULL
+    }
+
     /// Create a new pointer to an array, using a function to initialize all the
     /// elements
     pub fn new_ptr<'a, F>(label: L, len: usize, mut func: F) -> &'a mut Self
     where
         F: FnMut(&mut L, usize) -> E,
     {
+        assert!(len <= block_max_len::<E, L>());
         let new_ptr = unsafe { Self::new_ptr_unsafe(label, len) };
         for i in 0..new_ptr.len() {
             new_ptr[i] = func(&mut new_ptr.label, i);
