@@ -2,6 +2,7 @@
 ---
 # TODO
 - [X] Write pointer types to arrays that are easier to use than raw references
+   - [ ] Write a modified global allocator to handle allocations during testing
    - [X] Write tests
 - [ ] Write naive reference counting structs (only strong references) and naive
       atomic reference counting structs

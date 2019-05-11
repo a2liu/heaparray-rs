@@ -1,7 +1,7 @@
 pub mod fat_arc_array_ptr;
 pub mod fat_rc_array_ptr;
 pub(crate) mod prelude;
-// pub mod thin_arc_array_ptr;
+pub mod thin_arc_array_ptr;
 pub mod thin_rc_array_ptr;
 
 pub use crate::prelude::*;
