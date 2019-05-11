@@ -1,5 +1,3 @@
----
----
 # TODO
 - [X] Write pointer types to arrays that are easier to use than raw references
    - [ ] `clone_from` for both
