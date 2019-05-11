@@ -57,7 +57,10 @@
 extern crate containers_rs as containers;
 
 /// Array with an optional label struct stored next to the data.
-pub trait LabelledArray<E, L>: containers::Array<E> {
+pub trait LabelledArray<'a, E, L>: containers::Array<'a, E>
+where
+    E: 'a,
+{
     /// Get immutable access to the label.
     fn get_label(&self) -> &L;
     /// Get mutable reference to the label.

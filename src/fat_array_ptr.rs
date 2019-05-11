@@ -121,7 +121,10 @@ where
         }
     }
 }
-impl<'a, E, L> LabelledArray<E, L> for FatPtrArray<'a, E, L> {
+impl<'a, E, L> LabelledArray<'a, E, L> for FatPtrArray<'a, E, L>
+where
+    E: 'a,
+{
     /// Get a reference to the label of the array.
     #[inline]
     fn get_label(&self) -> &L {
@@ -174,7 +177,10 @@ impl<'a, E, L> Container<(usize, E)> for FatPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> CopyMap<usize, E> for FatPtrArray<'a, E, L> {
+impl<'a, E, L> CopyMap<'a, usize, E> for FatPtrArray<'a, E, L>
+where
+    E: 'a,
+{
     #[inline]
     fn get(&self, key: usize) -> Option<&E> {
         if key > self.len() {
@@ -201,4 +207,4 @@ impl<'a, E, L> CopyMap<usize, E> for FatPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> Array<E> for FatPtrArray<'a, E, L> {}
+impl<'a, E, L> Array<'a, E> for FatPtrArray<'a, E, L> where E: 'a {}
