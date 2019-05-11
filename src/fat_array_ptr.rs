@@ -182,7 +182,7 @@ where
     E: 'a,
 {
     #[inline]
-    fn get(&self, key: usize) -> Option<&E> {
+    fn get(&'a self, key: usize) -> Option<&'a E> {
         if key > self.len() {
             None
         } else {
@@ -190,7 +190,7 @@ where
         }
     }
     #[inline]
-    fn get_mut(&mut self, key: usize) -> Option<&mut E> {
+    fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
         if key > self.len() {
             None
         } else {

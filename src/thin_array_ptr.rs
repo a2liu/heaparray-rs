@@ -189,7 +189,7 @@ impl<'a, E, L> Container<(usize, E)> for ThinPtrArray<'a, E, L> {
 
 impl<'a, E, L> CopyMap<'a, usize, E, (usize, E)> for ThinPtrArray<'a, E, L> {
     #[inline]
-    fn get(&self, key: usize) -> Option<&E> {
+    fn get(&'a self, key: usize) -> Option<&'a E> {
         if key > self.len() {
             None
         } else {
@@ -197,7 +197,7 @@ impl<'a, E, L> CopyMap<'a, usize, E, (usize, E)> for ThinPtrArray<'a, E, L> {
         }
     }
     #[inline]
-    fn get_mut(&mut self, key: usize) -> Option<&mut E> {
+    fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
         if key > self.len() {
             None
         } else {
