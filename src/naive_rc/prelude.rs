@@ -1,5 +1,5 @@
 pub(crate) use crate::fat_array_ptr::FatPtrArray;
-pub(crate) use crate::prelude::*;
+pub use crate::prelude::*;
 // pub(crate) use crate::thin_array_ptr::ThinPtrArray;
 pub(crate) use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -10,14 +10,12 @@ pub struct RcStruct<T> {
 
 impl<T> RcStruct<T> {
     /// Returns a new instance of this reference counter
+    #[inline]
     pub fn new(data: T) -> Self {
         Self { counter: 1, data }
     }
-    /// Returns `true` if this reference counter is at zero
-    pub fn is_zero(&self) -> bool {
-        self.counter == 0
-    }
     /// Decrements the reference counter by one and returns its current value
+    #[inline]
     pub fn decrement(&self) -> usize {
         unsafe {
             *(&self.counter as *const usize as *mut usize) -= 1;
@@ -25,6 +23,7 @@ impl<T> RcStruct<T> {
         self.counter
     }
     /// Increments the reference counter by one and returns its current value
+    #[inline]
     pub fn increment(&self) -> usize {
         unsafe {
             *(&self.counter as *const usize as *mut usize) += 1;
@@ -40,22 +39,20 @@ pub struct ArcStruct<T> {
 
 impl<T> ArcStruct<T> {
     /// Returns a new instance of this atomic reference counter
+    #[inline]
     pub fn new(data: T) -> Self {
         Self {
             counter: AtomicUsize::new(1),
             data,
         }
     }
-    /// Returns `true` if this reference counter is at zero
-    pub fn is_zero(&self) -> bool {
-        self.counter.load(Ordering::Relaxed) == 0
-    }
-
     /// Atomically decrements the reference counter by one and returns its current value.
+    #[inline]
     pub fn decrement(&self) -> usize {
         self.counter.fetch_sub(1, Ordering::Relaxed) - 1
     }
     /// Atomically increments the reference counter by one and returns its current value
+    #[inline]
     pub fn increment(&self) -> usize {
         self.counter.fetch_add(1, Ordering::Relaxed) + 1
     }
