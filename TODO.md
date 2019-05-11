@@ -5,7 +5,7 @@
   - [ ] Write tests
 - [ ] Write naive reference counting structs (only strong references) and naive
       atomic reference counting structs
-  - [ ] `Ref::clone()` and `AtomicRef::clone()` to be more idiomatic
+  - [ ] `ArrayRef::clone()` to be more idiomatic with `ArrayRef::clone<A>(arr: A) -> A where A: ArrayRef + Clone`
   - [ ] Write tests
 - [ ] Write structs that are explicity reference counted, with some exposed unsafe
       methods for altering reference count directly. Use naive Rc structs as weak-pointers
