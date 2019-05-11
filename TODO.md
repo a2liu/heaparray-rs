@@ -2,10 +2,12 @@
 ---
 # TODO
 - [X] Write pointer types to arrays that are easier to use than raw references
+   - [ ] `clone_from` for both
    - [ ] Write a modified global allocator to handle allocations during testing
    - [X] Write tests
 - [ ] Write naive reference counting structs (only strong references) and naive
       atomic reference counting structs
+   - [ ] `Ref::clone()` and `AtomicRef::clone()` to be more idiomatic
    - [ ] Write tests
 - [ ] Write structs that are explicity reference counted, with some exposed unsafe
       methods for altering reference count directly. Use naive Rc structs as weak-pointers
