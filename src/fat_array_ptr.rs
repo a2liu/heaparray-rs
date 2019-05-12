@@ -35,7 +35,7 @@ pub use crate::prelude::*;
 /// but you need to give the array a replacement object to fill its slot with.
 ///
 /// Additionally, you can customize what information should be stored alongside the elements in
-/// the array using the FatPtrArray::new_labelled function:
+/// the array using the `FatPtrArray::new_labelled` function:
 ///
 /// ```rust
 /// # use heaparray::fat_array_ptr::*;
