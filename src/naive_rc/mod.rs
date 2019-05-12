@@ -15,16 +15,6 @@
 //! let another_ref = ArrayRef::clone(&array_ref);
 //! ```
 
-pub mod fat_arc_array;
-pub mod fat_rc_array;
-pub mod ref_counters;
-// pub mod thin_arc_array;
-// pub mod thin_rc_array;
-
-pub use crate::prelude::*;
-pub use fat_arc_array::FpArcArray as ArcArray;
-pub use fat_rc_array::FpRcArray as RcArray;
-
 /// A reference to an array, whose clone points to the same data.
 ///
 /// Allows for idiomatic cloning of array references:
@@ -47,6 +37,18 @@ pub trait ArrayRef: Clone {
     }
 }
 
+pub mod fat_arc_array;
+pub mod fat_rc_array;
+pub mod ref_counters;
+// pub mod thin_arc_array;
+// pub mod thin_rc_array;
+
+pub use crate::prelude::*;
+pub use fat_arc_array::FpArcArray as ArcArray;
+pub use fat_rc_array::FpRcArray as RcArray;
+
+/// publicly include this before every reference counting module, as it contains
+/// all the traits necessary to use the structures correctly.
 pub(crate) mod prelude {
     pub(crate) use super::ref_counters::*;
     pub use super::ArrayRef;
