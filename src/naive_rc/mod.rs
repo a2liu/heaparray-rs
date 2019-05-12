@@ -32,6 +32,9 @@
 /// }
 /// ```
 pub trait ArrayRef: Clone {
+    // Should this be stricter? It really shouldn't be implemented by other
+    // crates, but the type system could definitely make that somewhat of a
+    // guarrantee without making the usage of this trait any less ergonomic.
     fn clone(ptr: &Self) -> Self {
         ptr.clone()
     }
