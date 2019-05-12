@@ -60,8 +60,7 @@ pub mod alloc;
 mod api;
 pub mod fat_array_ptr;
 pub mod memory_block;
-#[allow(dead_code)]
-mod naive_rc;
+pub mod naive_rc;
 pub mod thin_array_ptr;
 
 mod prelude {
@@ -84,6 +83,19 @@ mod prelude {
 }
 
 pub use api::*;
+
+#[cfg(all(test, not(bench)))]
+extern crate stats_alloc;
+
+#[cfg(all(test, not(bench)))]
+use stats_alloc::{StatsAlloc, INSTRUMENTED_SYSTEM};
+
+#[cfg(all(test, not(bench)))]
+use std::alloc::System;
+
+#[cfg(all(test, not(bench)))]
+#[global_allocator]
+static GLOBAL: &StatsAlloc<System> = &INSTRUMENTED_SYSTEM;
 
 #[cfg(test)]
 pub mod tests;

@@ -10,3 +10,7 @@ license = "MIT"
 
 [dependencies]
 containers-rs = "^0.1.6"
+
+[dev-dependencies]
+stats_alloc = "0.1.6"
+

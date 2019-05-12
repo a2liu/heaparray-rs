@@ -78,6 +78,8 @@ where
     }
 }
 
+unsafe impl<'a, E, L> Send for FpArcArray<'a, E, L> {}
+
 impl<'a, E, L> Index<usize> for FpArcArray<'a, E, L> {
     type Output = E;
     #[inline]
