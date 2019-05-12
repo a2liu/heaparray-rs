@@ -112,9 +112,20 @@ impl<'a, E, L> ThinPtrArray<'a, E, L> {
     /// reference to the associated memory block.
     /// Causes all sorts of undefined behavior, use with caution.
     pub unsafe fn to_null(&mut self) -> &mut TPArrayBlock<E, L> {
-        let block = transmute_copy(&*self.data);
-        self.data = ManuallyDrop::new(&mut *(TPArrayBlock::null_ptr()));
-        block
+        let old = mem::replace(&mut *self, Self::null_ref());
+        let ptr = mem::transmute_copy(*old.data);
+        // We want to prevent the deallocation from being run, so we
+        // need to forget the old version of this struct
+        mem::forget(old);
+        ptr
+    }
+
+    /// Creates a null array. All kinds of UB associated with this, use
+    /// with caution.
+    pub unsafe fn null_ref() -> Self {
+        Self {
+            data: ManuallyDrop::new(&mut *(TPArrayBlock::null_ptr())),
+        }
     }
 
     /// Returns whether the internal pointer of this struct is null. Should always

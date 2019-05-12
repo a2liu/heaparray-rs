@@ -107,9 +107,15 @@ impl<'a, E, L> FatPtrArray<'a, E, L> {
     /// reference to the associated memory block.
     /// Causes all sorts of undefined behavior, use with caution.
     pub unsafe fn to_null(&mut self) -> &mut FPArrayBlock<E, L> {
-        let block = transmute_copy(&self.data);
-        self.data = &mut *(FPArrayBlock::null_ptr());
-        block
+        core::mem::replace(&mut *self, Self::null_ref()).data
+    }
+
+    /// Creates a null array. All kinds of UB associated with this, use
+    /// with caution.
+    pub unsafe fn null_ref() -> Self {
+        Self {
+            data: &mut *(FPArrayBlock::null_ptr()),
+        }
     }
 
     /// Returns whether the internal pointer of this struct is null. Should always

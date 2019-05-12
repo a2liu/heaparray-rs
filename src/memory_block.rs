@@ -11,16 +11,16 @@
 //! subset of the API to this struct. Please note that the unsafe API does NOT
 //! maintain these invariants, but still assumes them to be true.
 //!
-//! -  A valid memory block cannot have a `len` of `core::usize::MAX`.
-//! -  A valid memory block cannot have an valid index that overflows a `usize`
-//! -  A valid reference to a memory block cannot have the value of `core::usize::MAX`
-//! -  A valid memory block will not be zero-sized
+//! - A valid memory block cannot have a `len` of `core::usize::MAX`.
+//! - A valid memory block cannot have an valid index that overflows a `usize`
+//! - A valid reference to a memory block cannot have the value of `core::usize::MAX`
+//! - A valid memory block will not be zero-sized
+//! - A valid thin-pointer memory block has a correctly set capacity.
 //!
 //! The invariants above are used to reduce the number of checks in the safe API,
 //! as well as to have consistent definitions for null pointers. Again, note that
 //! calls to unsafe functions do *NOT* check these invariants for you when doing
 //! things like constructing new types.
-//!
 use super::alloc::*;
 use core::ops::{Index, IndexMut};
 pub const NULL: usize = core::usize::MAX;
@@ -36,6 +36,22 @@ pub fn block_max_len<E, L>() -> usize {
     } else {
         (core::usize::MAX - label_size) / elem_size - 1
     }
+}
+
+#[cfg(test)]
+fn check_null_tp<E, L>(arr: &TPArrayBlock<E, L>, message: &'static str) {
+    assert!(
+        arr as *const TPArrayBlock<E, L> as usize != NULL && arr.len != NULL,
+        message
+    );
+}
+
+#[cfg(test)]
+fn check_null_fp<E, L>(arr: &FPArrayBlock<E, L>, message: &'static str) {
+    assert!(
+        arr.elements.len() != NULL && (&arr.label as *const L as usize) != NULL,
+        message
+    );
 }
 
 /// An array block that keeps size information in the block itself.
@@ -63,7 +79,9 @@ impl<E, L> TPArrayBlock<E, L> {
 
     /// Deallocates a reference to this struct.
     pub unsafe fn dealloc<'a>(&'a mut self) {
-        let (size, align) = TPArrayBlock::<E, L>::memory_layout(self.len());
+        #[cfg(test)]
+        check_null_tp(self, "TPArrayBlock::dealloc: Deallocating null pointer!");
+        let (size, align) = TPArrayBlock::<E, L>::memory_layout(self.len);
         deallocate(self, size, align);
     }
 
@@ -74,6 +92,11 @@ impl<E, L> TPArrayBlock<E, L> {
         let new_ptr = allocate::<Self>(size, align);
         new_ptr.label = label;
         new_ptr.len = len;
+        #[cfg(test)]
+        check_null_tp(
+            new_ptr,
+            "TPArrayBlock::new_ptr_unsafe: Allocated null pointer!",
+        );
         new_ptr
     }
 
@@ -98,7 +121,7 @@ impl<E, L> TPArrayBlock<E, L> {
     {
         assert!(len <= block_max_len::<E, L>());
         let new_ptr = unsafe { Self::new_ptr_unsafe(label, len) };
-        for i in 0..new_ptr.len() {
+        for i in 0..new_ptr.len {
             new_ptr[i] = func(&mut new_ptr.label, i);
         }
         new_ptr
@@ -107,20 +130,32 @@ impl<E, L> TPArrayBlock<E, L> {
     /// Get a reference to an element in this memory block.
     #[inline]
     pub fn get<'a>(&'a self, idx: usize) -> &'a E {
-        assert!(idx < self.len());
+        #[cfg(test)]
+        check_null_tp(self, "TPArrayBlock::get: Immutable access of null pointer!");
+        assert!(idx < self.len);
         unsafe { self.unchecked_access(idx) }
     }
 
     /// Get a mutable reference to an element in this memory block.
     #[inline]
     pub fn get_mut<'a>(&'a mut self, idx: usize) -> &'a mut E {
-        assert!(idx < self.len());
+        #[cfg(test)]
+        check_null_tp(
+            self,
+            "TPArrayBlock::get_mut: Mutable access of null pointer!",
+        );
+        assert!(idx < self.len);
         unsafe { self.unchecked_access(idx) }
     }
 
     /// Unsafe access to an element at an index in the block.
     #[inline]
     pub unsafe fn unchecked_access<'a>(&'a self, idx: usize) -> &'a mut E {
+        #[cfg(test)]
+        check_null_tp(
+            self,
+            "TPArrayBlock::unchecked_access: Memory access on null pointer!",
+        );
         let element = &self.elements as *const E as *mut E;
 
         // TODO what if I make a buffer of u8 whose size overflows an isize?
@@ -131,6 +166,8 @@ impl<E, L> TPArrayBlock<E, L> {
     /// Get the capacity of this memory block
     #[inline]
     pub fn len(&self) -> usize {
+        #[cfg(test)]
+        check_null_tp(self, "TPArrayBlock::len: Length check of null pointer!");
         self.len
     }
 }
@@ -151,7 +188,6 @@ impl<E, L> Index<usize> for TPArrayBlock<E, L> {
     type Output = E;
     #[inline]
     fn index(&self, index: usize) -> &E {
-        assert!(index < self.len());
         self.get(index)
     }
 }
@@ -159,7 +195,6 @@ impl<E, L> Index<usize> for TPArrayBlock<E, L> {
 impl<E, L> IndexMut<usize> for TPArrayBlock<E, L> {
     #[inline]
     fn index_mut(&mut self, index: usize) -> &mut E {
-        assert!(index < self.len());
         self.get_mut(index)
     }
 }
@@ -201,6 +236,11 @@ impl<E, L> FPArrayBlock<E, L> {
         let new_ptr = allocate::<E>(size, align);
         let new_ptr = std::slice::from_raw_parts(new_ptr, len);
         let new_ptr = &mut *(new_ptr as *const [E] as *mut [E] as *mut Self);
+        #[cfg(test)]
+        check_null_fp(
+            new_ptr,
+            "FPArrayBlock::new_ptr_unsafe: Allocated null pointer!",
+        );
         new_ptr.label = label;
         new_ptr
     }
@@ -236,6 +276,8 @@ impl<E, L> FPArrayBlock<E, L> {
     /// Get a reference to an element in this memory block.
     #[inline]
     pub fn get<'a>(&'a self, idx: usize) -> &'a E {
+        #[cfg(test)]
+        check_null_fp(self, "FPArrayBlock::get: Immutable access of null pointer!");
         assert!(idx < self.len());
         &self.elements[idx]
     }
@@ -243,6 +285,11 @@ impl<E, L> FPArrayBlock<E, L> {
     /// Get a mutable reference to an element in this memory block.
     #[inline]
     pub fn get_mut<'a>(&'a mut self, idx: usize) -> &'a mut E {
+        #[cfg(test)]
+        check_null_fp(
+            self,
+            "FPArrayBlock::get_mut: Mutable access of null pointer!",
+        );
         assert!(idx < self.len());
         &mut self.elements[idx]
     }
@@ -250,6 +297,11 @@ impl<E, L> FPArrayBlock<E, L> {
     /// Unsafe access to an element at an index in the block.
     #[inline]
     pub unsafe fn unchecked_access(&self, idx: usize) -> &mut E {
+        #[cfg(test)]
+        check_null_fp(
+            self,
+            "FPArrayBlock::unchecked_access: Memory access of null pointer!",
+        );
         let mut_self = &mut *(self as *const Self as *mut Self);
         mut_self.elements.get_unchecked_mut(idx)
     }
@@ -257,6 +309,8 @@ impl<E, L> FPArrayBlock<E, L> {
     /// Get the capacity of this memory block
     #[inline]
     pub fn len(&self) -> usize {
+        #[cfg(test)]
+        check_null_fp(self, "FPArrayBlock::len: Length check on null pointer!");
         self.elements.len()
     }
 }
