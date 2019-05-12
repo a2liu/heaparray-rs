@@ -3,7 +3,7 @@
 //! This more similar to how arrays are defined in C or C++, and is less idiomatic
 //! in Rust, but may improve performance depending on your use case. Thus, it is
 //! not the standard implementation of `HeapArray`, but is still available for use
-//! via `use heaparray::*;`.
+//! via `use heaparray::thin_array_ptr::*;
 pub use crate::prelude::*;
 
 /// Heap-allocated array, with array size stored alongside the memory block
