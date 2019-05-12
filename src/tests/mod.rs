@@ -1,4 +1,7 @@
-mod array_ptr;
+pub mod alloc;
+mod fat_array_ptr;
+pub mod monitor;
+mod thin_array_ptr;
 
 #[derive(Eq, PartialEq)]
 pub struct Test {
@@ -14,8 +17,10 @@ impl Default for Test {
 }
 
 pub(self) mod prelude {
+    pub use super::monitor::TestMonitor;
     pub use super::Test;
     pub use crate::fat_array_ptr::FatPtrArray;
+    pub use crate::prelude::*;
     pub use crate::thin_array_ptr::ThinPtrArray;
-    pub use crate::*;
+    pub use core::mem;
 }

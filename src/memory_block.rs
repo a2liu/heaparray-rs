@@ -24,21 +24,23 @@
 //! calls to unsafe functions do *NOT* check these invariants for you when doing
 //! things like constructing new types.
 use super::alloc::*;
+use core::mem;
 use core::ops::{Index, IndexMut};
 pub const NULL: usize = core::usize::MAX;
+use core::mem::ManuallyDrop;
 
 // TODO Make this function a const function when if statements are stabilized in
 // const functions
 /// Get the maximum length of a memory block, based on the types that it contains.
 /// Maintains the invariants discussed above.
 pub fn block_max_len<E, L>() -> usize {
-    use core::mem::size_of;
-    let elem_size = size_of::<E>();
-    let label_size = size_of::<L>();
+    use core::usize::MAX as MAX_LEN;
+    let elem_size = mem::size_of::<E>();
+    let label_size = mem::size_of::<L>();
     if elem_size == 0 {
-        core::usize::MAX - 1
+        MAX_LEN - 1
     } else {
-        (core::usize::MAX - label_size) / elem_size - 1
+        (MAX_LEN - label_size) / elem_size - 1
     }
 }
 
@@ -78,22 +80,31 @@ pub struct TPArrayBlock<E, L = ()> {
     /// Capacity of the block
     len: usize,
     /// First element in the block
-    elements: E,
+    elements: ManuallyDrop<E>,
 }
 
 impl<E, L> TPArrayBlock<E, L> {
     /// Get size and alignment of the memory that this struct uses.
     pub fn memory_layout(len: usize) -> (usize, usize) {
-        let l_layout = size_align::<L>();
-        let d_layout = size_align_array::<E>(len);
-        size_align_multiple(&[l_layout, size_align::<usize>(), d_layout])
+        let l_layout = size_align::<Self>();
+        if len <= 1 {
+            l_layout
+        } else {
+            let d_layout = size_align_array::<E>(len - 1);
+            size_align_multiple(&[l_layout, size_align::<usize>(), d_layout])
+        }
     }
 
-    /// Deallocates a reference to this struct.
+    /// Deallocates a reference to this struct, as well as all objects contained
+    /// in it.
     pub unsafe fn dealloc<'a>(&'a mut self) {
         #[cfg(test)]
         check_null_tp(self, "TPArrayBlock::dealloc: Deallocating null pointer!");
-        let (size, align) = TPArrayBlock::<E, L>::memory_layout(self.len);
+        for i in 0..self.len {
+            let val = mem::transmute_copy(&self[i]);
+            mem::drop::<E>(val);
+        }
+        let (size, align) = Self::memory_layout(self.len);
         deallocate(self, size, align);
     }
 
@@ -134,7 +145,10 @@ impl<E, L> TPArrayBlock<E, L> {
         assert!(len <= block_max_len::<E, L>());
         let new_ptr = unsafe { Self::new_ptr_unsafe(label, len) };
         for i in 0..new_ptr.len {
-            new_ptr[i] = func(&mut new_ptr.label, i);
+            let item = func(&mut new_ptr.label, i);
+            let garbage = mem::replace(new_ptr.get_mut(i), item);
+            mem::forget(garbage);
+            //*item_ref = item; // FIXME Malloc error happening right here. Why?
         }
         new_ptr
     }
@@ -168,7 +182,7 @@ impl<E, L> TPArrayBlock<E, L> {
             self,
             "TPArrayBlock::unchecked_access: Memory access on null pointer!",
         );
-        let element = &self.elements as *const E as *mut E;
+        let element = &*self.elements as *const E as *mut E;
 
         // TODO what if I make a buffer of u8 whose size overflows an isize?
         let element = element.add(idx);
@@ -199,8 +213,8 @@ where
 impl<E, L> Index<usize> for TPArrayBlock<E, L> {
     type Output = E;
     #[inline]
-    fn index(&self, index: usize) -> &E {
-        self.get(index)
+    fn index(&self, idx: usize) -> &E {
+        self.get(idx)
     }
 }
 
@@ -280,7 +294,9 @@ impl<E, L> FPArrayBlock<E, L> {
         assert!(len <= block_max_len::<E, L>());
         let new_ptr = unsafe { Self::new_ptr_unsafe(label, len) };
         for i in 0..new_ptr.len() {
-            new_ptr[i] = func(&mut new_ptr.label, i);
+            let item = func(&mut new_ptr.label, i);
+            let garbage = mem::replace(new_ptr.get_mut(i), item);
+            mem::forget(garbage);
         }
         new_ptr
     }

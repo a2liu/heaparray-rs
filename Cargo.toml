@@ -12,5 +12,6 @@ license = "MIT"
 containers-rs = "^0.1.6"
 
 [dev-dependencies]
-stats_alloc = "0.1.6"
+parking_lot = "0.8.0"
+lock_api = "0.2.0"
 

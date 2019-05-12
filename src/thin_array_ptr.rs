@@ -91,9 +91,11 @@ impl<'a, E, L> ThinPtrArray<'a, E, L> {
     where
         F: FnMut(&mut L, usize) -> E,
     {
-        Self {
-            data: ManuallyDrop::new(TPArrayBlock::<E, L>::new_ptr(label, len, func)),
-        }
+        let block_ptr = TPArrayBlock::<E, L>::new_ptr(label, len, func);
+        let new_obj = Self {
+            data: ManuallyDrop::new(block_ptr),
+        };
+        new_obj
     }
 
     /// Create a new array, without initializing the values in it.
