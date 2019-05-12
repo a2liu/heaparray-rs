@@ -1,4 +1,4 @@
-use super::*;
+use crate::tests::prelude::*;
 
 #[test]
 fn make_arrays() {

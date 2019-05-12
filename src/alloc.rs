@@ -1,13 +1,15 @@
-#![allow(deprecated)]
+//! Contains pointer math and allocation utilities.
 use core::alloc::Layout;
 use std::alloc::{alloc, dealloc};
 use std::mem::{align_of, size_of};
 
+/// Allocate a block of memory, and then coerce it to type `T`
 pub unsafe fn allocate<'a, T>(size: usize, align: usize) -> &'a mut T {
     let layout = Layout::from_size_align(size, align).unwrap();
     &mut *(alloc(layout) as *mut T)
 }
 
+/// Deallocate a block of memory using the given size and alignment information.
 pub unsafe fn deallocate<T>(ptr: &mut T, size: usize, align: usize) {
     let layout = Layout::from_size_align(size, align).unwrap();
     dealloc(ptr as *mut T as *mut u8, layout);

@@ -1,4 +1,10 @@
-use crate::prelude::*;
+//! Contains definition of `ThinPtrArray`, an array whose pointer is 1 word.
+//!
+//! This more similar to how arrays are defined in C or C++, and is less idiomatic
+//! in Rust, but may improve performance depending on your use case. Thus, it is
+//! not the standard implementation of `HeapArray`, but is still available for use
+//! via `use heaparray::*;`.
+pub use crate::prelude::*;
 
 /// Heap-allocated array, with array size stored alongside the memory block
 /// itself.
@@ -7,14 +13,14 @@ use crate::prelude::*;
 ///
 /// Creating an array:
 /// ```rust
-/// use heaparray::*;
+/// use heaparray::thin_array_ptr::*;
 /// let len = 10;
 /// let array = ThinPtrArray::new(len, |idx| idx + 3);
 /// ```
 ///
 /// Indexing works as you would expect:
 /// ```rust
-/// # use heaparray::*;
+/// # use heaparray::thin_array_ptr::*;
 /// # let mut array = ThinPtrArray::new(10, |idx| idx + 3);
 /// array[3] = 2;
 /// assert!(array[3] == 2);
@@ -23,7 +29,7 @@ use crate::prelude::*;
 /// Notably, you can take ownership of objects back from the container:
 ///
 /// ```rust
-/// # use heaparray::*;
+/// # use heaparray::thin_array_ptr::*;
 /// let mut array = ThinPtrArray::new(10, |_| Vec::<u8>::new());
 /// let replacement_object = Vec::new();
 /// let owned_object = array.insert(0, replacement_object);
@@ -35,7 +41,7 @@ use crate::prelude::*;
 /// the array using the ThinPtrArray::new_labelled function:
 ///
 /// ```rust
-/// # use heaparray::*;
+/// # use heaparray::thin_array_ptr::*;
 /// struct MyLabel {
 ///     pub even: usize,
 ///     pub odd: usize,
@@ -54,6 +60,11 @@ use crate::prelude::*;
 ///         }
 ///     });
 /// ```
+///
+/// # Invariants
+/// This struct follows the same invariants as mentioned in `crate::memory_block`,
+/// and does not check for pointer validity; you should use this struct in the same
+/// way you would use a raw array or slice.
 pub struct ThinPtrArray<'a, E, L = ()>
 where
     Self: 'a,

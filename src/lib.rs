@@ -57,9 +57,11 @@
 extern crate containers_rs as containers;
 
 pub mod alloc;
+mod api;
 pub mod fat_array_ptr;
 pub mod memory_block;
-pub mod naive_rc;
+#[allow(dead_code)]
+mod naive_rc;
 pub mod thin_array_ptr;
 
 mod prelude {
@@ -81,10 +83,7 @@ mod prelude {
     pub(crate) use core::ops::{Index, IndexMut};
 }
 
-pub use fat_array_ptr::FatPtrArray as HeapArray;
-pub use fat_array_ptr::FatPtrArray;
-pub use prelude::*;
-pub use thin_array_ptr::ThinPtrArray;
+pub use api::*;
 
 #[cfg(test)]
 pub mod tests;

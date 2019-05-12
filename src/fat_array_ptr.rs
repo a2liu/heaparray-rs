@@ -1,4 +1,8 @@
-use crate::prelude::*;
+//! Contains definition of `FatPtrArray`, an array whose pointer is 2 words.
+//!
+//! This is the typical representation of unsized references in Rust,
+//! and is thus also the default implementation of `HeapArray` as imported by `use heaparray::*;`
+pub use crate::prelude::*;
 
 /// Heap-allocated array, with array size stored with the pointer to the memory.
 ///
@@ -6,14 +10,14 @@ use crate::prelude::*;
 ///
 /// Creating an array:
 /// ```rust
-/// use heaparray::*;
+/// use heaparray::fat_array_ptr::*;
 /// let len = 10;
 /// let array = FatPtrArray::new(len, |idx| idx + 3);
 /// ```
 ///
 /// Indexing works as you would expect:
 /// ```rust
-/// # use heaparray::*;
+/// # use heaparray::fat_array_ptr::*;
 /// # let mut array = FatPtrArray::new(10, |idx| idx + 3);
 /// array[3] = 2;
 /// assert!(array[3] == 2);
@@ -22,7 +26,7 @@ use crate::prelude::*;
 /// Notably, you can take ownership of objects back from the container:
 ///
 /// ```rust
-/// # use heaparray::*;
+/// # use heaparray::fat_array_ptr::*;
 /// let mut array = FatPtrArray::new(10, |_| Vec::<u8>::new());
 /// let replacement_object = Vec::new();
 /// let owned_object = array.insert(0, replacement_object);
@@ -34,7 +38,7 @@ use crate::prelude::*;
 /// the array using the FatPtrArray::new_labelled function:
 ///
 /// ```rust
-/// # use heaparray::*;
+/// # use heaparray::fat_array_ptr::*;
 /// struct MyLabel {
 ///     pub even: usize,
 ///     pub odd: usize,
@@ -53,6 +57,10 @@ use crate::prelude::*;
 ///         }
 ///     });
 /// ```
+/// # Invariants
+/// This struct follows the same invariants as mentioned in `crate::memory_block`,
+/// and does not check for pointer validity; you should use this struct in the same
+/// way you would use a raw array or slice.
 pub struct FatPtrArray<'a, E, L = ()>
 where
     Self: 'a,

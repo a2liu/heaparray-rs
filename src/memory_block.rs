@@ -27,6 +27,8 @@ pub const NULL: usize = core::usize::MAX;
 
 // TODO Make this function a const function when if statements are stabilized in
 // const functions
+/// Get the maximum length of a memory block, based on the types that it contains.
+/// Maintains the invariants discussed above.
 pub fn block_max_len<E, L>() -> usize {
     use core::mem::size_of;
     let elem_size = size_of::<E>();
@@ -38,6 +40,10 @@ pub fn block_max_len<E, L>() -> usize {
     }
 }
 
+/// This function checks that the given array block pointer is valid, and if it
+/// isn't, it panics with an error message. This prevents unsafe code from seg-faulting
+/// when corrupt memory is about to be access, but it's a comparison AND a memory
+/// dereference, so it's only enabled during testing.
 #[cfg(test)]
 fn check_null_tp<E, L>(arr: &TPArrayBlock<E, L>, message: &'static str) {
     assert!(
@@ -46,6 +52,10 @@ fn check_null_tp<E, L>(arr: &TPArrayBlock<E, L>, message: &'static str) {
     );
 }
 
+/// This function checks that the given array block pointer is valid, and if it
+/// isn't, it panics with an error message. This prevents unsafe code from seg-faulting
+/// when corrupt memory is about to be access, but it's a comparison AND a memory
+/// dereference, so it's only enabled during testing.
 #[cfg(test)]
 fn check_null_fp<E, L>(arr: &FPArrayBlock<E, L>, message: &'static str) {
     assert!(
