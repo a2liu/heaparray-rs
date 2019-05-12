@@ -60,7 +60,8 @@ pub mod alloc;
 mod api;
 pub mod fat_array_ptr;
 pub mod memory_block;
-// mod naive_rc;
+#[allow(dead_code)]
+mod naive_rc;
 pub mod thin_array_ptr;
 
 mod prelude {
