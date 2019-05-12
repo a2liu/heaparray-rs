@@ -3,6 +3,7 @@ use crate::tests::prelude::*;
 #[test]
 fn make_arrays() {
     let _thin = ThinPtrArray::new_labelled(Test::default(), 10, |_, i| i);
+    let _fat = FatPtrArray::new_labelled(Test::default(), 10, |_, i| i);
 }
 
 #[test]

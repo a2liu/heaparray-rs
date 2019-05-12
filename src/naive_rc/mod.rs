@@ -1,6 +1,7 @@
 //! This module contains naively reference counted arrays, both as atomic and
-//! regular versions.
-//!
+//! regular versions. i.e. if you're not careful, you could make a cycle that
+//! never gets deallocated.
+
 pub mod fat_arc_array_ptr;
 pub mod fat_rc_array_ptr;
 pub(crate) mod prelude;

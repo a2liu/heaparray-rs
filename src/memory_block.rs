@@ -1,5 +1,7 @@
 //! Memory blocks that can be created on the heap to hold an arbitrary amount
-//! of data.
+//! of data. These are used to represent the data that all the other types point
+//! to. It's not recommended to use these directly; instead, use the pointer types
+//! that refer to these, namely `HeapArray`, `FatPtrArray`, and `ThinPtrArray`.
 //!
 //! *NOTE:* `TPArrayBlock` is marked by the compiler as "Sized". This is incorrect,
 //! and thus it's not suggested that you use this type directly. It's suggested
@@ -54,8 +56,8 @@ fn check_null_tp<E, L>(arr: &TPArrayBlock<E, L>, message: &'static str) {
 
 /// This function checks that the given array block pointer is valid, and if it
 /// isn't, it panics with an error message. This prevents unsafe code from seg-faulting
-/// when corrupt memory is about to be access, but it's a comparison AND a memory
-/// dereference, so it's only enabled during testing.
+/// when corrupt memory is about to be access, but it's two extra comparisons,
+/// so it's only enabled during testing.
 #[cfg(test)]
 fn check_null_fp<E, L>(arr: &FPArrayBlock<E, L>, message: &'static str) {
     assert!(
