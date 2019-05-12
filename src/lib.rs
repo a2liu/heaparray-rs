@@ -1,4 +1,4 @@
-//! This crate holds a struct, HeapArray, that internally points to a
+//! This crate holds a struct, `HeapArray`, that internally points to a
 //! contiguous block of memory. It also supports storing arbitrary data
 //! adjacent to the block of memory.
 //!
