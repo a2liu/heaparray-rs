@@ -2,6 +2,7 @@
 - [X] Write pointer types to arrays that are easier to use than raw references
   - [ ] `clone_from` for both
   - [ ] Write a modified global allocator to handle allocations during testing
+        use https://github.com/neoeinstein/stats_alloc/
   - [ ] Write tests
 - [ ] Write naive reference counting structs (only strong references) and naive
       atomic reference counting structs
