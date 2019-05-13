@@ -45,15 +45,16 @@ fn swap_exchange() {
     }
 }
 
-// Will almost always fall during testing unless testing happens on only a
-// sinlge thread, i.e. `cargo test -- --test-threads=1`
-// #[test]
-// fn check_drop() {
-//     // use std::sync::atomic;
-//     let monitor = &crate::TEST_MONITOR;
-//     // let origin = alloc.info();
-//     let arr = ThinPtrArray::new(100, |_| Vec::<usize>::new());
-//     mem::drop(arr);
-//     // let diff = alloc.info().relative_to(&origin);
-//     // assert!(diff.bytes_alloc == diff.bytes_dealloc);
-// }
+#[test]
+fn check_drop() {
+    let monitor = &crate::TEST_MONITOR;
+    let origin = monitor.local_info();
+    let arr = ThinPtrArray::new(100, |_| Vec::<usize>::new());
+    mem::drop(arr);
+    let diff = monitor.local_info().relative_to(&origin);
+    assert!(
+        diff.bytes_alloc == diff.bytes_dealloc,
+        "Diff is {:#?}",
+        diff
+    );
+}

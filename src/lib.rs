@@ -91,7 +91,10 @@ extern crate parking_lot;
 extern crate lock_api;
 
 #[cfg(all(test, not(bench)))]
-use tests::alloc::*;
+extern crate interloc;
+
+#[cfg(all(test, not(bench)))]
+use interloc::*;
 
 #[cfg(all(test, not(bench)))]
 use tests::monitor::*;
@@ -106,7 +109,7 @@ static TEST_MONITOR: TestMonitor = TestMonitor::new();
 #[global_allocator]
 static GLOBAL: InterAlloc<System, TestMonitor> = InterAlloc {
     inner: System,
-    monitor_struct: &TEST_MONITOR,
+    monitor: &TEST_MONITOR,
 };
 
 #[cfg(test)]

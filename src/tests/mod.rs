@@ -1,4 +1,3 @@
-pub mod alloc;
 mod fat_array_ptr;
 pub mod monitor;
 mod thin_array_ptr;
@@ -17,10 +16,9 @@ impl Default for Test {
 }
 
 pub(self) mod prelude {
-    pub use super::monitor::TestMonitor;
-    pub use super::Test;
-    pub use crate::fat_array_ptr::FatPtrArray;
+    pub(crate) use super::Test;
+    pub(crate) use crate::fat_array_ptr::FatPtrArray;
     pub use crate::prelude::*;
-    pub use crate::thin_array_ptr::ThinPtrArray;
-    pub use core::mem;
+    pub(crate) use crate::thin_array_ptr::ThinPtrArray;
+    pub(crate) use core::mem;
 }

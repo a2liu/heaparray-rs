@@ -44,3 +44,17 @@ fn swap_exchange() {
         assert!(arr[i].c == i as u8 - 1);
     }
 }
+
+#[test]
+fn check_drop() {
+    let monitor = &crate::TEST_MONITOR;
+    let origin = monitor.local_info();
+    let arr = FatPtrArray::new(100, |_| Vec::<usize>::new());
+    mem::drop(arr);
+    let diff = monitor.local_info().relative_to(&origin);
+    assert!(
+        diff.bytes_alloc == diff.bytes_dealloc,
+        "Diff is {:#?}",
+        diff
+    );
+}
