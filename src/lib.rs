@@ -9,6 +9,7 @@
 //! use heaparray::*;
 //! let len = 10;
 //! let array = HeapArray::new(len, |idx| idx + 3);
+//! assert!(array[1] == 4);
 //! ```
 //!
 //! Indexing works as you would expect:
