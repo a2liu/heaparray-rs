@@ -105,15 +105,8 @@ static TEST_MONITOR: TestMonitor = TestMonitor::new();
 #[cfg(all(test, not(bench)))]
 #[global_allocator]
 static GLOBAL: InterAlloc<System, TestMonitor> = InterAlloc {
-    allocs: AtomicUsize::new(0),
-    deallocs: AtomicUsize::new(0),
-    reallocs: AtomicUsize::new(0),
-    bytes_alloc: AtomicUsize::new(0),
-    bytes_dealloc: AtomicUsize::new(0),
-    bytes_realloc: AtomicIsize::new(0),
     inner: System,
     monitor_struct: &TEST_MONITOR,
-    info_lock: AtomicBool::new(false),
 };
 
 #[cfg(test)]

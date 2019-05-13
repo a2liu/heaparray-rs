@@ -97,7 +97,19 @@ where
     }
 }
 
-unsafe impl<'a, E, L> Send for FpArcArray<'a, E, L> {}
+unsafe impl<'a, E, L> Send for FpArcArray<'a, E, L>
+where
+    E: Send + Sync,
+    L: Send + Sync,
+{
+}
+
+unsafe impl<'a, E, L> Sync for FpArcArray<'a, E, L>
+where
+    E: Send + Sync,
+    L: Send + Sync,
+{
+}
 
 impl<'a, E, L> Index<usize> for FpArcArray<'a, E, L> {
     type Output = E;

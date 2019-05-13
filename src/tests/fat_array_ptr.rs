@@ -44,9 +44,3 @@ fn swap_exchange() {
         assert!(arr[i].c == i as u8 - 1);
     }
 }
-
-#[test]
-fn check_drop() {
-    let _arr = ThinPtrArray::new(100, |_| Vec::<usize>::new());
-    let _arr = ThinPtrArray::new(100, |_| Vec::<usize>::with_capacity(2));
-}
