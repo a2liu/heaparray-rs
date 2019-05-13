@@ -63,10 +63,41 @@ impl<'a, E, L> FpArcArray<'a, E, L> {
         }
     }
 
-    /// Unsafe access to an element at an index in the array.
+    /// Unsafe access to an element at an index in the array. Does NOT check
+    /// for null reference first.
     #[inline]
     pub unsafe fn unchecked_access(&'a self, idx: usize) -> &'a mut E {
         self.data.unchecked_access(idx)
+    }
+
+    /// Make this a null reference. This is safe, because the API for this
+    /// object doesn't assume that the reference is valid before dereferencing it.
+    #[inline]
+    pub fn to_null(&mut self) {
+        if self.is_null() {
+            return;
+        }
+
+        let ref_count = self.data.get_label_mut().decrement();
+        if ref_count == 0 {
+            let to_drop = mem::replace(&mut *self.data, unsafe { PtrType::null_ref() });
+            mem::drop(to_drop);
+        }
+    }
+
+    /// Checks whether the array reference contained by this struct is
+    /// valid.
+    #[inline]
+    pub fn is_null(&'a self) -> bool {
+        self.data.is_null()
+    }
+
+    /// Creates a new null pointer reference.
+    #[inline]
+    pub fn null_ref() -> Self {
+        Self {
+            data: ManuallyDrop::new(unsafe { PtrType::null_ref() }),
+        }
     }
 }
 
@@ -115,6 +146,9 @@ impl<'a, E, L> Index<usize> for FpArcArray<'a, E, L> {
     type Output = E;
     #[inline]
     fn index(&self, idx: usize) -> &E {
+        if self.is_null() {
+            panic!("Null dereference of heaparray::FpArcArray");
+        }
         &self.data[idx]
     }
 }
@@ -122,6 +156,9 @@ impl<'a, E, L> Index<usize> for FpArcArray<'a, E, L> {
 impl<'a, E, L> IndexMut<usize> for FpArcArray<'a, E, L> {
     #[inline]
     fn index_mut(&mut self, idx: usize) -> &mut E {
+        if self.is_null() {
+            panic!("Null dereference of heaparray::FpArcArray");
+        }
         &mut self.data[idx]
     }
 }
@@ -129,34 +166,34 @@ impl<'a, E, L> IndexMut<usize> for FpArcArray<'a, E, L> {
 impl<'a, E, L> Clone for FpArcArray<'a, E, L> {
     #[inline]
     fn clone(&self) -> Self {
-        #[cfg(test)]
-        println!("heaparray::naive_rc::FpArcArray called self.clone()");
-        (*self.data).get_label().increment();
-        unsafe { std::mem::transmute_copy(self) }
+        if self.is_null() {
+            Self::null_ref()
+        } else {
+            (*self.data).get_label().increment();
+            unsafe { mem::transmute_copy(self) }
+        }
     }
 }
 
 impl<'a, E, L> Drop for FpArcArray<'a, E, L> {
     fn drop(&mut self) {
-        let ref_count = self.data.get_label_mut().decrement();
-
-        if ref_count == 0 {
-            #[cfg(test)]
-            println!("heaparray::naive_rc::FpArcArray called self.drop()");
-
-            let to_drop: PtrType<'a, E, L> = unsafe { std::mem::transmute_copy(&*self.data) };
-            std::mem::drop(to_drop);
-        }
+        self.to_null();
     }
 }
 
 impl<'a, E, L> Container<(usize, E)> for FpArcArray<'a, E, L> {
     #[inline]
     fn add(&mut self, elem: (usize, E)) {
+        if self.is_null() {
+            panic!("Null dereference of heaparray::FpArcArray");
+        }
         self[elem.0] = elem.1;
     }
     #[inline]
     fn len(&self) -> usize {
+        if self.is_null() {
+            panic!("Null dereference of heaparray::FpArcArray");
+        }
         self.data.len()
     }
 }
@@ -167,7 +204,9 @@ where
 {
     #[inline]
     fn get(&'a self, key: usize) -> Option<&'a E> {
-        if key > self.len() {
+        if self.is_null() {
+            panic!("Null dereference of heaparray::FpArcArray");
+        } else if key > self.len() {
             None
         } else {
             Some(&self[key])
@@ -175,7 +214,9 @@ where
     }
     #[inline]
     fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
-        if key > self.len() {
+        if self.is_null() {
+            panic!("Null dereference of heaparray::FpArcArray");
+        } else if key > self.len() {
             None
         } else {
             Some(&mut self[key])
@@ -183,7 +224,9 @@ where
     }
     #[inline]
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
-        if key > self.len() {
+        if self.is_null() {
+            panic!("Null dereference of heaparray::FpArcArray");
+        } else if key > self.len() {
             None
         } else {
             Some(std::mem::replace(&mut self[key], value))
@@ -200,12 +243,18 @@ where
     /// Get a reference to the label of the array.
     #[inline]
     fn get_label(&self) -> &L {
+        if self.is_null() {
+            panic!("Null dereference of heaparray::FpArcArray");
+        }
         &self.data.get_label().data
     }
 
     /// Get a mutable reference to the label of the array.
     #[inline]
     fn get_label_mut(&mut self) -> &mut L {
+        if self.is_null() {
+            panic!("Null dereference of heaparray::FpArcArray");
+        }
         &mut self.data.get_label_mut().data
     }
 }
