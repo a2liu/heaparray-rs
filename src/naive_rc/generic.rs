@@ -1,9 +1,14 @@
-//! Contains definition for `RcArray`, which is a fat pointer to an atomically reference-counted
-//! array, and the implementation for `heaparray::naive_rc::ArcArray`.
-pub use crate::naive_rc::prelude::*;
+//! Contains definition for `RcArray`, which is an implementation-agnositc,
+//! reference-counted array.
+use super::ref_counters::*;
+use crate::prelude::*;
 use core::marker::PhantomData;
+use core::sync::atomic::Ordering;
 
-pub(crate) struct RcArray<'a, A, R, B, E, L = ()>
+/// `RcArray` is a generic, implementation-agnositc array. It uses traits to
+/// handle literally everything. Implementing your own version is not recommended.
+#[repr(transparent)]
+pub struct RcArray<'a, A, R, B, E, L = ()>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
@@ -26,7 +31,7 @@ where
     fn check_null(&self) {
         assert!(
             !self.is_null(),
-            "Null dereference of naively reference-counted array"
+            "Null dereference of naively reference-counted array."
         );
     }
     fn from_ref(ptr: A) -> Self {
@@ -38,9 +43,7 @@ where
     // This would be unsafe if the `A` were returned to caller, but since it
     // isn't, everything should be fiiiiiiiine
     fn to_ref(self) -> A {
-        let ptr = &*self.data;
-        let ret = unsafe { mem::transmute_copy(ptr) };
-        mem::forget(ptr);
+        let ret = unsafe { mem::transmute_copy(&self.data) };
         mem::forget(self);
         ret
     }
@@ -177,7 +180,6 @@ where
             Some(&self[key])
         }
     }
-    #[inline]
     fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
         self.check_null();
         if key > self.len() {
@@ -186,7 +188,6 @@ where
             Some(&mut self[key])
         }
     }
-    #[inline]
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
         self.check_null();
         if key > self.len() {
@@ -245,7 +246,7 @@ where
 
 impl<'a, A, R, B, E> MakeArray<'a, E> for RcArray<'a, A, R, B, E, ()>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<()>,
     E: 'a,
     B: 'a + ?Sized,
@@ -261,7 +262,7 @@ where
 impl<'a, A, R, B, E, L> DefaultLabelledArray<'a, E, L> for RcArray<'a, A, R, B, E, L>
 where
     A: 'a
-        + DefaultLabelledArray<'a, E, L>
+        + DefaultLabelledArray<'a, E, R>
         + LabelledArray<'a, E, R>
         + BaseArrayRef
         + UnsafeArrayRef<'a, B>,
@@ -271,7 +272,7 @@ where
     B: 'a + ?Sized,
 {
     fn with_len(label: L, len: usize) -> Self {
-        Self::from_ref(A::with_len(label, len))
+        Self::from_ref(A::with_len(R::new(label), len))
     }
 }
 

@@ -9,6 +9,11 @@ fn make_array() {
 }
 
 #[test]
+fn make_large_array() {
+    let _array = TestArray::with_label(Test::default(), 2000000, |_, i| i);
+}
+
+#[test]
 #[should_panic]
 fn bounds_check() {
     let thin = TestArray::with_label(Test::default(), 10, |_, i| i);

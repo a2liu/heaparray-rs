@@ -1,4 +1,4 @@
-// use crate::fat_array_ptr::FatPtrArray;
+use crate::fat_array_ptr::FatPtrArray;
 pub use crate::prelude::*;
 
 /// Heap-allocated array, with array size stored with the pointer to the memory.
@@ -58,167 +58,114 @@ pub use crate::prelude::*;
 /// This struct follows the same invariants as mentioned in `crate::memory_block`,
 /// and does not check for pointer validity; you should use this struct in the same
 /// way you would use a raw array or slice.
-pub use crate::fat_array_ptr::FatPtrArray as HeapArray;
+#[repr(transparent)]
+pub struct HeapArray<'a, E, L = ()>(Inner<'a, E, L>);
+type Inner<'a, E, L> = FatPtrArray<'a, E, L>;
 
-// #[repr(transparent)]
-// pub struct HeapArray<'a, E, L = ()>(FatPtrArray<'a, E, L>);
-//
-// impl<'a, E> HeapArray<'a, E> {
-//     /// Create a new array, with values initialized using a provided function.
-//     #[inline]
-//     pub fn new<F>(len: usize, mut func: F) -> Self
-//     where
-//         F: FnMut(usize) -> E,
-//     {
-//         FatPtrArray::<'a, E, L>::with_label((), len, |_, idx| func(idx))
-//     }
-// }
-//
-// impl<'a, E, L> HeapArray<'a, E, L> {
-//     /// Create a new array, with values initialized using a provided function, and label
-//     /// initialized to a provided value.
-//     #[inline]
-//     pub fn with_label<F>(label: L, len: usize, func: F) -> Self
-//     where
-//         F: FnMut(&mut L, usize) -> E,
-//     {
-//         Self(FatPtrArray::<'a, E, L>::with_label(label, len, func))
-//     }
-//
-//     /// Create a new array, without initializing the values in it.
-//     #[inline]
-//     pub unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
-//         Self(FatPtrArray::<'a, E, L>::with_label_unsafe(label, len))
-//     }
-//
-//     /// Creates a new array from a raw pointer to a memory block.
-//     #[inline]
-//     pub unsafe fn from_raw_parts(ptr: &'a mut FPArrayBlock<E, L>) -> Self {
-//         Self(FatPtrArray::<'a, E, L>::from_raw_parts(ptr))
-//     }
-//
-//     /// Unsafe access to an element at an index in the array.
-//     #[inline]
-//     pub unsafe fn unchecked_access(&'a self, idx: usize) -> &'a mut E {
-//         self.data.unchecked_access(idx)
-//     }
-//
-//     /// Sets the internal pointer to null, without deallocating it, and returns
-//     /// reference to the associated memory block.
-//     /// Causes all sorts of undefined behavior, use with caution.
-//     pub unsafe fn to_null(&mut self) -> &mut FPArrayBlock<E, L> {
-//         core::mem::replace(&mut *self, Self::null_ref()).data
-//     }
-//
-//     /// Creates a null array. All kinds of UB associated with this, use
-//     /// with caution.
-//     pub unsafe fn null_ref() -> Self {
-//         Self {
-//             data: &mut *(FPArrayBlock::null_ptr()),
-//         }
-//     }
-//
-//     /// Returns whether the internal pointer of this struct is null. Should always
-//     /// return false unless you use the unsafe API.
-//     pub fn is_null(&self) -> bool {
-//         self.data.is_null()
-//     }
-// }
-//
-// impl<'a, E> HeapArray<'a, E>
-// where
-//     E: Default,
-// {
-//     /// Get a new array, initialized to default values.
-//     #[inline]
-//     pub fn new_default(len: usize) -> Self {
-//         Self::with_len((), len)
-//     }
-// }
-//
-// impl<'a, E, L> HeapArray<'a, E, L>
-// where
-//     E: Default,
-// {
-//     /// Get a new array, initialized to default values.
-//     #[inline]
-//     pub fn with_len(label: L, len: usize) -> Self {
-//         Self {
-//             data: FPArrayBlock::new_ptr_default(label, len),
-//         }
-//     }
-// }
-//
-// impl<'a, E, L> Index<usize> for HeapArray<'a, E, L> {
-//     type Output = E;
-//     #[inline]
-//     fn index(&self, idx: usize) -> &E {
-//         &self.data[idx]
-//     }
-// }
-//
-// impl<'a, E, L> IndexMut<usize> for HeapArray<'a, E, L> {
-//     #[inline]
-//     fn index_mut(&mut self, idx: usize) -> &mut E {
-//         &mut self.data[idx]
-//     }
-// }
-//
-// impl<'a, E, L> Clone for HeapArray<'a, E, L>
-// where
-//     L: Clone,
-//     E: Clone,
-// {
-//     #[inline]
-//     fn clone(&self) -> Self {
-//         Self(self.0.clone())
-//     }
-// }
-//
-// impl<'a, E, L> Container<(usize, E)> for HeapArray<'a, E, L> {
-//     #[inline]
-//     fn add(&mut self, elem: (usize, E)) {
-//         self.0.add(elem)
-//     }
-//     #[inline]
-//     fn len(&self) -> usize {
-//         self.0.len()
-//     }
-// }
-//
-// impl<'a, E, L> CopyMap<'a, usize, E> for HeapArray<'a, E, L>
-// where
-//     E: 'a,
-// {
-//     #[inline]
-//     fn get(&'a self, key: usize) -> Option<&'a E> {
-//         self.0.get(key)
-//     }
-//     #[inline]
-//     fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
-//         self.0.get_mut(key)
-//     }
-//     #[inline]
-//     fn insert(&mut self, key: usize, value: E) -> Option<E> {
-//         self.0.insert(key, value)
-//     }
-// }
-//
-// impl<'a, E, L> Array<'a, E> for HeapArray<'a, E, L> where E: 'a {}
-//
-// impl<'a, E, L> OldLA<'a, E, L> for HeapArray<'a, E, L>
-// where
-//     E: 'a,
-// {
-//     /// Get a reference to the label of the array.
-//     #[inline]
-//     fn get_label(&self) -> &L {
-//         self.0.get_label()
-//     }
-//
-//     /// Get a mutable reference to the label of the array.
-//     #[inline]
-//     fn get_label_mut(&mut self) -> &mut L {
-//         self.0.get_label_mut()
-//     }
-// }
+impl<'a, E, L> BaseArrayRef for HeapArray<'a, E, L> {
+    fn is_null(&self) -> bool {
+        self.0.is_null()
+    }
+}
+impl<'a, E, L> Clone for HeapArray<'a, E, L>
+where
+    E: Clone,
+    L: Clone,
+{
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+impl<'a, E, L> UnsafeArrayRef<'a, FPArrayBlock<E, L>> for HeapArray<'a, E, L> {
+    unsafe fn from_raw_parts(ptr: &'a mut FPArrayBlock<E, L>) -> Self {
+        Self(Inner::from_raw_parts(ptr))
+    }
+    unsafe fn to_null<'b>(&mut self) -> &'b mut FPArrayBlock<E, L> {
+        self.0.to_null()
+    }
+    unsafe fn null_ref() -> Self {
+        Self(Inner::null_ref())
+    }
+}
+impl<'a, E, L> Index<usize> for HeapArray<'a, E, L> {
+    type Output = E;
+    fn index(&self, idx: usize) -> &E {
+        self.0.index(idx)
+    }
+}
+impl<'a, E, L> IndexMut<usize> for HeapArray<'a, E, L> {
+    fn index_mut(&mut self, idx: usize) -> &mut E {
+        self.0.index_mut(idx)
+    }
+}
+
+impl<'a, E, L> Container<(usize, E)> for HeapArray<'a, E, L> {
+    fn add(&mut self, elem: (usize, E)) {
+        self.0.add(elem)
+    }
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<'a, E, L> CopyMap<'a, usize, E> for HeapArray<'a, E, L> {
+    fn get(&'a self, key: usize) -> Option<&'a E> {
+        self.0.get(key)
+    }
+    fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
+        self.0.get_mut(key)
+    }
+    fn insert(&mut self, key: usize, value: E) -> Option<E> {
+        self.0.insert(key, value)
+    }
+}
+
+impl<'a, E, L> Array<'a, E> for HeapArray<'a, E, L> {}
+
+impl<'a, E, L> LabelledArray<'a, E, L> for HeapArray<'a, E, L> {
+    fn with_label<F>(label: L, len: usize, func: F) -> Self
+    where
+        F: FnMut(&mut L, usize) -> E,
+    {
+        Self(Inner::with_label(label, len, func))
+    }
+    unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
+        Self(Inner::with_label_unsafe(label, len))
+    }
+    fn get_label(&self) -> &L {
+        self.0.get_label()
+    }
+    fn get_label_mut(&mut self) -> &mut L {
+        self.0.get_label_mut()
+    }
+    unsafe fn get_label_unsafe(&self) -> &mut L {
+        self.0.get_label_unsafe()
+    }
+    unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
+        self.0.get_unsafe(idx)
+    }
+}
+
+impl<'a, E> MakeArray<'a, E> for HeapArray<'a, E, ()>
+where
+    E: 'a,
+{
+    fn new<F>(len: usize, func: F) -> Self
+    where
+        F: FnMut(usize) -> E,
+    {
+        Self(Inner::new(len, func))
+    }
+}
+
+impl<'a, E, L> DefaultLabelledArray<'a, E, L> for HeapArray<'a, E, L>
+where
+    E: Default,
+{
+    fn with_len(label: L, len: usize) -> Self {
+        Self(Inner::with_len(label, len))
+    }
+}
+
+unsafe impl<'a, E, L> Send for HeapArray<'a, E, L> where Inner<'a, E, L>: Send {}
+unsafe impl<'a, E, L> Sync for HeapArray<'a, E, L> where Inner<'a, E, L>: Sync {}

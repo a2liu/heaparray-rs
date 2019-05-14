@@ -108,8 +108,8 @@ impl<'a, E, L> IndexMut<usize> for FatPtrArray<'a, E, L> {
 
 impl<'a, E, L> Clone for FatPtrArray<'a, E, L>
 where
-    L: Clone,
     E: Clone,
+    L: Clone,
 {
     #[inline]
     fn clone(&self) -> Self {

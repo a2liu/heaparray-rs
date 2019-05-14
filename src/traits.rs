@@ -1,5 +1,16 @@
-pub use core::sync::atomic::Ordering;
+use core::sync::atomic::Ordering;
 
+/// An array of arbitrary (sized) values that can be safely initialized.
+///
+/// # Example
+///
+/// ```rust
+/// # use heaparray::*;
+/// let array = HeapArray::<usize,()>::new(100, |i| i * i);
+/// for i in 0..array.len() {
+///     assert!(array[i] == i * i);
+/// }
+/// ```
 pub trait MakeArray<'a, E>: containers::Array<'a, E>
 where
     E: 'a,
@@ -12,7 +23,6 @@ where
 
 /// Array with an optional label struct stored next to the data.
 pub trait LabelledArray<'a, E, L>: containers::Array<'a, E>
-// MakeArray<'a,E>
 where
     E: 'a,
 {
@@ -78,7 +88,7 @@ where
 ///
 /// ```rust
 /// # use heaparray::naive_rc::*;
-/// let array_ref = RcArray::new(10, |_| 0);
+/// let array_ref = FpRcArray::new(10, |_| 0);
 /// let another_ref = ArrayRef::clone(&array_ref);
 ///
 /// assert!(array_ref.len() == another_ref.len());

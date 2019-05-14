@@ -79,12 +79,6 @@ mod prelude {
 pub use api::*;
 
 #[cfg(all(test, not(bench)))]
-extern crate parking_lot;
-
-#[cfg(all(test, not(bench)))]
-extern crate lock_api;
-
-#[cfg(all(test, not(bench)))]
 extern crate interloc;
 
 #[cfg(all(test, not(bench)))]

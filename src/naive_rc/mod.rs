@@ -11,24 +11,31 @@
 //!
 //! ```rust
 //! # use heaparray::naive_rc::*;
-//! let array_ref = ArcArray::new(10, |_| 0);
+//! let array_ref = FpRcArray::new(10, |_| 0);
 //! let another_ref = ArrayRef::clone(&array_ref);
 //! ```
-
-pub mod fat_rc_array;
-mod generic;
-pub mod ref_counters;
-pub mod thin_arc_array;
-
-pub use crate::prelude::*;
-pub use fat_rc_array::FpRcArray as RcArray;
-pub use thin_arc_array::TpArcArray as ArcArray;
 
 /// publicly include this before every reference counting module, as it contains
 /// all the traits necessary to use the structures correctly.
 pub(crate) mod prelude {
+    pub(crate) use super::generic::*;
     pub(crate) use super::ref_counters::*;
-    pub(crate) use crate::fat_array_ptr::FatPtrArray;
+    pub(crate) use crate::fat_array_ptr::FatPtrArray as FpArr;
+    pub(crate) use crate::memory_block::FPArrayBlock as FpBlk;
+    pub(crate) use crate::memory_block::TPArrayBlock as TpBlk;
     pub use crate::prelude::*;
-    pub(crate) use crate::thin_array_ptr::ThinPtrArray;
+    pub(crate) use crate::thin_array_ptr::ThinPtrArray as TpArr;
 }
+
+mod fparc;
+mod fprc;
+pub mod generic;
+pub mod ref_counters;
+mod tparc;
+mod tprc;
+
+pub use crate::prelude::*;
+pub use fparc::*;
+pub use fprc::*;
+pub use tparc::*;
+pub use tprc::*;

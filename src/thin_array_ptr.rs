@@ -5,6 +5,7 @@
 //! not the standard implementation of `HeapArray`, but is still available for use
 //! via `use heaparray::thin_array_ptr::*;
 pub use crate::prelude::*;
+use core::sync::atomic::{AtomicPtr, Ordering};
 
 /// Heap-allocated array, with array size stored alongside the memory block
 /// itself.
@@ -72,17 +73,34 @@ where
     data: ManuallyDrop<&'a mut TPArrayBlock<E, L>>,
 }
 
-impl<'a, E, L> BaseArrayRef for ThinPtrArray<'a, E, L> {
-    fn is_null(&self) -> bool {
-        self.data.is_null()
+impl<'a, E, L> ThinPtrArray<'a, E, L> {
+    fn from_raw(ptr: *mut TPArrayBlock<E, L>) -> Self {
+        Self {
+            data: ManuallyDrop::new(unsafe { &mut *ptr }),
+        }
+    }
+    fn from_ref(ptr: &'a mut TPArrayBlock<E, L>) -> Self {
+        Self {
+            data: ManuallyDrop::new(ptr),
+        }
+    }
+    fn get_ref<'b>(&self) -> &'b mut TPArrayBlock<E, L> {
+        let ret = unsafe { mem::transmute_copy(&self.data) };
+        ret
+    }
+    fn to_ref<'b>(self) -> &'b mut TPArrayBlock<E, L> {
+        let ret = self.get_ref();
+        mem::forget(self);
+        ret
+    }
+    fn as_atomic(&self) -> AtomicPtr<TPArrayBlock<E, L>> {
+        AtomicPtr::new(self.get_ref())
     }
 }
 
 impl<'a, E, L> UnsafeArrayRef<'a, TPArrayBlock<E, L>> for ThinPtrArray<'a, E, L> {
     unsafe fn from_raw_parts(ptr: &'a mut TPArrayBlock<E, L>) -> Self {
-        Self {
-            data: ManuallyDrop::new(ptr),
-        }
+        Self::from_ref(ptr)
     }
     unsafe fn to_null<'b>(&mut self) -> &'b mut TPArrayBlock<E, L> {
         let old = mem::replace(&mut *self, Self::null_ref());
@@ -116,8 +134,8 @@ impl<'a, E, L> IndexMut<usize> for ThinPtrArray<'a, E, L> {
 
 impl<'a, E, L> Clone for ThinPtrArray<'a, E, L>
 where
-    L: Clone,
     E: Clone,
+    L: Clone,
 {
     #[inline]
     fn clone(&self) -> Self {
@@ -228,5 +246,61 @@ where
         Self {
             data: ManuallyDrop::new(TPArrayBlock::new_ptr_default(label, len)),
         }
+    }
+}
+
+impl<'a, E, L> BaseArrayRef for ThinPtrArray<'a, E, L> {
+    fn is_null(&self) -> bool {
+        self.data.is_null()
+    }
+}
+
+impl<'a, E, L> AtomicArrayRef for ThinPtrArray<'a, E, L> {
+    fn compare_and_swap(&self, current: Self, new: Self, order: Ordering) -> Self {
+        Self::from_raw(
+            self.as_atomic()
+                .compare_and_swap(current.to_ref(), new.to_ref(), order),
+        )
+    }
+    fn compare_exchange(
+        &self,
+        current: Self,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        match self
+            .as_atomic()
+            .compare_exchange(current.to_ref(), new.to_ref(), success, failure)
+        {
+            Ok(data) => Ok(Self::from_raw(data)),
+            Err(data) => Err(Self::from_raw(data)),
+        }
+    }
+    fn compare_exchange_weak(
+        &self,
+        current: Self,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        match self.as_atomic().compare_exchange_weak(
+            current.to_ref(),
+            new.to_ref(),
+            success,
+            failure,
+        ) {
+            Ok(data) => Ok(Self::from_raw(data)),
+            Err(data) => Err(Self::from_raw(data)),
+        }
+    }
+    fn load(&self, order: Ordering) -> Self {
+        Self::from_raw(self.as_atomic().load(order))
+    }
+    fn store(&self, ptr: Self, order: Ordering) {
+        self.as_atomic().store(ptr.to_ref(), order)
+    }
+    fn swap(&self, ptr: Self, order: Ordering) -> Self {
+        Self::from_raw(self.as_atomic().swap(ptr.to_ref(), order))
     }
 }
