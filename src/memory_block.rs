@@ -1,6 +1,7 @@
-//! Memory blocks that can be created on the heap to hold an arbitrary amount
-//! of data. These are used to represent the data that all the other types point
-//! to. It's not recommended to use these directly; instead, use the pointer types
+//! Memory blocks that can hold arbitrary data on the heap.
+//! Used to represent the data that all the other types point to.
+//!
+//! It's not recommended to use these directly; instead, use the pointer types
 //! that refer to these, namely `HeapArray`, `FatPtrArray`, and `ThinPtrArray`.
 //!
 //! *NOTE:* `TPArrayBlock` is marked by the compiler as "Sized". This is incorrect,
