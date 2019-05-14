@@ -1,20 +1,23 @@
 use crate::tests::prelude::*;
+use crate::thin_array_ptr::ThinPtrArray;
+
+type TestArray<'a, E, L = ()> = ThinPtrArray<'a, E, L>;
 
 #[test]
 fn make_array() {
-    let _array = ThinPtrArray::new_labelled(Test::default(), 10, |_, i| i);
+    let _array = TestArray::new_labelled(Test::default(), 10, |_, i| i);
 }
 
 #[test]
 #[should_panic]
 fn bounds_check() {
-    let thin = ThinPtrArray::new_labelled(Test::default(), 10, |_, i| i);
+    let thin = TestArray::new_labelled(Test::default(), 10, |_, i| i);
     println!("{}", thin[10]);
 }
 
 #[test]
 fn data_check() {
-    let arr = ThinPtrArray::new_labelled(Test::default(), 100, |_, _| Test::default());
+    let arr = TestArray::new_labelled(Test::default(), 100, |_, _| Test::default());
     let default = Test::default();
     for i in 0..arr.len() {
         assert!(default == arr[i]);
@@ -23,7 +26,7 @@ fn data_check() {
 
 #[test]
 fn swap_exchange() {
-    let mut arr = ThinPtrArray::new_labelled(Test::default(), 100, |_, i| Test {
+    let mut arr = TestArray::new_labelled(Test::default(), 100, |_, i| Test {
         a: i,
         b: i as u8,
         c: i as u8,
@@ -49,7 +52,7 @@ fn swap_exchange() {
 fn check_drop() {
     let monitor = &crate::TEST_MONITOR;
     let origin = monitor.local_info();
-    let arr = ThinPtrArray::new(100, |_| Vec::<usize>::new());
+    let arr = TestArray::new(100, |_| Vec::<usize>::new());
     mem::drop(arr);
     let diff = monitor.local_info().relative_to(&origin);
     assert!(
@@ -62,6 +65,6 @@ fn check_drop() {
 #[should_panic]
 #[test]
 fn check_null() {
-    let null_ptr = unsafe { ThinPtrArray::<u8, ()>::null_ref() };
+    let null_ptr = unsafe { TestArray::<u8, ()>::null_ref() };
     mem::drop(null_ptr);
 }

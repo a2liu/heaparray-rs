@@ -1,20 +1,23 @@
+use crate::fat_array_ptr::FatPtrArray;
 use crate::tests::prelude::*;
+
+type TestArray<'a, E, L = ()> = FatPtrArray<'a, E, L>;
 
 #[test]
 fn make_array() {
-    let _array = FatPtrArray::new_labelled(Test::default(), 10, |_, i| i);
+    let _array = TestArray::new_labelled(Test::default(), 10, |_, i| i);
 }
 
 #[test]
 #[should_panic]
 fn bounds_check() {
-    let fat = FatPtrArray::new_labelled(Test::default(), 10, |_, i| i);
+    let fat = TestArray::new_labelled(Test::default(), 10, |_, i| i);
     println!("{}", fat[10]);
 }
 
 #[test]
 fn data_check() {
-    let arr = FatPtrArray::new_labelled(Test::default(), 100, |_, _| Test::default());
+    let arr = TestArray::new_labelled(Test::default(), 100, |_, _| Test::default());
     let default = Test::default();
     for i in 0..arr.len() {
         assert!(default == arr[i]);
@@ -23,7 +26,7 @@ fn data_check() {
 
 #[test]
 fn swap_exchange() {
-    let mut arr = FatPtrArray::new_labelled(Test::default(), 100, |_, i| Test {
+    let mut arr = TestArray::new_labelled(Test::default(), 100, |_, i| Test {
         a: i,
         b: i as u8,
         c: i as u8,
@@ -49,7 +52,7 @@ fn swap_exchange() {
 fn check_drop() {
     let monitor = &crate::TEST_MONITOR;
     let origin = monitor.local_info();
-    let arr = FatPtrArray::new(100, |_| Vec::<usize>::new());
+    let arr = TestArray::new(100, |_| Vec::<usize>::new());
     mem::drop(arr);
     let diff = monitor.local_info().relative_to(&origin);
     assert!(
@@ -62,6 +65,6 @@ fn check_drop() {
 #[should_panic]
 #[test]
 fn check_null() {
-    let null_ptr = unsafe { FatPtrArray::<u8, ()>::null_ref() };
+    let null_ptr = unsafe { TestArray::<u8, ()>::null_ref() };
     mem::drop(null_ptr);
 }
