@@ -43,8 +43,8 @@ pub trait ArrayRef: Clone {
 pub mod fat_arc_array;
 pub mod fat_rc_array;
 pub mod ref_counters;
-// pub mod thin_arc_array;
-// pub mod thin_rc_array;
+pub mod thin_arc_array;
+pub mod thin_rc_array;
 
 pub use crate::prelude::*;
 pub use fat_arc_array::FpArcArray as ArcArray;
