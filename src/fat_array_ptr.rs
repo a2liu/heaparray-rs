@@ -93,14 +93,12 @@ impl<'a, E, L> UnsafeArrayRef<'a, FPArrayBlock<E, L>> for FatPtrArray<'a, E, L> 
 
 impl<'a, E, L> Index<usize> for FatPtrArray<'a, E, L> {
     type Output = E;
-    #[inline]
     fn index(&self, idx: usize) -> &E {
         &self.data[idx]
     }
 }
 
 impl<'a, E, L> IndexMut<usize> for FatPtrArray<'a, E, L> {
-    #[inline]
     fn index_mut(&mut self, idx: usize) -> &mut E {
         &mut self.data[idx]
     }
@@ -111,7 +109,6 @@ where
     E: Clone,
     L: Clone,
 {
-    #[inline]
     fn clone(&self) -> Self {
         Self {
             data: self.data.clone(),
@@ -120,7 +117,6 @@ where
 }
 
 impl<'a, E, L> Drop for FatPtrArray<'a, E, L> {
-    #[inline]
     fn drop(&mut self) {
         debug_assert!(!self.is_null());
         let mut_ref = &mut self.data;
@@ -130,11 +126,9 @@ impl<'a, E, L> Drop for FatPtrArray<'a, E, L> {
 }
 
 impl<'a, E, L> Container<(usize, E)> for FatPtrArray<'a, E, L> {
-    #[inline]
     fn add(&mut self, elem: (usize, E)) {
         self[elem.0] = elem.1;
     }
-    #[inline]
     fn len(&self) -> usize {
         self.data.len()
     }
@@ -144,7 +138,6 @@ impl<'a, E, L> CopyMap<'a, usize, E> for FatPtrArray<'a, E, L>
 where
     E: 'a,
 {
-    #[inline]
     fn get(&'a self, key: usize) -> Option<&'a E> {
         if key > self.len() {
             None
@@ -152,7 +145,6 @@ where
             Some(&self[key])
         }
     }
-    #[inline]
     fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
         if key > self.len() {
             None
@@ -160,7 +152,6 @@ where
             Some(&mut self[key])
         }
     }
-    #[inline]
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
         if key > self.len() {
             None

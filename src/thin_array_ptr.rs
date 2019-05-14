@@ -119,14 +119,12 @@ impl<'a, E, L> UnsafeArrayRef<'a, TPArrayBlock<E, L>> for ThinPtrArray<'a, E, L>
 
 impl<'a, E, L> Index<usize> for ThinPtrArray<'a, E, L> {
     type Output = E;
-    #[inline]
     fn index(&self, idx: usize) -> &E {
         &self.data[idx]
     }
 }
 
 impl<'a, E, L> IndexMut<usize> for ThinPtrArray<'a, E, L> {
-    #[inline]
     fn index_mut(&mut self, idx: usize) -> &mut E {
         &mut self.data[idx]
     }
@@ -137,16 +135,24 @@ where
     E: Clone,
     L: Clone,
 {
-    #[inline]
     fn clone(&self) -> Self {
         Self {
             data: ManuallyDrop::new((*self.data).clone()),
         }
     }
+    fn clone_from(&mut self, source: &Self) {
+        if source.len() > self.len() {
+            *self = source.clone();
+        } else {
+            self.data.set_len(source.len());
+            for i in 0..source.len() {
+                self[i].clone_from(&source[i]);
+            }
+        }
+    }
 }
 
 impl<'a, E, L> Drop for ThinPtrArray<'a, E, L> {
-    #[inline]
     fn drop(&mut self) {
         debug_assert!(!self.is_null());
         let mut_ref = &mut self.data;
@@ -156,18 +162,15 @@ impl<'a, E, L> Drop for ThinPtrArray<'a, E, L> {
 }
 
 impl<'a, E, L> Container<(usize, E)> for ThinPtrArray<'a, E, L> {
-    #[inline]
     fn add(&mut self, elem: (usize, E)) {
         self[elem.0] = elem.1;
     }
-    #[inline]
     fn len(&self) -> usize {
         self.data.len()
     }
 }
 
 impl<'a, E, L> CopyMap<'a, usize, E, (usize, E)> for ThinPtrArray<'a, E, L> {
-    #[inline]
     fn get(&'a self, key: usize) -> Option<&'a E> {
         if key > self.len() {
             None
@@ -175,7 +178,6 @@ impl<'a, E, L> CopyMap<'a, usize, E, (usize, E)> for ThinPtrArray<'a, E, L> {
             Some(&self[key])
         }
     }
-    #[inline]
     fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
         if key > self.len() {
             None
@@ -183,7 +185,6 @@ impl<'a, E, L> CopyMap<'a, usize, E, (usize, E)> for ThinPtrArray<'a, E, L> {
             Some(&mut self[key])
         }
     }
-    #[inline]
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
         if key > self.len() {
             None

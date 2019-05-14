@@ -201,6 +201,15 @@ impl<E, L> TPArrayBlock<E, L> {
         check_null_tp(self, "TPArrayBlock::len: Length check of null pointer!");
         self.len
     }
+    pub fn set_len(&mut self, len: usize) {
+        #[cfg(test)]
+        check_null_tp(
+            self,
+            "TPArrayBlock::set_len: Length assignment of null pointer!",
+        );
+        debug_assert!(self.len >= len);
+        self.len = len;
+    }
 }
 
 impl<E, L> TPArrayBlock<E, L>
