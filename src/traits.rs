@@ -61,6 +61,24 @@ where
     P: BaseArrayRef,
 {
     fn compare_and_swap(&self, current: P, new: P, order: Ordering) -> P;
+    fn compare_exchange(
+        &self,
+        current: P,
+        new: P,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<P, P>;
+    fn compare_exchange_weak(
+        &self,
+        current: P,
+        new: P,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<P, P>;
+    fn get_mut(&mut self) -> &mut P;
+    fn load(&self, order: Ordering) -> P;
+    fn store(&self, ptr: P, order: Ordering);
+    fn swap(&self, ptr: P, order: Ordering) -> P;
 }
 
 /// A reference to a heap-allocated array whose safe API guarrantees it to
