@@ -1,4 +1,4 @@
-use core::sync::atomic::Ordering;
+pub use core::sync::atomic::Ordering;
 
 pub trait MakeArray<'a, E>: containers::Array<'a, E>
 where
@@ -117,7 +117,6 @@ pub trait AtomicArrayRef: BaseArrayRef + Sized {
         success: Ordering,
         failure: Ordering,
     ) -> Result<Self, Self>;
-    fn get_mut(&mut self) -> &mut Self;
     fn load(&self, order: Ordering) -> Self;
     fn store(&self, ptr: Self, order: Ordering);
     fn swap(&self, ptr: Self, order: Ordering) -> Self;

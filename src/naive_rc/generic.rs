@@ -29,6 +29,21 @@ where
             "Null dereference of naively reference-counted array"
         );
     }
+    fn from_ref(ptr: A) -> Self {
+        Self {
+            data: ManuallyDrop::new(ptr),
+            phantom: PhantomData,
+        }
+    }
+    // This would be unsafe if the `A` were returned to caller, but since it
+    // isn't, everything should be fiiiiiiiine
+    fn to_ref(self) -> A {
+        let ptr = &*self.data;
+        let ret = unsafe { mem::transmute_copy(ptr) };
+        mem::forget(ptr);
+        mem::forget(self);
+        ret
+    }
 }
 
 impl<'a, A, R, B, E, L> BaseArrayRef for RcArray<'a, A, R, B, E, L>
@@ -82,10 +97,7 @@ where
     }
 
     fn null_ref() -> Self {
-        Self {
-            data: ManuallyDrop::new(unsafe { A::null_ref() }),
-            phantom: PhantomData,
-        }
+        Self::from_ref(unsafe { A::null_ref() })
     }
 }
 
@@ -210,18 +222,10 @@ where
         let new_ptr = A::with_label(R::new(label), len, |rc_struct, idx| {
             func(&mut rc_struct.get_data_mut(), idx)
         });
-        Self {
-            data: ManuallyDrop::new(new_ptr),
-            phantom: PhantomData,
-        }
+        Self::from_ref(new_ptr)
     }
     unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
-        let new_ptr = A::with_label_unsafe(R::new(label), len);
-
-        Self {
-            data: ManuallyDrop::new(new_ptr),
-            phantom: PhantomData,
-        }
+        Self::from_ref(A::with_label_unsafe(R::new(label), len))
     }
     fn get_label(&self) -> &L {
         self.check_null();
@@ -267,10 +271,7 @@ where
     B: 'a + ?Sized,
 {
     fn with_len(label: L, len: usize) -> Self {
-        Self {
-            data: ManuallyDrop::new(A::with_len(label, len)),
-            phantom: PhantomData,
-        }
+        Self::from_ref(A::with_len(label, len))
     }
 }
 
@@ -292,4 +293,50 @@ where
     E: 'a + Send + Sync,
     B: 'a + ?Sized,
 {
+}
+
+impl<'a, A, R, B, E, L> AtomicArrayRef for RcArray<'a, A, R, B, E, L>
+where
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B> + AtomicArrayRef,
+    R: 'a + RefCounter<L>,
+    L: 'a,
+    E: 'a,
+    B: 'a + ?Sized,
+{
+    fn compare_and_swap(&self, current: Self, new: Self, order: Ordering) -> Self {
+        Self::from_ref((*self.data).compare_and_swap(current.to_ref(), new.to_ref(), order))
+    }
+    fn compare_exchange(
+        &self,
+        current: Self,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        match (*self.data).compare_exchange(current.to_ref(), new.to_ref(), success, failure) {
+            Ok(data) => Ok(Self::from_ref(data)),
+            Err(data) => Err(Self::from_ref(data)),
+        }
+    }
+    fn compare_exchange_weak(
+        &self,
+        current: Self,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        match (*self.data).compare_exchange_weak(current.to_ref(), new.to_ref(), success, failure) {
+            Ok(data) => Ok(Self::from_ref(data)),
+            Err(data) => Err(Self::from_ref(data)),
+        }
+    }
+    fn load(&self, order: Ordering) -> Self {
+        Self::from_ref((*self.data).load(order))
+    }
+    fn store(&self, ptr: Self, order: Ordering) {
+        (*self.data).store(ptr.to_ref(), order);
+    }
+    fn swap(&self, ptr: Self, order: Ordering) -> Self {
+        Self::from_ref((*self.data).swap(ptr.to_ref(), order))
+    }
 }
