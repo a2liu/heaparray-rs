@@ -199,7 +199,7 @@ impl<E, L> TPArrayBlock<E, L> {
         &mut *(&self.label as *const L as *mut L)
     }
 
-    /// Get the capacity of this memory block
+    /// Get the capacity of this memory block.
     #[inline]
     pub fn len(&self) -> usize {
         #[cfg(test)]
