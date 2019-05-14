@@ -183,10 +183,19 @@ impl<E, L> TPArrayBlock<E, L> {
             "TPArrayBlock::unchecked_access: Memory access on null pointer!",
         );
         let element = &*self.elements as *const E as *mut E;
-
-        // TODO what if I make a buffer of u8 whose size overflows an isize?
         let element = element.add(idx);
         &mut *element
+    }
+
+    /// Unsafe access to the label of the block.
+    #[inline]
+    pub unsafe fn unchecked_access_label(&self) -> &mut L {
+        #[cfg(test)]
+        check_null_tp(
+            self,
+            "TPArrayBlock::unchecked_access_label: Memory access on null pointer!",
+        );
+        &mut *(&self.label as *const L as *mut L)
     }
 
     /// Get the capacity of this memory block
@@ -253,12 +262,17 @@ pub struct FPArrayBlock<E, L = ()> {
 }
 
 impl<E, L> FPArrayBlock<E, L> {
+    /// Get size and alignment of the memory that this struct uses.
+    fn memory_layout(len: usize) -> (usize, usize) {
+        let l_layout = size_align::<L>();
+        let d_layout = size_align_array::<E>(len);
+        size_align_multiple(&[l_layout, d_layout])
+    }
+
     /// Get a mutable reference to a new block. Array elements are initialized to
     /// garbage (i.e. they are not initialized).
     pub unsafe fn new_ptr_unsafe<'a>(label: L, len: usize) -> &'a mut Self {
-        let l_layout = size_align::<L>();
-        let d_layout = size_align_array::<E>(len);
-        let (size, align) = size_align_multiple(&[l_layout, d_layout]);
+        let (size, align) = Self::memory_layout(len);
         let new_ptr = allocate::<E>(size, align);
         let new_ptr = core::slice::from_raw_parts(new_ptr, len);
         let new_ptr = &mut *(new_ptr as *const [E] as *mut [E] as *mut Self);
@@ -269,6 +283,20 @@ impl<E, L> FPArrayBlock<E, L> {
         );
         new_ptr.label = label;
         new_ptr
+    }
+
+    /// Deallocates a reference to this struct, as well as all objects contained
+    /// in it.
+    pub unsafe fn dealloc<'a>(&'a mut self) {
+        #[cfg(test)]
+        check_null_fp(self, "FPArrayBlock::dealloc: Deallocating null pointer!");
+
+        for i in 0..self.elements.len() {
+            let val = mem::transmute_copy(&self[i]);
+            mem::drop::<E>(val);
+        }
+        let (size, align) = Self::memory_layout(self.elements.len());
+        deallocate(&mut self.label, size, align);
     }
 
     /// Returns a null pointer to a memory block. Dereferencing it is undefined
@@ -282,7 +310,7 @@ impl<E, L> FPArrayBlock<E, L> {
     /// memory block is null or not. Shouldn't be necessary unless you're using
     /// the unsafe API.
     pub fn is_null(&self) -> bool {
-        self.len() == NULL || (&self.label as *const L as usize) == NULL
+        (&self.label as *const L as usize) == NULL
     }
 
     /// Create a new pointer to an array, using a function to initialize all the
@@ -332,6 +360,17 @@ impl<E, L> FPArrayBlock<E, L> {
         );
         let mut_self = &mut *(self as *const Self as *mut Self);
         mut_self.elements.get_unchecked_mut(idx)
+    }
+
+    /// Unsafe access to the label of the block.
+    #[inline]
+    pub unsafe fn unchecked_access_label(&self) -> &mut L {
+        #[cfg(test)]
+        check_null_fp(
+            self,
+            "FPArrayBlock::unchecked_access_label: Memory access of null pointer!",
+        );
+        &mut *(&self.label as *const L as *mut L)
     }
 
     /// Get the capacity of this memory block

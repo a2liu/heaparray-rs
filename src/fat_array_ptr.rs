@@ -111,6 +111,12 @@ impl<'a, E, L> FatPtrArray<'a, E, L> {
         self.data.unchecked_access(idx)
     }
 
+    /// Unsafe access to the label of the block.
+    #[inline]
+    pub unsafe fn unchecked_access_label(&'a self) -> &'a mut L {
+        self.data.unchecked_access_label()
+    }
+
     /// Sets the internal pointer to null, without deallocating it, and returns
     /// reference to the associated memory block.
     /// Causes all sorts of undefined behavior, use with caution.
@@ -190,7 +196,12 @@ where
 
 impl<'a, E, L> Drop for FatPtrArray<'a, E, L> {
     #[inline]
-    fn drop(&mut self) {}
+    fn drop(&mut self) {
+        debug_assert!(!self.is_null());
+        let mut_ref = &mut self.data;
+        unsafe { mut_ref.dealloc() };
+        mem::forget(mut_ref);
+    }
 }
 
 impl<'a, E, L> Container<(usize, E)> for FatPtrArray<'a, E, L> {
