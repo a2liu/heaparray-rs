@@ -23,7 +23,7 @@
 //! as well as to have consistent definitions for null pointers. Again, note that
 //! calls to unsafe functions do *NOT* check these invariants for you when doing
 //! things like constructing new types.
-use super::alloc::*;
+use super::alloc_utils::*;
 use core::mem;
 use core::ops::{Index, IndexMut};
 pub const NULL: usize = core::usize::MAX;

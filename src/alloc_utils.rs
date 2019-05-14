@@ -1,6 +1,8 @@
 //! Contains pointer math and allocation utilities.
 use core::alloc::Layout;
 use core::mem::{align_of, size_of};
+
+// TODO change this to use the alloc crate when stabilized
 use std::alloc::{alloc, dealloc};
 
 /// Allocate a block of memory, and then coerce it to type `T`

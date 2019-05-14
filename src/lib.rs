@@ -55,9 +55,11 @@
 //!     });
 //! ```
 
+// TODO uncomment this when the alloc crate hits stable
+// extern crate alloc;
 extern crate containers_rs as containers;
 
-pub mod alloc;
+pub mod alloc_utils;
 mod api;
 pub mod fat_array_ptr;
 pub mod memory_block;
