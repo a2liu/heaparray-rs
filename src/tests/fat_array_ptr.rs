@@ -58,3 +58,10 @@ fn check_drop() {
         diff
     );
 }
+
+#[should_panic]
+#[test]
+fn check_null() {
+    let null_ptr = unsafe { FatPtrArray::<u8, ()>::null_ref() };
+    mem::drop(null_ptr);
+}
