@@ -142,10 +142,10 @@ where
         }
     }
     fn clone_from(&mut self, source: &Self) {
-        if source.len() > self.len() {
+        if source.len() != self.len() {
             *self = source.clone();
         } else {
-            self.data.set_len(source.len());
+            self.get_label_mut().clone_from(source.get_label());
             for i in 0..source.len() {
                 self[i].clone_from(&source[i]);
             }

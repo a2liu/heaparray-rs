@@ -54,6 +54,7 @@ pub use crate::prelude::*;
 ///         }
 ///     });
 /// ```
+///
 /// # Invariants
 /// This struct follows the same invariants as mentioned in `crate::memory_block`,
 /// and does not check for pointer validity; you should use this struct in the same

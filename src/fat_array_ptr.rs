@@ -115,6 +115,16 @@ where
             data: self.data.clone(),
         }
     }
+    fn clone_from(&mut self, source: &Self) {
+        if source.len() != self.len() {
+            *self = source.clone();
+        } else {
+            self.get_label_mut().clone_from(source.get_label());
+            for i in 0..source.len() {
+                self[i].clone_from(&source[i]);
+            }
+        }
+    }
 }
 
 impl<'a, E, L> Drop for FatPtrArray<'a, E, L> {
