@@ -48,41 +48,15 @@ where
     fn with_len(label: L, len: usize) -> Self;
 }
 
-/// A basic reference to a heap-allocated array.
+/// A basic reference to a heap-allocated array. Should be paired with exactly
+/// one of either `heaparray::UnsafeArrayRef` or `heaparray::ArrayRef`.
 pub trait BaseArrayRef {
     /// Returns whether the array pointer that this contains is null.
     fn is_null(&self) -> bool;
 }
 
-/// Atomically modified array reference. Guarrantees that all operations on the
-/// array reference are atomic (i.e. all changes to the internal array pointer).
-pub trait AtomicArrayRef<P>: BaseArrayRef
-where
-    P: BaseArrayRef,
-{
-    fn compare_and_swap(&self, current: P, new: P, order: Ordering) -> P;
-    fn compare_exchange(
-        &self,
-        current: P,
-        new: P,
-        success: Ordering,
-        failure: Ordering,
-    ) -> Result<P, P>;
-    fn compare_exchange_weak(
-        &self,
-        current: P,
-        new: P,
-        success: Ordering,
-        failure: Ordering,
-    ) -> Result<P, P>;
-    fn get_mut(&mut self) -> &mut P;
-    fn load(&self, order: Ordering) -> P;
-    fn store(&self, ptr: P, order: Ordering);
-    fn swap(&self, ptr: P, order: Ordering) -> P;
-}
-
 /// A reference to a heap-allocated array whose safe API guarrantees it to
-/// always be non-null
+/// always be non-null.
 pub trait UnsafeArrayRef<'a, B>: BaseArrayRef
 where
     B: ?Sized,
@@ -123,4 +97,28 @@ pub trait ArrayRef: BaseArrayRef + Clone {
     }
     fn to_null(&mut self);
     fn null_ref() -> Self;
+}
+
+/// Atomically modified array reference. Guarrantees that all operations on the
+/// array reference are atomic (i.e. all changes to the internal array pointer).
+pub trait AtomicArrayRef: BaseArrayRef + Sized {
+    fn compare_and_swap(&self, current: Self, new: Self, order: Ordering) -> Self;
+    fn compare_exchange(
+        &self,
+        current: Self,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self>;
+    fn compare_exchange_weak(
+        &self,
+        current: Self,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self>;
+    fn get_mut(&mut self) -> &mut Self;
+    fn load(&self, order: Ordering) -> Self;
+    fn store(&self, ptr: Self, order: Ordering);
+    fn swap(&self, ptr: Self, order: Ordering) -> Self;
 }

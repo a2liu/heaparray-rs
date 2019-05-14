@@ -5,7 +5,7 @@ use core::marker::PhantomData;
 
 pub(crate) struct RcArray<'a, A, R, B, E, L = ()>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -17,7 +17,7 @@ where
 
 impl<'a, A, R, B, E, L> RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -33,7 +33,7 @@ where
 
 impl<'a, A, R, B, E, L> BaseArrayRef for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -46,7 +46,7 @@ where
 
 impl<'a, A, R, B, E, L> Clone for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -64,7 +64,7 @@ where
 
 impl<'a, A, R, B, E, L> ArrayRef for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -91,7 +91,7 @@ where
 
 impl<'a, A, R, B, E, L> Index<usize> for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -106,7 +106,7 @@ where
 
 impl<'a, A, R, B, E, L> IndexMut<usize> for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -120,7 +120,7 @@ where
 
 impl<'a, A, R, B, E, L> Drop for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -133,7 +133,7 @@ where
 
 impl<'a, A, R, B, E, L> Container<(usize, E)> for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -151,7 +151,7 @@ where
 
 impl<'a, A, R, B, E, L> CopyMap<'a, usize, E> for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -187,7 +187,7 @@ where
 
 impl<'a, A, R, B, E, L> Array<'a, E> for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -197,7 +197,7 @@ where
 
 impl<'a, A, R, B, E, L> LabelledArray<'a, E, L> for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
@@ -259,7 +259,6 @@ where
     A: 'a
         + DefaultLabelledArray<'a, E, L>
         + LabelledArray<'a, E, R>
-        + MakeArray<'a, E>
         + BaseArrayRef
         + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L>,
@@ -277,7 +276,7 @@ where
 
 unsafe impl<'a, A, R, B, E, L> Send for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L> + Send + Sync,
     L: 'a + Send + Sync,
     E: 'a + Send + Sync,
@@ -287,7 +286,7 @@ where
 
 unsafe impl<'a, A, R, B, E, L> Sync for RcArray<'a, A, R, B, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + MakeArray<'a, E> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
     R: 'a + RefCounter<L> + Send + Sync,
     L: 'a + Send + Sync,
     E: 'a + Send + Sync,
