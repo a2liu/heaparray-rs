@@ -7,6 +7,18 @@
 use core::marker::PhantomData;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
+/// Utility struct that handles reference counting.
+pub trait RefCounter<T> {
+    /// Returns a new instance of this reference counter
+    fn new(data: T) -> Self;
+    /// Decrements the reference counter by one and returns its current value
+    fn decrement(&self) -> usize;
+    /// Increments the reference counter by one and returns its current value
+    fn increment(&self) -> usize;
+    fn get_data(&self) -> &T;
+    fn get_data_mut(&mut self) -> &mut T;
+}
+
 /// Reference counting struct for non-atomic reference counts.
 pub struct RcStruct<T> {
     phantom: PhantomData<*mut u8>,
@@ -14,31 +26,31 @@ pub struct RcStruct<T> {
     pub data: T,
 }
 
-impl<T> RcStruct<T> {
-    /// Returns a new instance of this reference counter
-    #[inline]
-    pub fn new(data: T) -> Self {
+impl<T> RefCounter<T> for RcStruct<T> {
+    fn new(data: T) -> Self {
         Self {
             phantom: PhantomData,
             counter: 1,
             data,
         }
     }
-    /// Decrements the reference counter by one and returns its current value
-    #[inline]
-    pub fn decrement(&self) -> usize {
+    fn decrement(&self) -> usize {
         unsafe {
             *(&self.counter as *const usize as *mut usize) -= 1;
         }
         self.counter
     }
-    /// Increments the reference counter by one and returns its current value
-    #[inline]
-    pub fn increment(&self) -> usize {
+    fn increment(&self) -> usize {
         unsafe {
             *(&self.counter as *const usize as *mut usize) += 1;
         }
         self.counter
+    }
+    fn get_data(&self) -> &T {
+        &self.data
+    }
+    fn get_data_mut(&mut self) -> &mut T {
+        &mut self.data
     }
 }
 
@@ -48,23 +60,27 @@ pub struct ArcStruct<T> {
     pub data: T,
 }
 
-impl<T> ArcStruct<T> {
-    /// Returns a new instance of this atomic reference counter
-    #[inline]
-    pub fn new(data: T) -> Self {
+impl<T> RefCounter<T> for ArcStruct<T> {
+    fn new(data: T) -> Self {
         Self {
             counter: AtomicUsize::new(1),
             data,
         }
     }
-    /// Atomically decrements the reference counter by one and returns its current value.
-    #[inline]
-    pub fn decrement(&self) -> usize {
+    fn decrement(&self) -> usize {
         self.counter.fetch_sub(1, Ordering::Relaxed) - 1
     }
-    /// Atomically increments the reference counter by one and returns its current value
-    #[inline]
-    pub fn increment(&self) -> usize {
+    fn increment(&self) -> usize {
         self.counter.fetch_add(1, Ordering::Relaxed) + 1
     }
+    fn get_data(&self) -> &T {
+        &self.data
+    }
+    fn get_data_mut(&mut self) -> &mut T {
+        &mut self.data
+    }
 }
+
+unsafe impl<T> Send for ArcStruct<T> where T: Send {}
+
+unsafe impl<T> Sync for ArcStruct<T> where T: Sync {}

@@ -12,7 +12,7 @@ type DataType<'a, E, L> = ManuallyDrop<PtrType<'a, E, L>>;
 ///
 /// ```rust
 /// use heaparray::naive_rc::fat_rc_array::*;
-/// let array_ref = FpRcArray::<i32, (&str, &str)>::new_labelled(("hello", "world"), 10, |_,_| 0);
+/// let array_ref = FpRcArray::<i32, (&str, &str)>::with_label(("hello", "world"), 10, |_,_| 0);
 /// let array_ref_2 = ArrayRef::clone(&array_ref);
 ///
 /// assert!(array_ref.len() == array_ref_2.len());
@@ -33,50 +33,11 @@ impl<'a, E> FpRcArray<'a, E> {
     where
         F: FnMut(usize) -> E,
     {
-        Self::new_labelled((), len, |_, idx| func(idx))
+        Self::with_label((), len, |_, idx| func(idx))
     }
 }
 
 impl<'a, E, L> FpRcArray<'a, E, L> {
-    /// Create a new reference-counted array, with values initialized using a provided function, and label
-    /// initialized to a provided value.
-    #[inline]
-    pub fn new_labelled<F>(label: L, len: usize, mut func: F) -> Self
-    where
-        F: FnMut(&mut L, usize) -> E,
-    {
-        let new_ptr = PtrType::new_labelled(RcStruct::new(label), len, |rc_struct, idx| {
-            func(&mut rc_struct.data, idx)
-        });
-        Self {
-            data: ManuallyDrop::new(new_ptr),
-        }
-    }
-
-    /// Create a new reference-counted array, without initializing the values in it.
-    #[inline]
-    pub unsafe fn new_labelled_unsafe(label: L, len: usize) -> Self {
-        let new_ptr = PtrType::new_labelled_unsafe(RcStruct::new(label), len);
-
-        Self {
-            data: ManuallyDrop::new(new_ptr),
-        }
-    }
-
-    /// Unsafe access to an element at an index in the array. Does NOT check
-    /// for null reference first.
-    #[inline]
-    pub unsafe fn unchecked_access(&'a self, idx: usize) -> &'a mut E {
-        self.data.unchecked_access(idx)
-    }
-
-    /// Unsafe access to the label of this array. Does NOT check
-    /// for null reference first.
-    #[inline]
-    pub unsafe fn unchecked_access_label(&'a self) -> &'a mut L {
-        &mut self.data.unchecked_access_label().data
-    }
-
     /// Make this a null reference. This is safe, because the API for this
     /// object doesn't assume that the reference is valid before dereferencing it.
     #[inline]
@@ -115,7 +76,7 @@ where
     /// Get a new reference-counted array, initialized to default values.
     #[inline]
     pub fn new_default(len: usize) -> Self {
-        Self::new_default_labelled((), len)
+        Self::with_len((), len)
     }
 }
 
@@ -125,9 +86,9 @@ where
 {
     /// Get a new reference-counted array, initialized to default values.
     #[inline]
-    pub fn new_default_labelled(label: L, len: usize) -> Self {
+    pub fn with_len(label: L, len: usize) -> Self {
         Self {
-            data: ManuallyDrop::new(FatPtrArray::new_default_labelled(RcStruct::new(label), len)),
+            data: ManuallyDrop::new(FatPtrArray::with_len(RcStruct::new(label), len)),
         }
     }
 }
@@ -205,9 +166,7 @@ where
     #[inline]
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
         assert!(!self.is_null(), "Null dereference of heaparray::FpRcArray");
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpRcArray");
-        } else if key > self.len() {
+        if key > self.len() {
             None
         } else {
             Some(mem::replace(&mut self[key], value))
@@ -221,23 +180,36 @@ impl<'a, E, L> LabelledArray<'a, E, L> for FpRcArray<'a, E, L>
 where
     E: 'a,
 {
-    /// Get a reference to the label of the array.
-    #[inline]
-    fn get_label(&self) -> &L {
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpRcArray");
+    fn with_label<F>(label: L, len: usize, mut func: F) -> Self
+    where
+        F: FnMut(&mut L, usize) -> E,
+    {
+        let new_ptr = PtrType::with_label(RcStruct::new(label), len, |rc_struct, idx| {
+            func(&mut rc_struct.data, idx)
+        });
+        Self {
+            data: ManuallyDrop::new(new_ptr),
         }
+    }
+    unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
+        let new_ptr = PtrType::with_label_unsafe(RcStruct::new(label), len);
+
+        Self {
+            data: ManuallyDrop::new(new_ptr),
+        }
+    }
+    fn get_label(&self) -> &L {
+        assert!(!self.is_null(), "Null dereference of heaparray::FpRcArray");
         &self.data.get_label().data
     }
-
-    /// Get a mutable reference to the label of the array.
-    #[inline]
     fn get_label_mut(&mut self) -> &mut L {
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpRcArray");
-        }
+        assert!(!self.is_null(), "Null dereference of heaparray::FpRcArray");
         &mut self.data.get_label_mut().data
     }
+    unsafe fn get_label_unsafe(&self) -> &mut L {
+        &mut self.data.get_label_unsafe().data
+    }
+    unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
+        self.data.get_unsafe(idx)
+    }
 }
-
-impl<'a, E, L> ArrayRef for FpRcArray<'a, E, L> where E: 'a {}

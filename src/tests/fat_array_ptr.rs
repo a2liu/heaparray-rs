@@ -5,19 +5,19 @@ type TestArray<'a, E, L = ()> = FatPtrArray<'a, E, L>;
 
 #[test]
 fn make_array() {
-    let _array = TestArray::new_labelled(Test::default(), 10, |_, i| i);
+    let _array = TestArray::with_label(Test::default(), 10, |_, i| i);
 }
 
 #[test]
 #[should_panic]
 fn bounds_check() {
-    let fat = TestArray::new_labelled(Test::default(), 10, |_, i| i);
+    let fat = TestArray::with_label(Test::default(), 10, |_, i| i);
     println!("{}", fat[10]);
 }
 
 #[test]
 fn data_check() {
-    let arr = TestArray::new_labelled(Test::default(), 100, |_, _| Test::default());
+    let arr = TestArray::with_label(Test::default(), 100, |_, _| Test::default());
     let default = Test::default();
     for i in 0..arr.len() {
         assert!(default == arr[i]);
@@ -26,7 +26,7 @@ fn data_check() {
 
 #[test]
 fn swap_exchange() {
-    let mut arr = TestArray::new_labelled(Test::default(), 100, |_, i| Test {
+    let mut arr = TestArray::with_label(Test::default(), 100, |_, i| Test {
         a: i,
         b: i as u8,
         c: i as u8,

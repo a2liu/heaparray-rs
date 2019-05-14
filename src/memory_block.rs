@@ -155,7 +155,6 @@ impl<E, L> TPArrayBlock<E, L> {
     }
 
     /// Get a reference to an element in this memory block.
-    #[inline]
     pub fn get<'a>(&'a self, idx: usize) -> &'a E {
         #[cfg(test)]
         check_null_tp(self, "TPArrayBlock::get: Immutable access of null pointer!");
@@ -164,7 +163,6 @@ impl<E, L> TPArrayBlock<E, L> {
     }
 
     /// Get a mutable reference to an element in this memory block.
-    #[inline]
     pub fn get_mut<'a>(&'a mut self, idx: usize) -> &'a mut E {
         #[cfg(test)]
         check_null_tp(
@@ -176,7 +174,6 @@ impl<E, L> TPArrayBlock<E, L> {
     }
 
     /// Unsafe access to an element at an index in the block.
-    #[inline]
     pub unsafe fn unchecked_access<'a>(&'a self, idx: usize) -> &'a mut E {
         #[cfg(test)]
         check_null_tp(
@@ -189,18 +186,16 @@ impl<E, L> TPArrayBlock<E, L> {
     }
 
     /// Unsafe access to the label of the block.
-    #[inline]
-    pub unsafe fn unchecked_access_label(&self) -> &mut L {
+    pub unsafe fn get_label_unsafe(&self) -> &mut L {
         #[cfg(test)]
         check_null_tp(
             self,
-            "TPArrayBlock::unchecked_access_label: Memory access on null pointer!",
+            "TPArrayBlock::get_label_unsafe: Memory access on null pointer!",
         );
         &mut *(&self.label as *const L as *mut L)
     }
 
     /// Get the capacity of this memory block.
-    #[inline]
     pub fn len(&self) -> usize {
         #[cfg(test)]
         check_null_tp(self, "TPArrayBlock::len: Length check of null pointer!");
@@ -213,7 +208,6 @@ where
     E: Default,
 {
     /// Get a mutable reference to a new block.
-    #[inline]
     pub fn new_ptr_default<'a>(label: L, len: usize) -> &'a mut Self {
         let new_ptr = Self::new_ptr(label, len, |_, _| E::default());
         new_ptr
@@ -222,14 +216,12 @@ where
 
 impl<E, L> Index<usize> for TPArrayBlock<E, L> {
     type Output = E;
-    #[inline]
     fn index(&self, idx: usize) -> &E {
         self.get(idx)
     }
 }
 
 impl<E, L> IndexMut<usize> for TPArrayBlock<E, L> {
-    #[inline]
     fn index_mut(&mut self, index: usize) -> &mut E {
         self.get_mut(index)
     }
@@ -240,7 +232,6 @@ where
     L: Clone,
     E: Clone,
 {
-    #[inline]
     fn clone(&self) -> Self {
         let new_ptr =
             TPArrayBlock::new_ptr(self.label.clone(), self.len(), |_, idx| self[idx].clone());
@@ -331,7 +322,6 @@ impl<E, L> FPArrayBlock<E, L> {
     }
 
     /// Get a reference to an element in this memory block.
-    #[inline]
     pub fn get<'a>(&'a self, idx: usize) -> &'a E {
         #[cfg(test)]
         check_null_fp(self, "FPArrayBlock::get: Immutable access of null pointer!");
@@ -340,7 +330,6 @@ impl<E, L> FPArrayBlock<E, L> {
     }
 
     /// Get a mutable reference to an element in this memory block.
-    #[inline]
     pub fn get_mut<'a>(&'a mut self, idx: usize) -> &'a mut E {
         #[cfg(test)]
         check_null_fp(
@@ -352,7 +341,6 @@ impl<E, L> FPArrayBlock<E, L> {
     }
 
     /// Unsafe access to an element at an index in the block.
-    #[inline]
     pub unsafe fn unchecked_access(&self, idx: usize) -> &mut E {
         #[cfg(test)]
         check_null_fp(
@@ -364,18 +352,16 @@ impl<E, L> FPArrayBlock<E, L> {
     }
 
     /// Unsafe access to the label of the block.
-    #[inline]
-    pub unsafe fn unchecked_access_label(&self) -> &mut L {
+    pub unsafe fn get_label_unsafe(&self) -> &mut L {
         #[cfg(test)]
         check_null_fp(
             self,
-            "FPArrayBlock::unchecked_access_label: Memory access of null pointer!",
+            "FPArrayBlock::get_label_unsafe: Memory access of null pointer!",
         );
         &mut *(&self.label as *const L as *mut L)
     }
 
     /// Get the capacity of this memory block
-    #[inline]
     pub fn len(&self) -> usize {
         #[cfg(test)]
         check_null_fp(self, "FPArrayBlock::len: Length check on null pointer!");
@@ -388,7 +374,6 @@ where
     E: Default,
 {
     /// Get a mutable reference to a new block, initialized to default values.
-    #[inline]
     pub fn new_ptr_default<'a>(label: L, len: usize) -> &'a mut Self {
         let new_ptr = Self::new_ptr(label, len, |_, _| E::default());
         new_ptr
@@ -397,7 +382,6 @@ where
 
 impl<E, L> Index<usize> for FPArrayBlock<E, L> {
     type Output = E;
-    #[inline]
     fn index(&self, index: usize) -> &E {
         assert!(index < self.len());
         self.get(index)
@@ -405,7 +389,6 @@ impl<E, L> Index<usize> for FPArrayBlock<E, L> {
 }
 
 impl<E, L> IndexMut<usize> for FPArrayBlock<E, L> {
-    #[inline]
     fn index_mut(&mut self, index: usize) -> &mut E {
         self.get_mut(index)
     }
@@ -416,7 +399,6 @@ where
     L: Clone,
     E: Clone,
 {
-    #[inline]
     fn clone(&self) -> Self {
         let new_ptr =
             FPArrayBlock::new_ptr(self.label.clone(), self.len(), |_, idx| self[idx].clone());

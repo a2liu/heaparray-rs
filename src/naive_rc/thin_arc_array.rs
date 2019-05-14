@@ -1,4 +1,5 @@
-//! Contains definition for `TpArcArray`, which is a thin pointer to an atomically reference-counted array.
+//! Contains definition for `TpArcArray`, which is a thin pointer to an atomically reference-counted
+//! array, and the implementation for `heaparray::naive_rc::ArcArray`.
 pub use crate::naive_rc::prelude::*;
 
 type PtrType<'a, E, L> = ThinPtrArray<'a, E, ArcStruct<L>>;
@@ -11,7 +12,7 @@ type DataType<'a, E, L> = ManuallyDrop<PtrType<'a, E, L>>;
 ///
 /// ```rust
 /// use heaparray::naive_rc::thin_arc_array::*;
-/// let array_ref = TpArcArray::<i32, (&str, &str)>::new_labelled(("hello", "world"), 10, |_,_| 0);
+/// let array_ref = TpArcArray::<i32, (&str, &str)>::with_label(("hello", "world"), 10, |_,_| 0);
 /// let array_ref_2 = ArrayRef::clone(&array_ref);
 ///
 /// assert!(array_ref.len() == array_ref_2.len());
@@ -32,50 +33,11 @@ impl<'a, E> TpArcArray<'a, E> {
     where
         F: FnMut(usize) -> E,
     {
-        Self::new_labelled((), len, |_, idx| func(idx))
+        Self::with_label((), len, |_, idx| func(idx))
     }
 }
 
 impl<'a, E, L> TpArcArray<'a, E, L> {
-    /// Create a new reference-counted array, with values initialized using a provided function, and label
-    /// initialized to a provided value.
-    #[inline]
-    pub fn new_labelled<F>(label: L, len: usize, mut func: F) -> Self
-    where
-        F: FnMut(&mut L, usize) -> E,
-    {
-        let new_ptr = PtrType::new_labelled(ArcStruct::new(label), len, |rc_struct, idx| {
-            func(&mut rc_struct.data, idx)
-        });
-        Self {
-            data: ManuallyDrop::new(new_ptr),
-        }
-    }
-
-    /// Create a new reference-counted array, without initializing the values in it.
-    #[inline]
-    pub unsafe fn new_labelled_unsafe(label: L, len: usize) -> Self {
-        let new_ptr = PtrType::new_labelled_unsafe(ArcStruct::new(label), len);
-
-        Self {
-            data: ManuallyDrop::new(new_ptr),
-        }
-    }
-
-    /// Unsafe access to an element at an index in the array. Does NOT check
-    /// for null reference first.
-    #[inline]
-    pub unsafe fn unchecked_access(&'a self, idx: usize) -> &'a mut E {
-        self.data.unchecked_access(idx)
-    }
-
-    /// Unsafe access to the label of this array. Does NOT check
-    /// for null reference first.
-    #[inline]
-    pub unsafe fn unchecked_access_label(&'a self) -> &'a mut L {
-        &mut self.data.unchecked_access_label().data
-    }
-
     /// Make this a null reference. This is safe, because the API for this
     /// object doesn't assume that the reference is valid before dereferencing it.
     #[inline]
@@ -114,7 +76,7 @@ where
     /// Get a new reference-counted array, initialized to default values.
     #[inline]
     pub fn new_default(len: usize) -> Self {
-        Self::new_default_labelled((), len)
+        Self::with_len((), len)
     }
 }
 
@@ -124,12 +86,9 @@ where
 {
     /// Get a new reference-counted array, initialized to default values.
     #[inline]
-    pub fn new_default_labelled(label: L, len: usize) -> Self {
+    pub fn with_len(label: L, len: usize) -> Self {
         Self {
-            data: ManuallyDrop::new(ThinPtrArray::new_default_labelled(
-                ArcStruct::new(label),
-                len,
-            )),
+            data: ManuallyDrop::new(ThinPtrArray::with_len(ArcStruct::new(label), len)),
         }
     }
 }
@@ -235,21 +194,38 @@ impl<'a, E, L> LabelledArray<'a, E, L> for TpArcArray<'a, E, L>
 where
     E: 'a,
 {
-    /// Get a reference to the label of the array.
-    #[inline]
+    fn with_label<F>(label: L, len: usize, mut func: F) -> Self
+    where
+        F: FnMut(&mut L, usize) -> E,
+    {
+        let new_ptr = PtrType::with_label(ArcStruct::new(label), len, |rc_struct, idx| {
+            func(&mut rc_struct.data, idx)
+        });
+        Self {
+            data: ManuallyDrop::new(new_ptr),
+        }
+    }
+    unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
+        let new_ptr = PtrType::with_label_unsafe(ArcStruct::new(label), len);
+
+        Self {
+            data: ManuallyDrop::new(new_ptr),
+        }
+    }
     fn get_label(&self) -> &L {
         assert!(!self.is_null(), "Null dereference of heaparray::TpArcArray");
 
         &self.data.get_label().data
     }
-
-    /// Get a mutable reference to the label of the array.
-    #[inline]
     fn get_label_mut(&mut self) -> &mut L {
         assert!(!self.is_null(), "Null dereference of heaparray::TpArcArray");
 
         &mut self.data.get_label_mut().data
     }
+    unsafe fn get_label_unsafe(&self) -> &mut L {
+        &mut self.data.get_label_unsafe().data
+    }
+    unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
+        self.data.get_unsafe(idx)
+    }
 }
-
-impl<'a, E, L> ArrayRef for TpArcArray<'a, E, L> {}

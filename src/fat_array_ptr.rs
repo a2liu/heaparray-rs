@@ -35,7 +35,7 @@ pub use crate::prelude::*;
 /// but you need to give the array a replacement object to fill its slot with.
 ///
 /// Additionally, you can customize what information should be stored alongside the elements in
-/// the array using the `FatPtrArray::new_labelled` function:
+/// the array using the `FatPtrArray::with_label` function:
 ///
 /// ```rust
 /// # use heaparray::fat_array_ptr::*;
@@ -44,7 +44,7 @@ pub use crate::prelude::*;
 ///     pub odd: usize,
 /// }
 ///
-/// let mut array = FatPtrArray::new_labelled(
+/// let mut array = FatPtrArray::with_label(
 ///     MyLabel { even: 0, odd: 0 },
 ///     100,
 ///     |label, index| {
@@ -68,100 +68,25 @@ where
     data: &'a mut FPArrayBlock<E, L>,
 }
 
-impl<'a, E> FatPtrArray<'a, E> {
-    /// Create a new array, with values initialized using a provided function.
-    #[inline]
-    pub fn new<F>(len: usize, mut func: F) -> Self
-    where
-        F: FnMut(usize) -> E,
-    {
-        Self::new_labelled((), len, |_, idx| func(idx))
+impl<'a, E, L> BaseArrayRef for FatPtrArray<'a, E, L> {
+    fn is_null(&self) -> bool {
+        self.data.is_null()
     }
 }
 
-impl<'a, E, L> FatPtrArray<'a, E, L> {
-    /// Create a new array, with values initialized using a provided function, and label
-    /// initialized to a provided value.
-    #[inline]
-    pub fn new_labelled<F>(label: L, len: usize, func: F) -> Self
-    where
-        F: FnMut(&mut L, usize) -> E,
-    {
-        Self {
-            data: FPArrayBlock::<E, L>::new_ptr(label, len, func),
-        }
-    }
-
-    /// Create a new array, without initializing the values in it.
-    #[inline]
-    pub unsafe fn new_labelled_unsafe(label: L, len: usize) -> Self {
-        let new_ptr = FPArrayBlock::<E, L>::new_ptr_unsafe(label, len);
-        Self { data: new_ptr }
-    }
-
-    /// Creates a new array from a raw pointer to a memory block.
-    #[inline]
-    pub unsafe fn from_raw_parts(ptr: &'a mut FPArrayBlock<E, L>) -> Self {
+impl<'a, E, L> UnsafeArrayRef<'a, FPArrayBlock<E, L>> for FatPtrArray<'a, E, L> {
+    unsafe fn from_raw_parts(ptr: &'a mut FPArrayBlock<E, L>) -> Self {
         Self { data: ptr }
     }
-
-    /// Unsafe access to an element at an index in the array.
-    #[inline]
-    pub unsafe fn unchecked_access(&'a self, idx: usize) -> &'a mut E {
-        self.data.unchecked_access(idx)
-    }
-
-    /// Unsafe access to the label of the block.
-    #[inline]
-    pub unsafe fn unchecked_access_label(&'a self) -> &'a mut L {
-        self.data.unchecked_access_label()
-    }
-
-    /// Sets the internal pointer to null, without deallocating it, and returns
-    /// reference to the associated memory block.
-    /// Causes all sorts of undefined behavior, use with caution.
-    pub unsafe fn to_null(&mut self) -> &mut FPArrayBlock<E, L> {
+    unsafe fn to_null<'b>(&mut self) -> &'b mut FPArrayBlock<E, L> {
         let output = mem::replace(&mut *self, Self::null_ref());
         let data = output.data as *mut FPArrayBlock<E, L>;
         mem::forget(output);
         &mut *data
     }
-
-    /// Creates a null array. All kinds of UB associated with this, use
-    /// with caution.
-    pub unsafe fn null_ref() -> Self {
+    unsafe fn null_ref() -> Self {
         Self {
             data: &mut *(FPArrayBlock::null_ptr()),
-        }
-    }
-
-    /// Returns whether the internal pointer of this struct is null. Should always
-    /// return false unless you use the unsafe API.
-    pub fn is_null(&self) -> bool {
-        self.data.is_null()
-    }
-}
-
-impl<'a, E> FatPtrArray<'a, E>
-where
-    E: Default,
-{
-    /// Get a new array, initialized to default values.
-    #[inline]
-    pub fn new_default(len: usize) -> Self {
-        Self::new_default_labelled((), len)
-    }
-}
-
-impl<'a, E, L> FatPtrArray<'a, E, L>
-where
-    E: Default,
-{
-    /// Get a new array, initialized to default values.
-    #[inline]
-    pub fn new_default_labelled(label: L, len: usize) -> Self {
-        Self {
-            data: FPArrayBlock::new_ptr_default(label, len),
         }
     }
 }
@@ -247,19 +172,55 @@ where
 
 impl<'a, E, L> Array<'a, E> for FatPtrArray<'a, E, L> where E: 'a {}
 
+impl<'a, E> MakeArray<'a, E> for FatPtrArray<'a, E, ()>
+where
+    E: 'a,
+{
+    fn new<F>(len: usize, mut func: F) -> Self
+    where
+        F: FnMut(usize) -> E,
+    {
+        Self::with_label((), len, |_, idx| func(idx))
+    }
+}
+
 impl<'a, E, L> LabelledArray<'a, E, L> for FatPtrArray<'a, E, L>
 where
     E: 'a,
 {
-    /// Get a reference to the label of the array.
-    #[inline]
+    fn with_label<F>(label: L, len: usize, func: F) -> Self
+    where
+        F: FnMut(&mut L, usize) -> E,
+    {
+        Self {
+            data: FPArrayBlock::<E, L>::new_ptr(label, len, func),
+        }
+    }
+    unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
+        let new_ptr = FPArrayBlock::<E, L>::new_ptr_unsafe(label, len);
+        Self { data: new_ptr }
+    }
     fn get_label(&self) -> &L {
         &self.data.label
     }
-
-    /// Get a mutable reference to the label of the array.
-    #[inline]
     fn get_label_mut(&mut self) -> &mut L {
         &mut self.data.label
+    }
+    unsafe fn get_label_unsafe(&self) -> &mut L {
+        self.data.get_label_unsafe()
+    }
+    unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
+        self.data.unchecked_access(idx)
+    }
+}
+
+impl<'a, E, L> DefaultLabelledArray<'a, E, L> for FatPtrArray<'a, E, L>
+where
+    E: 'a + Default,
+{
+    fn with_len(label: L, len: usize) -> Self {
+        Self {
+            data: FPArrayBlock::new_ptr_default(label, len),
+        }
     }
 }

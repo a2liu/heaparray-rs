@@ -32,7 +32,7 @@ pub use crate::prelude::*;
 /// but you need to give the array a replacement object to fill its slot with.
 ///
 /// Additionally, you can customize what information should be stored alongside the elements in
-/// the array using the HeapArray::new_labelled function:
+/// the array using the HeapArray::with_label function:
 ///
 /// ```rust
 /// # use heaparray::*;
@@ -41,7 +41,7 @@ pub use crate::prelude::*;
 ///     pub odd: usize,
 /// }
 ///
-/// let mut array = HeapArray::new_labelled(
+/// let mut array = HeapArray::with_label(
 ///     MyLabel { even: 0, odd: 0 },
 ///     100,
 ///     |label, index| {
@@ -70,7 +70,7 @@ pub use crate::fat_array_ptr::FatPtrArray as HeapArray;
 //     where
 //         F: FnMut(usize) -> E,
 //     {
-//         FatPtrArray::<'a, E, L>::new_labelled((), len, |_, idx| func(idx))
+//         FatPtrArray::<'a, E, L>::with_label((), len, |_, idx| func(idx))
 //     }
 // }
 //
@@ -78,17 +78,17 @@ pub use crate::fat_array_ptr::FatPtrArray as HeapArray;
 //     /// Create a new array, with values initialized using a provided function, and label
 //     /// initialized to a provided value.
 //     #[inline]
-//     pub fn new_labelled<F>(label: L, len: usize, func: F) -> Self
+//     pub fn with_label<F>(label: L, len: usize, func: F) -> Self
 //     where
 //         F: FnMut(&mut L, usize) -> E,
 //     {
-//         Self(FatPtrArray::<'a, E, L>::new_labelled(label, len, func))
+//         Self(FatPtrArray::<'a, E, L>::with_label(label, len, func))
 //     }
 //
 //     /// Create a new array, without initializing the values in it.
 //     #[inline]
-//     pub unsafe fn new_labelled_unsafe(label: L, len: usize) -> Self {
-//         Self(FatPtrArray::<'a, E, L>::new_labelled_unsafe(label, len))
+//     pub unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
+//         Self(FatPtrArray::<'a, E, L>::with_label_unsafe(label, len))
 //     }
 //
 //     /// Creates a new array from a raw pointer to a memory block.
@@ -132,7 +132,7 @@ pub use crate::fat_array_ptr::FatPtrArray as HeapArray;
 //     /// Get a new array, initialized to default values.
 //     #[inline]
 //     pub fn new_default(len: usize) -> Self {
-//         Self::new_default_labelled((), len)
+//         Self::with_len((), len)
 //     }
 // }
 //
@@ -142,7 +142,7 @@ pub use crate::fat_array_ptr::FatPtrArray as HeapArray;
 // {
 //     /// Get a new array, initialized to default values.
 //     #[inline]
-//     pub fn new_default_labelled(label: L, len: usize) -> Self {
+//     pub fn with_len(label: L, len: usize) -> Self {
 //         Self {
 //             data: FPArrayBlock::new_ptr_default(label, len),
 //         }
@@ -206,7 +206,7 @@ pub use crate::fat_array_ptr::FatPtrArray as HeapArray;
 //
 // impl<'a, E, L> Array<'a, E> for HeapArray<'a, E, L> where E: 'a {}
 //
-// impl<'a, E, L> LabelledArray<'a, E, L> for HeapArray<'a, E, L>
+// impl<'a, E, L> OldLA<'a, E, L> for HeapArray<'a, E, L>
 // where
 //     E: 'a,
 // {
