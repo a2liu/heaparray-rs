@@ -229,7 +229,7 @@ where
         } else if key > self.len() {
             None
         } else {
-            Some(std::mem::replace(&mut self[key], value))
+            Some(mem::replace(&mut self[key], value))
         }
     }
 }

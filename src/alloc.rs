@@ -1,7 +1,7 @@
 //! Contains pointer math and allocation utilities.
 use core::alloc::Layout;
+use core::mem::{align_of, size_of};
 use std::alloc::{alloc, dealloc};
-use std::mem::{align_of, size_of};
 
 /// Allocate a block of memory, and then coerce it to type `T`
 pub unsafe fn allocate<'a, T>(size: usize, align: usize) -> &'a mut T {
@@ -29,9 +29,6 @@ pub fn size_align_multiple(alignments: &[(usize, usize)]) -> (usize, usize) {
     }
     (total_size, max_align)
 }
-
-// TODO Use std::mem::align_of and std::mem::size_of to get the size and alignment
-// of the array, and then create the layout with Layout::from_size_align(size, align)
 
 /// Returns the (size, alignment) of an array of elements with capacity T
 #[inline]

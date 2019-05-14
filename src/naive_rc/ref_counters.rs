@@ -5,7 +5,7 @@
 //! so that the other reference counting structs can just call the API. Since
 //! all functions are `#[inline]`, this ends up being a zero-cost abstraction.
 use core::marker::PhantomData;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use core::sync::atomic::{AtomicUsize, Ordering};
 
 /// Reference counting struct for non-atomic reference counts.
 pub struct RcStruct<T> {

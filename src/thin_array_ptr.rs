@@ -219,7 +219,7 @@ impl<'a, E, L> Drop for ThinPtrArray<'a, E, L> {
     fn drop(&mut self) {
         let mut_ref = &mut self.data;
         unsafe { mut_ref.dealloc() };
-        core::mem::forget(mut_ref);
+        mem::forget(mut_ref);
     }
 }
 
@@ -256,7 +256,7 @@ impl<'a, E, L> CopyMap<'a, usize, E, (usize, E)> for ThinPtrArray<'a, E, L> {
         if key > self.len() {
             None
         } else {
-            Some(std::mem::replace(&mut self[key], value))
+            Some(mem::replace(&mut self[key], value))
         }
     }
 }

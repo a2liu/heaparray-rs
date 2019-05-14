@@ -260,7 +260,7 @@ impl<E, L> FPArrayBlock<E, L> {
         let d_layout = size_align_array::<E>(len);
         let (size, align) = size_align_multiple(&[l_layout, d_layout]);
         let new_ptr = allocate::<E>(size, align);
-        let new_ptr = std::slice::from_raw_parts(new_ptr, len);
+        let new_ptr = core::slice::from_raw_parts(new_ptr, len);
         let new_ptr = &mut *(new_ptr as *const [E] as *mut [E] as *mut Self);
         #[cfg(test)]
         check_null_fp(
@@ -274,7 +274,7 @@ impl<E, L> FPArrayBlock<E, L> {
     /// Returns a null pointer to a memory block. Dereferencing it is undefined
     /// behavior.
     pub unsafe fn null_ptr() -> *mut Self {
-        let new_ptr = std::slice::from_raw_parts(NULL as *const E, NULL);
+        let new_ptr = core::slice::from_raw_parts(NULL as *const E, NULL);
         &mut *(new_ptr as *const [E] as *mut [E] as *mut Self)
     }
 

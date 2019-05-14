@@ -115,7 +115,10 @@ impl<'a, E, L> FatPtrArray<'a, E, L> {
     /// reference to the associated memory block.
     /// Causes all sorts of undefined behavior, use with caution.
     pub unsafe fn to_null(&mut self) -> &mut FPArrayBlock<E, L> {
-        core::mem::replace(&mut *self, Self::null_ref()).data
+        let output = mem::replace(&mut *self, Self::null_ref());
+        let data = output.data as *mut FPArrayBlock<E, L>;
+        mem::forget(output);
+        &mut *data
     }
 
     /// Creates a null array. All kinds of UB associated with this, use
@@ -185,6 +188,11 @@ where
     }
 }
 
+impl<'a, E, L> Drop for FatPtrArray<'a, E, L> {
+    #[inline]
+    fn drop(&mut self) {}
+}
+
 impl<'a, E, L> Container<(usize, E)> for FatPtrArray<'a, E, L> {
     #[inline]
     fn add(&mut self, elem: (usize, E)) {
@@ -221,7 +229,7 @@ where
         if key > self.len() {
             None
         } else {
-            Some(std::mem::replace(&mut self[key], value))
+            Some(mem::replace(&mut self[key], value))
         }
     }
 }
