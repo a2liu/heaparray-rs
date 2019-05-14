@@ -70,6 +70,13 @@ impl<'a, E, L> FpArcArray<'a, E, L> {
         self.data.unchecked_access(idx)
     }
 
+    /// Unsafe access to the label of this array. Does NOT check
+    /// for null reference first.
+    #[inline]
+    pub unsafe fn unchecked_access_label(&'a self) -> &'a mut L {
+        &mut self.data.unchecked_access_label().data
+    }
+
     /// Make this a null reference. This is safe, because the API for this
     /// object doesn't assume that the reference is valid before dereferencing it.
     #[inline]
@@ -146,9 +153,7 @@ impl<'a, E, L> Index<usize> for FpArcArray<'a, E, L> {
     type Output = E;
     #[inline]
     fn index(&self, idx: usize) -> &E {
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpArcArray");
-        }
+        assert!(!self.is_null(), "Null dereference of heaparray::FpArcArray");
         &self.data[idx]
     }
 }
@@ -156,9 +161,7 @@ impl<'a, E, L> Index<usize> for FpArcArray<'a, E, L> {
 impl<'a, E, L> IndexMut<usize> for FpArcArray<'a, E, L> {
     #[inline]
     fn index_mut(&mut self, idx: usize) -> &mut E {
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpArcArray");
-        }
+        assert!(!self.is_null(), "Null dereference of heaparray::FpArcArray");
         &mut self.data[idx]
     }
 }
@@ -184,16 +187,12 @@ impl<'a, E, L> Drop for FpArcArray<'a, E, L> {
 impl<'a, E, L> Container<(usize, E)> for FpArcArray<'a, E, L> {
     #[inline]
     fn add(&mut self, elem: (usize, E)) {
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpArcArray");
-        }
+        assert!(!self.is_null(), "Null dereference of heaparray::FpArcArray");
         self[elem.0] = elem.1;
     }
     #[inline]
     fn len(&self) -> usize {
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpArcArray");
-        }
+        assert!(!self.is_null(), "Null dereference of heaparray::FpArcArray");
         self.data.len()
     }
 }
@@ -204,9 +203,8 @@ where
 {
     #[inline]
     fn get(&'a self, key: usize) -> Option<&'a E> {
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpArcArray");
-        } else if key > self.len() {
+        assert!(!self.is_null(), "Null dereference of heaparray::FpArcArray");
+        if key > self.len() {
             None
         } else {
             Some(&self[key])
@@ -214,9 +212,8 @@ where
     }
     #[inline]
     fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpArcArray");
-        } else if key > self.len() {
+        assert!(!self.is_null(), "Null dereference of heaparray::FpArcArray");
+        if key > self.len() {
             None
         } else {
             Some(&mut self[key])
@@ -224,9 +221,8 @@ where
     }
     #[inline]
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpArcArray");
-        } else if key > self.len() {
+        assert!(!self.is_null(), "Null dereference of heaparray::FpArcArray");
+        if key > self.len() {
             None
         } else {
             Some(mem::replace(&mut self[key], value))
@@ -243,18 +239,16 @@ where
     /// Get a reference to the label of the array.
     #[inline]
     fn get_label(&self) -> &L {
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpArcArray");
-        }
+        assert!(!self.is_null(), "Null dereference of heaparray::FpArcArray");
+
         &self.data.get_label().data
     }
 
     /// Get a mutable reference to the label of the array.
     #[inline]
     fn get_label_mut(&mut self) -> &mut L {
-        if self.is_null() {
-            panic!("Null dereference of heaparray::FpArcArray");
-        }
+        assert!(!self.is_null(), "Null dereference of heaparray::FpArcArray");
+
         &mut self.data.get_label_mut().data
     }
 }
