@@ -5,7 +5,7 @@ metadata about the block itself.
 
 ## Features
 - Arrays are allocated on the heap, with optional extra space allocated for metadata
-- An array implementation that uses an atomic pointer
+- An array implementation that uses an atomic pointer (`heaparray::thin_array_ptr::ThinPtrArray`)
 - 1-word and 2-word references to arrays
 - Reference-counted memory blocks of arbitrary size without using a `Vec`
 - Swap owned objects in and out with `array.insert()`

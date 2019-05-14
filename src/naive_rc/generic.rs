@@ -7,7 +7,7 @@ use core::sync::atomic::Ordering;
 
 /// `RcArray` is a generic, implementation-agnositc array. It uses traits to
 /// handle literally everything. Implementing your own version is not recommended.
-#[repr(transparent)]
+#[repr(C)]
 pub struct RcArray<'a, A, R, B, E, L = ()>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,

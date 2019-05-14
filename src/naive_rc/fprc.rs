@@ -6,7 +6,7 @@ type Arr<E, L> = FpBlk<E, RC<L>>;
 type Inner<'a, E, L> = RcArray<'a, ArrPtr<'a, E, L>, RcStruct<L>, Arr<E, L>, E, L>;
 
 /// Fat-pointer, single-threaded implementation of `generic::RcArray`.
-#[repr(transparent)]
+#[repr(C)]
 pub struct FpRcArray<'a, E, L = ()>(Inner<'a, E, L>);
 
 impl<'a, E, L> BaseArrayRef for FpRcArray<'a, E, L> {

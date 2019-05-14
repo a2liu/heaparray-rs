@@ -6,7 +6,7 @@ type Arr<E, L> = TpBlk<E, RC<L>>;
 type Inner<'a, E, L> = RcArray<'a, ArrPtr<'a, E, L>, ArcStruct<L>, Arr<E, L>, E, L>;
 
 /// Thin-pointer, atomic implementation of `generic::RcArray`.
-#[repr(transparent)]
+#[repr(C)]
 pub struct TpArcArray<'a, E, L = ()>(Inner<'a, E, L>);
 
 impl<'a, E, L> BaseArrayRef for TpArcArray<'a, E, L> {

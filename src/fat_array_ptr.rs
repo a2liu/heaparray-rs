@@ -61,6 +61,7 @@ pub use crate::prelude::*;
 /// This struct follows the same invariants as mentioned in `crate::memory_block`,
 /// and does not check for pointer validity; you should use this struct in the same
 /// way you would use a raw array or slice.
+#[repr(C)]
 pub struct FatPtrArray<'a, E, L = ()>
 where
     Self: 'a,

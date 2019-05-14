@@ -58,7 +58,7 @@ pub use crate::prelude::*;
 /// This struct follows the same invariants as mentioned in `crate::memory_block`,
 /// and does not check for pointer validity; you should use this struct in the same
 /// way you would use a raw array or slice.
-#[repr(transparent)]
+#[repr(C)]
 pub struct HeapArray<'a, E, L = ()>(Inner<'a, E, L>);
 type Inner<'a, E, L> = FatPtrArray<'a, E, L>;
 
