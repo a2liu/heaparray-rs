@@ -10,6 +10,8 @@ pub unsafe fn allocate<'a, T>(size: usize, align: usize) -> &'a mut T {
 }
 
 /// Deallocate a block of memory using the given size and alignment information.
+/// Completely ignores the type of the input pointer, so the size and
+/// align need to be correct.
 pub unsafe fn deallocate<T>(ptr: &mut T, size: usize, align: usize) {
     let layout = Layout::from_size_align(size, align).unwrap();
     dealloc(ptr as *mut T as *mut u8, layout);
