@@ -306,3 +306,14 @@ impl<'a, E, L> AtomicArrayRef for ThinPtrArray<'a, E, L> {
         Self::from_raw(self.as_atomic().swap(ptr.to_ref(), order))
     }
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//
+//     impl<'a> ArrayTest<'a> for ThinPtrArray<'a, Load, LabelLoad> {
+//         fn get_self(len: usize) -> Self {
+//             Self::with_len(LabelLoad::default(), len)
+//         }
+//     }
+// }

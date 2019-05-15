@@ -1,5 +1,7 @@
 mod array_ref;
-mod base;
+mod labelled_array;
+mod make_array;
 
 pub use array_ref::*;
-pub use base::*;
+pub use labelled_array::*;
+pub use make_array::*;

@@ -1,3 +1,5 @@
+// #[cfg(test)]
+// use super::tests::*;
 use core::sync::atomic::Ordering;
 
 /// A basic reference to a heap-allocated array. Should be paired with exactly
@@ -15,8 +17,8 @@ where
 {
     /// Creates a new array from a raw pointer to a memory block.
     unsafe fn from_raw_parts(ptr: &'a mut B) -> Self;
-    /// Sets the internal pointer to null, without deallocating it, and returns
-    /// reference to the associated memory block.
+    /// Sets the internal pointer to null, without deallocating it, and
+    /// returns a reference to the associated memory block.
     /// Causes all sorts of undefined behavior, use with caution.
     unsafe fn to_null<'b>(&mut self) -> &'b mut B;
     /// Creates a null array. All kinds of UB associated with this, use
@@ -54,6 +56,36 @@ pub trait ArrayRef: BaseArrayRef + Clone {
     /// Get a null reference of this pointer type.
     fn null_ref() -> Self;
 }
+
+// #[trait_tests]
+// pub trait RefTest<'a>: ArrayRef + ArrayTest<'a> {
+//     fn clone_test() {
+//         let first_ref = Self::get_self(LENGTH);
+//         let second_ref = ArrayRef::clone(&first_ref);
+//         assert!(first_ref.len() == second_ref.len());
+//         for i in 0..second_ref.len() {
+//             let r1 = &first_ref[i] as *const Load;
+//             let r2 = &second_ref[i] as *const Load;
+//             assert!(r1 == r2);
+//         }
+//     }
+//     fn ref_counting_test() {
+//         let mut ref_vec = Vec::with_capacity(2 * LENGTH);
+//         let t_0 = before_alloc();
+//         let balloc = t_0.bytes_alloc;
+//         let first_ref = Self::get_self(LENGTH);
+//         ref_vec.push(first_ref);
+//         for _ in 0..LENGTH {
+//             let new_ref = ArrayRef::clone(ref_vec.last().unwrap());
+//             assert!(before_alloc().bytes_alloc == balloc);
+//             ref_vec.push(new_ref);
+//         }
+//         let final_ref = ArrayRef::clone(&ref_vec[0]);
+//         mem::drop(ref_vec);
+//         assert!(before_alloc().bytes_alloc == balloc);
+//         after_alloc(final_ref, t_0);
+//     }
+// }
 
 /// Atomically modified array reference. Guarrantees that all operations on the
 /// array reference are atomic (i.e. all changes to the internal array pointer).

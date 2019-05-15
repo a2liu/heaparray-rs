@@ -5,25 +5,20 @@ type TestArray<'a, E, L = ()> = FatPtrArray<'a, E, L>;
 
 #[test]
 fn make_array() {
-    let _array = TestArray::with_label(Test::default(), 10, |_, i| i);
-}
-
-#[test]
-fn make_large_array() {
-    let _array = TestArray::with_label(Test::default(), 2000000, |_, i| i);
+    let _array = TestArray::with_label(LabelLoad::default(), LENGTH, |_, i| i);
 }
 
 #[test]
 #[should_panic]
 fn bounds_check() {
-    let fat = TestArray::with_label(Test::default(), 10, |_, i| i);
-    println!("{}", fat[10]);
+    let fat = TestArray::with_label(LabelLoad::default(), LENGTH, |_, i| i);
+    println!("{:?}", fat[LENGTH]);
 }
 
 #[test]
 fn data_check() {
-    let arr = TestArray::with_label(Test::default(), 100, |_, _| Test::default());
-    let default = Test::default();
+    let arr = TestArray::with_label(LabelLoad::default(), LENGTH, |_, _| Load::default());
+    let default = LabelLoad::default();
     for i in 0..arr.len() {
         assert!(default == arr[i]);
     }
@@ -31,13 +26,13 @@ fn data_check() {
 
 #[test]
 fn swap_exchange() {
-    let mut arr = TestArray::with_label(Test::default(), 100, |_, i| Test {
+    let mut arr = TestArray::with_label(LabelLoad::default(), LENGTH, |_, i| Medium {
         a: i,
-        b: i as u8,
-        c: i as u8,
+        b: i as u32,
+        c: i as u32,
     });
 
-    let mut default = Test::default();
+    let mut default = Medium::default();
     let len = arr.len();
     for i in 0..len {
         default = match arr.insert(i, default) {
@@ -45,26 +40,19 @@ fn swap_exchange() {
             None => panic!("should not return None"),
         }
     }
-    assert!(Test::default() == arr[0]);
+    assert!(Medium::default() == arr[0]);
     for i in 1..arr.len() {
         assert!(arr[i].a == i - 1);
-        assert!(arr[i].b == i as u8 - 1);
-        assert!(arr[i].c == i as u8 - 1);
+        assert!(arr[i].b == i as u32 - 1);
+        assert!(arr[i].c == i as u32 - 1);
     }
 }
 
 #[test]
 fn check_drop() {
-    let monitor = &crate::TEST_MONITOR;
-    let origin = monitor.local_info();
-    let arr = TestArray::new(100, |_| Vec::<usize>::new());
-    mem::drop(arr);
-    let diff = monitor.local_info().relative_to(&origin);
-    assert!(
-        diff.bytes_alloc == diff.bytes_dealloc,
-        "Diff is {:#?}",
-        diff
-    );
+    let bfr = before_alloc();
+    let arr = TestArray::new(LENGTH, |_| Vec::<usize>::new());
+    after_alloc(arr, bfr);
 }
 
 #[should_panic]

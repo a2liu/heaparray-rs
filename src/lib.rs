@@ -69,6 +69,8 @@ mod traits;
 
 mod prelude {
     pub(crate) use super::memory_block::*;
+    #[cfg(test)]
+    pub(crate) use super::test_utils::*;
     pub use super::traits::*;
     pub use containers::{Array, Container, CopyMap};
     pub(crate) use core::mem;
@@ -101,4 +103,6 @@ static GLOBAL: InterAlloc<System, TestMonitor> = InterAlloc {
 };
 
 #[cfg(test)]
-pub mod tests;
+mod test_utils;
+#[cfg(test)]
+mod tests;
