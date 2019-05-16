@@ -5,6 +5,8 @@
   - [X] Write a modified global allocator to handle allocations during testing  
         **Using existing crate:** https://github.com/a1liu/interloc
   - [X] Write tests
+  - [ ] Write test generator on traits, because there are gonna be a bunch of
+    implementations of the same traits
 - [X] Write naive reference counting structs (only strong references) and naive
       atomic reference counting structs
   - [X] `ArrayRef::clone()` to be more idiomatic with `ArrayRef::clone<A>(arr: A) -> A where A: ArrayRef + Clone`
@@ -15,6 +17,10 @@
   - [ ] Write tests
 - [ ] Allow the user to customize allocator
   - [ ] Write tests
+- [ ] Completely unchecked arrays whose size is never known and whose state needs
+  to be manually handled. Purpose is two-fold: makes it possible to turn `ThinPtrArray`
+  into a special case of a more general struct; also makes it *really* easy to write
+  the constant-sized arrays (as they're another special case)
 - [ ] Constant-sized arrays whose size is known at compile time.  
       **Blocked by:** *const generics*
   - [ ] Write tests
