@@ -9,6 +9,9 @@ It has two main features that provide the foundation for the rest:
   [Rust documentation on exotically sized types](https://doc.rust-lang.org/nomicon/exotic-sizes.html),
   at the end of the section on dynamically-sized types:
 
+  > Currently the only properly supported way to create a custom DST is by
+  > making your type generic and performing an unsizing coercion
+  > ...
   > (Yes, custom DSTs are a largely half-baked feature for now.)
 
   This crate aims to provide *some* of that functionality; the code that
