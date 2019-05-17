@@ -94,7 +94,7 @@ impl<'a, E, L> ThinPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> UnsafeArrayRef<'a, TPArrayBlock<E, L>> for ThinPtrArray<'a, E, L> {
+impl<'a, E, L> UnsafeArrayRef for ThinPtrArray<'a, E, L> {
     unsafe fn null_ref() -> Self {
         Self {
             data: ManuallyDrop::new(&mut *(TPArrayBlock::null_ptr())),

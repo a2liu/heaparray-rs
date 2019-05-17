@@ -2,10 +2,9 @@ pub use super::prelude::*;
 
 type RC<L> = ArcStruct<L>;
 type ArrPtr<'a, E, L> = FpArr<'a, E, RC<L>>;
-type Arr<E, L> = FpBlk<E, RC<L>>;
-type Inner<'a, E, L> = RcArray<'a, ArrPtr<'a, E, L>, RC<L>, Arr<E, L>, E, L>;
+type Inner<'a, E, L> = RcArray<'a, ArrPtr<'a, E, L>, RC<L>, E, L>;
 
-/// Fat-pointer, atomic implementation of `generic::RcArray`.
+/// Fat-pointer implementation of `generic::RcArray` with atomic reference counting.
 #[repr(C)]
 pub struct FpArcArray<'a, E, L = ()>(Inner<'a, E, L>);
 

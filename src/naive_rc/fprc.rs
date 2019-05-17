@@ -2,8 +2,7 @@ pub use super::prelude::*;
 
 type RC<L> = RcStruct<L>;
 type ArrPtr<'a, E, L> = FpArr<'a, E, RC<L>>;
-type Arr<E, L> = FpBlk<E, RC<L>>;
-type Inner<'a, E, L> = RcArray<'a, ArrPtr<'a, E, L>, RC<L>, Arr<E, L>, E, L>;
+type Inner<'a, E, L> = RcArray<'a, ArrPtr<'a, E, L>, RC<L>, E, L>;
 
 /// Fat-pointer, single-threaded implementation of `generic::RcArray`.
 #[repr(C)]

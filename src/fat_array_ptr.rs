@@ -75,7 +75,7 @@ impl<'a, E, L> BaseArrayRef for FatPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> UnsafeArrayRef<'a, FPArrayBlock<E, L>> for FatPtrArray<'a, E, L> {
+impl<'a, E, L> UnsafeArrayRef for FatPtrArray<'a, E, L> {
     unsafe fn null_ref() -> Self {
         Self {
             data: &mut *(FPArrayBlock::null_ptr()),

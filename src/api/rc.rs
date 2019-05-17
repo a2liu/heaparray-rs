@@ -1,13 +1,11 @@
 use crate::fat_array_ptr::FatPtrArray as FpArr;
-use crate::memory_block::FPArrayBlock as FpBlk;
 use crate::naive_rc::generic::RcArray as GenRcArray;
 use crate::naive_rc::ref_counters::*;
 use crate::prelude::*;
 
 type RC<L> = RcStruct<L>;
 type ArrPtr<'a, E, L> = FpArr<'a, E, RC<L>>;
-type Arr<E, L> = FpBlk<E, RC<L>>;
-type Inner<'a, E, L> = GenRcArray<'a, ArrPtr<'a, E, L>, RC<L>, Arr<E, L>, E, L>;
+type Inner<'a, E, L> = GenRcArray<'a, ArrPtr<'a, E, L>, RC<L>, E, L>;
 
 /// Reference counted array.
 #[repr(C)]

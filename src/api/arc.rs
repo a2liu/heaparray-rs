@@ -1,4 +1,3 @@
-use crate::memory_block::TPArrayBlock as TpBlk;
 use crate::naive_rc::generic::RcArray as GenRcArray;
 use crate::naive_rc::ref_counters::*;
 use crate::prelude::*;
@@ -6,8 +5,7 @@ use crate::thin_array_ptr::ThinPtrArray as TpArr;
 
 type RC<L> = ArcStruct<L>;
 type ArrPtr<'a, E, L> = TpArr<'a, E, RC<L>>;
-type Arr<E, L> = TpBlk<E, RC<L>>;
-type Inner<'a, E, L> = GenRcArray<'a, ArrPtr<'a, E, L>, RC<L>, Arr<E, L>, E, L>;
+type Inner<'a, E, L> = GenRcArray<'a, ArrPtr<'a, E, L>, RC<L>, E, L>;
 
 /// Atomically reference counted array.
 #[repr(C)]

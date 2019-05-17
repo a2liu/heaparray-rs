@@ -13,25 +13,23 @@ use core::sync::atomic::Ordering;
 /// `RcArray` is a generic, implementation-agnositc array. It uses traits to
 /// handle literally everything. Implementing your own version is not recommended.
 #[repr(C)]
-pub struct RcArray<'a, A, R, B, E, L = ()>
+pub struct RcArray<'a, A, R, E, L = ()>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     data: ManuallyDrop<A>,
-    phantom: PhantomData<(&'a E, R, L, B)>,
+    phantom: PhantomData<(&'a E, R, L)>,
 }
 
-impl<'a, A, R, B, E, L> RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     fn check_null(&self) {
         assert!(
@@ -57,26 +55,24 @@ where
     }
 }
 
-impl<'a, A, R, B, E, L> BaseArrayRef for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> BaseArrayRef for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     fn is_null(&self) -> bool {
         (*self.data).is_null()
     }
 }
 
-impl<'a, A, R, B, E, L> Clone for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> Clone for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     fn clone(&self) -> Self {
         if self.is_null() {
@@ -88,13 +84,12 @@ where
     }
 }
 
-impl<'a, A, R, B, E, L> ArrayRef for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> ArrayRef for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     fn to_null(&mut self) {
         if self.is_null() {
@@ -118,13 +113,12 @@ where
     }
 }
 
-impl<'a, A, R, B, E, L> Index<usize> for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> Index<usize> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     type Output = E;
     fn index(&self, idx: usize) -> &E {
@@ -133,13 +127,12 @@ where
     }
 }
 
-impl<'a, A, R, B, E, L> IndexMut<usize> for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> IndexMut<usize> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     fn index_mut(&mut self, idx: usize) -> &mut E {
         self.check_null();
@@ -147,13 +140,12 @@ where
     }
 }
 
-impl<'a, A, R, B, E, L> Drop for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> Drop for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     fn drop(&mut self) {
         self.to_null();
@@ -161,13 +153,12 @@ where
     }
 }
 
-impl<'a, A, R, B, E, L> Container<(usize, E)> for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> Container<(usize, E)> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     fn add(&mut self, elem: (usize, E)) {
         self.check_null();
@@ -179,13 +170,12 @@ where
     }
 }
 
-impl<'a, A, R, B, E, L> CopyMap<'a, usize, E> for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> CopyMap<'a, usize, E> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     fn get(&'a self, key: usize) -> Option<&'a E> {
         self.check_null();
@@ -213,23 +203,21 @@ where
     }
 }
 
-impl<'a, A, R, B, E, L> Array<'a, E> for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> Array<'a, E> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
 }
 
-impl<'a, A, R, B, E, L> LabelledArray<'a, E, L> for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> LabelledArray<'a, E, L> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     fn with_label<F>(label: L, len: usize, mut func: F) -> Self
     where
@@ -259,12 +247,11 @@ where
     }
 }
 
-impl<'a, A, R, B, E> MakeArray<'a, E> for RcArray<'a, A, R, B, E, ()>
+impl<'a, A, R, E> MakeArray<'a, E> for RcArray<'a, A, R, E, ()>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<()>,
     E: 'a,
-    B: 'a + ?Sized,
 {
     fn new<F>(len: usize, mut func: F) -> Self
     where
@@ -274,50 +261,46 @@ where
     }
 }
 
-impl<'a, A, R, B, E, L> DefaultLabelledArray<'a, E, L> for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> DefaultLabelledArray<'a, E, L> for RcArray<'a, A, R, E, L>
 where
     A: 'a
         + DefaultLabelledArray<'a, E, R>
         + LabelledArray<'a, E, R>
         + BaseArrayRef
-        + UnsafeArrayRef<'a, B>,
+        + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a + Default,
-    B: 'a + ?Sized,
 {
     fn with_len(label: L, len: usize) -> Self {
         Self::from_ref(A::with_len(R::new(label), len))
     }
 }
 
-unsafe impl<'a, A, R, B, E, L> Send for RcArray<'a, A, R, B, E, L>
+unsafe impl<'a, A, R, E, L> Send for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L> + Send + Sync,
     L: 'a + Send + Sync,
     E: 'a + Send + Sync,
-    B: 'a + ?Sized,
 {
 }
 
-unsafe impl<'a, A, R, B, E, L> Sync for RcArray<'a, A, R, B, E, L>
+unsafe impl<'a, A, R, E, L> Sync for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B>,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L> + Send + Sync,
     L: 'a + Send + Sync,
     E: 'a + Send + Sync,
-    B: 'a + ?Sized,
 {
 }
 
-impl<'a, A, R, B, E, L> AtomicArrayRef for RcArray<'a, A, R, B, E, L>
+impl<'a, A, R, E, L> AtomicArrayRef for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef<'a, B> + AtomicArrayRef,
+    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef + AtomicArrayRef,
     R: 'a + RefCounter<L>,
     L: 'a,
     E: 'a,
-    B: 'a + ?Sized,
 {
     fn compare_and_swap(&self, current: Self, new: Self, order: Ordering) -> Self {
         Self::from_ref((*self.data).compare_and_swap(current.to_ref(), new.to_ref(), order))

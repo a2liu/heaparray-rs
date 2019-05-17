@@ -11,10 +11,7 @@ pub trait BaseArrayRef {
 
 /// A reference to a heap-allocated array whose safe API guarrantees it to
 /// always be non-null.
-pub trait UnsafeArrayRef<'a, B>: BaseArrayRef
-where
-    B: ?Sized,
-{
+pub trait UnsafeArrayRef: BaseArrayRef {
     /// Creates a null array. All kinds of UB associated with this, use
     /// with caution.
     unsafe fn null_ref() -> Self;
@@ -25,7 +22,7 @@ where
 /// Allows for idiomatic cloning of array references:
 ///
 /// ```rust
-/// # use heaparray::naive_rc::*;
+/// use heaparray::naive_rc::*;
 /// let array_ref = FpRcArray::new(10, |_| 0);
 /// let another_ref = ArrayRef::clone(&array_ref);
 ///
@@ -52,7 +49,7 @@ pub trait ArrayRef: BaseArrayRef + Clone {
 /// array reference are atomic (i.e. all changes to the internal array pointer).
 ///
 /// For mor details on the expected behavior of these methods, see the
-/// documentation for `std::sync::atomic::AtomicPtr`
+/// documentation for `std::sync::atomic::AtomicPtr`.
 pub trait AtomicArrayRef: BaseArrayRef + Sized {
     fn compare_and_swap(&self, current: Self, new: Self, order: Ordering) -> Self;
     fn compare_exchange(

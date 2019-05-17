@@ -21,8 +21,6 @@ pub(crate) mod prelude {
     pub(crate) use super::generic::*;
     pub(crate) use super::ref_counters::*;
     pub(crate) use crate::fat_array_ptr::FatPtrArray as FpArr;
-    pub(crate) use crate::memory_block::FPArrayBlock as FpBlk;
-    pub(crate) use crate::memory_block::TPArrayBlock as TpBlk;
     pub use crate::prelude::*;
     pub(crate) use crate::thin_array_ptr::ThinPtrArray as TpArr;
 }

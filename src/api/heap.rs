@@ -77,7 +77,7 @@ where
         Self(self.0.clone())
     }
 }
-impl<'a, E, L> UnsafeArrayRef<'a, FPArrayBlock<E, L>> for HeapArray<'a, E, L> {
+impl<'a, E, L> UnsafeArrayRef for HeapArray<'a, E, L> {
     unsafe fn null_ref() -> Self {
         Self(Inner::null_ref())
     }
