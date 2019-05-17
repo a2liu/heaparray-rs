@@ -159,6 +159,9 @@ impl<'a, E, L> Drop for ThinPtrArray<'a, E, L> {
         let mut_ref = &mut self.data;
         unsafe { mut_ref.dealloc(len) };
         mem::forget(mut_ref);
+        if cfg!(not(feature = "fast-drop")) {
+            self.data = ManuallyDrop::new(unsafe { &mut *Block::null_ref() });
+        }
     }
 }
 

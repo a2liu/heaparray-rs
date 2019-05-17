@@ -21,6 +21,7 @@ pub fn block_max_len<E, L>() -> usize {
 
 #[cfg(test)]
 pub fn check_null_ref<E, L>(arr: &MemBlock<E, L>, message: &'static str) {
+    // println!("about to check!");
     assert!(!arr.is_null(), message);
 }
 

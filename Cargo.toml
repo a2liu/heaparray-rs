@@ -18,3 +18,5 @@ interloc = "0.1.0"
 [features]
 default = []
 no-asserts = [] # does what it says on the tin - removes assertions.
+fast-drop = [] # Refrains from overwriting pointer when dropping or
+               # nullifying
