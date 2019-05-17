@@ -99,14 +99,18 @@ where
     fn to_null(&mut self) {
         if self.is_null() {
             return;
+        } else {
+            let ref_count = self.data.get_label_mut().decrement();
+
+            // Set this reference to null
+            let other = mem::replace(self, Self::null_ref());
+
+            if ref_count == 0 {
+                let to_drop: A = unsafe { mem::transmute_copy(&*other.data) };
+                mem::drop(to_drop); // Drop is here to be explicit about intent
+            }
+            mem::forget(other);
         }
-        let ref_count = self.data.get_label_mut().decrement();
-        let other = mem::replace(self, Self::null_ref());
-        if ref_count == 0 {
-            let to_drop: A = unsafe { mem::transmute_copy(&*other.data) };
-            mem::drop(to_drop);
-        }
-        mem::forget(other);
     }
 
     fn null_ref() -> Self {
