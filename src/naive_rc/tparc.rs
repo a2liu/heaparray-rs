@@ -1,4 +1,5 @@
 pub use super::prelude::*;
+use core::sync::atomic::Ordering;
 
 type RC<L> = ArcStruct<L>;
 type ArrPtr<'a, E, L> = TpArr<'a, E, RC<L>>;
@@ -109,50 +110,49 @@ where
 unsafe impl<'a, E, L> Send for TpArcArray<'a, E, L> where Inner<'a, E, L>: Send {}
 unsafe impl<'a, E, L> Sync for TpArcArray<'a, E, L> where Inner<'a, E, L>: Sync {}
 
-// impl<'a, E, L> AtomicArrayRef for TpRcArray<'a, E, L> {
-//     fn compare_and_swap(&self, current: Self, new: Self, order: Ordering) -> Self {
-//         Self(
-//             self.0
-//                 .compare_and_swap(current.to_ref(), new.to_ref(), order),
-//         )
-//     }
-//     fn compare_exchange(
-//         &self,
-//         current: Self,
-//         new: Self,
-//         success: Ordering,
-//         failure: Ordering,
-//     ) -> Result<Self, Self> {
-//         match self
-//             .0
-//             .compare_exchange(current.to_ref(), new.to_ref(), success, failure)
-//         {
-//             Ok(r) => Self(r),
-//             Err(r) => Self(r),
-//         }
-//     }
-//     fn compare_exchange_weak(
-//         &self,
-//         current: Self,
-//         new: Self,
-//         success: Ordering,
-//         failure: Ordering,
-//     ) -> Result<Self, Self> {
-//         match self
-//             .0
-//             .compare_exchange_weak(current.to_ref(), new.to_ref(), success, failure)
-//         {
-//             Ok(r) => Self(r),
-//             Err(r) => Self(r),
-//         }
-//     }
-//     fn load(&self, order: Ordering) -> Self {
-//         Self(self.0.load(order))
-//     }
-//     fn store(&self, ptr: Self, order: Ordering) {
-//         self.0.store(ptr.to_ref(), order)
-//     }
-//     fn swap(&self, ptr: Self, order: Ordering) -> Self {
-//         Self(self.0.swap(ptr.to_ref(), order))
-//     }
-// }
+impl<'a, E, L> AtomicArrayRef for TpArcArray<'a, E, L> {
+    fn compare_and_swap(&self, current: Self, new: Self, order: Ordering) -> Self {
+        let Self(current) = current;
+        let Self(new) = new;
+        Self(self.0.compare_and_swap(current, new, order))
+    }
+    fn compare_exchange(
+        &self,
+        current: Self,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        let Self(current) = current;
+        let Self(new) = new;
+        match self.0.compare_exchange(current, new, success, failure) {
+            Ok(r) => Ok(Self(r)),
+            Err(r) => Err(Self(r)),
+        }
+    }
+    fn compare_exchange_weak(
+        &self,
+        current: Self,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        let Self(current) = current;
+        let Self(new) = new;
+        match self.0.compare_exchange_weak(current, new, success, failure) {
+            Ok(r) => Ok(Self(r)),
+            Err(r) => Err(Self(r)),
+        }
+    }
+    fn load(&self, order: Ordering) -> Self {
+        Self(self.0.load(order))
+    }
+    fn store(&self, ptr: Self, order: Ordering) {
+        let Self(ptr) = ptr;
+        self.0.store(ptr, order)
+    }
+    fn swap(&self, ptr: Self, order: Ordering) -> Self {
+        let Self(ptr) = ptr;
+        Self(self.0.swap(ptr, order))
+    }
+}

@@ -139,7 +139,8 @@ where
 
 impl<'a, E, L> Drop for ThinPtrArray<'a, E, L> {
     fn drop(&mut self) {
-        debug_assert!(!self.is_null());
+        #[cfg(not(feature = "no-asserts"))]
+        assert!(!self.is_null());
         let mut_ref = &mut self.data;
         unsafe { mut_ref.dealloc() };
         mem::forget(mut_ref);

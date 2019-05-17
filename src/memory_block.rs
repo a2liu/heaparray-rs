@@ -26,9 +26,12 @@
 //! things like constructing new types.
 use super::alloc_utils::*;
 use core::mem;
-use core::ops::{Index, IndexMut};
-pub const NULL: usize = core::usize::MAX;
 use core::mem::ManuallyDrop;
+use core::ops::{Index, IndexMut};
+
+/// The value of null. Nullified pointers to memory blocks are overwritten
+/// with this value.
+const NULL: usize = core::usize::MAX;
 
 // TODO Make this function a const function when if statements are stabilized in
 // const functions
@@ -143,7 +146,9 @@ impl<E, L> TPArrayBlock<E, L> {
     where
         F: FnMut(&mut L, usize) -> E,
     {
+        #[cfg(not(feature = "no-asserts"))]
         assert!(len <= block_max_len::<E, L>());
+
         let new_ptr = unsafe { Self::new_ptr_unsafe(label, len) };
         for i in 0..new_ptr.len {
             let item = func(&mut new_ptr.label, i);
@@ -158,6 +163,8 @@ impl<E, L> TPArrayBlock<E, L> {
     pub fn get<'a>(&'a self, idx: usize) -> &'a E {
         #[cfg(test)]
         check_null_tp(self, "TPArrayBlock::get: Immutable access of null pointer!");
+
+        #[cfg(not(feature = "no-asserts"))]
         assert!(idx < self.len);
         unsafe { self.unchecked_access(idx) }
     }
@@ -169,6 +176,7 @@ impl<E, L> TPArrayBlock<E, L> {
             self,
             "TPArrayBlock::get_mut: Mutable access of null pointer!",
         );
+        #[cfg(not(feature = "no-asserts"))]
         assert!(idx < self.len);
         unsafe { self.unchecked_access(idx) }
     }
@@ -311,6 +319,7 @@ impl<E, L> FPArrayBlock<E, L> {
     where
         F: FnMut(&mut L, usize) -> E,
     {
+        #[cfg(not(feature = "no-asserts"))]
         assert!(len <= block_max_len::<E, L>());
         let new_ptr = unsafe { Self::new_ptr_unsafe(label, len) };
         for i in 0..new_ptr.len() {
@@ -325,6 +334,7 @@ impl<E, L> FPArrayBlock<E, L> {
     pub fn get<'a>(&'a self, idx: usize) -> &'a E {
         #[cfg(test)]
         check_null_fp(self, "FPArrayBlock::get: Immutable access of null pointer!");
+        #[cfg(not(feature = "no-asserts"))]
         assert!(idx < self.len());
         &self.elements[idx]
     }
@@ -336,6 +346,7 @@ impl<E, L> FPArrayBlock<E, L> {
             self,
             "FPArrayBlock::get_mut: Mutable access of null pointer!",
         );
+        #[cfg(not(feature = "no-asserts"))]
         assert!(idx < self.len());
         &mut self.elements[idx]
     }
@@ -383,7 +394,6 @@ where
 impl<E, L> Index<usize> for FPArrayBlock<E, L> {
     type Output = E;
     fn index(&self, index: usize) -> &E {
-        assert!(index < self.len());
         self.get(index)
     }
 }

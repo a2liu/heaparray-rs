@@ -32,9 +32,10 @@ where
     E: 'a,
 {
     fn check_null(&self) {
+        #[cfg(not(feature = "no-asserts"))]
         assert!(
             !self.is_null(),
-            "Null dereference of naively reference-counted array."
+            "Null dereference of reference-counted array."
         );
     }
     fn from_ref(ptr: A) -> Self {
