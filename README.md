@@ -124,6 +124,12 @@ This library relies heavily on the use of the `unsafe` keyword to do both
 reference counting and atomic operations; there are 14 instances total,
 not including tests.
 
+## Customizability
+All of the implementation details of this crate are public and documented; if you'd
+like to implement your own version of the tools available through this crate,
+note that you don't need to reinvent the wheel; many of the types in this crate
+are generic over certain traits, so you might not need to do that much.
+
 ## Future Plans
 Iteration, allocator customization, constant-sized array of arbitrary size,
 i.e. `CArray`, with sizes managed by the type system (waiting on const

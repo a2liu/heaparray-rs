@@ -11,14 +11,25 @@ use core::sync::atomic::Ordering;
 // E is the element that this type is an array of
 // B is the type that A dereferences to using its `.to_null()` method.
 /// `RcArray` is a generic, implementation-agnositc array. It uses traits to
-/// handle literally everything. Implementing your own version is not recommended.
+/// handle literally everything.
+///
+/// The type parameters are, in order:
+///
+/// ```text
+/// A: A struct that acts as a reference to an array.
+/// R: A reference-counting structure, that wraps the label.
+/// E: The elements that this array contains.
+/// L: The label that is associated with this array.
+/// ```
+///
+/// Since this struct is generic, feel free to go ham with implementation details.
 #[repr(C)]
 pub struct RcArray<'a, A, R, E, L = ()>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     data: ManuallyDrop<A>,
     phantom: PhantomData<(&'a E, R, L)>,
@@ -28,8 +39,8 @@ impl<'a, A, R, E, L> RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     fn check_null(&self) {
         #[cfg(not(feature = "no-asserts"))]
@@ -60,8 +71,8 @@ impl<'a, A, R, E, L> BaseArrayRef for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     fn is_null(&self) -> bool {
         (*self.data).is_null()
@@ -72,8 +83,8 @@ impl<'a, A, R, E, L> Clone for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     fn clone(&self) -> Self {
         if self.is_null() {
@@ -89,8 +100,8 @@ impl<'a, A, R, E, L> ArrayRef for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     fn to_null(&mut self) {
         if self.is_null() {
@@ -118,8 +129,8 @@ impl<'a, A, R, E, L> Index<usize> for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     type Output = E;
     fn index(&self, idx: usize) -> &E {
@@ -132,8 +143,8 @@ impl<'a, A, R, E, L> IndexMut<usize> for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     fn index_mut(&mut self, idx: usize) -> &mut E {
         self.check_null();
@@ -145,8 +156,8 @@ impl<'a, A, R, E, L> Drop for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     fn drop(&mut self) {
         self.to_null();
@@ -158,8 +169,8 @@ impl<'a, A, R, E, L> Container<(usize, E)> for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     fn add(&mut self, elem: (usize, E)) {
         self.check_null();
@@ -175,8 +186,8 @@ impl<'a, A, R, E, L> CopyMap<'a, usize, E> for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     fn get(&'a self, key: usize) -> Option<&'a E> {
         self.check_null();
@@ -208,8 +219,8 @@ impl<'a, A, R, E, L> Array<'a, E> for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
 }
 
@@ -217,8 +228,8 @@ impl<'a, A, R, E, L> LabelledArray<'a, E, L> for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     fn with_label<F>(label: L, len: usize, mut func: F) -> Self
     where
@@ -270,8 +281,8 @@ where
         + BaseArrayRef
         + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a + Default,
+    L: 'a,
 {
     fn with_len(label: L, len: usize) -> Self {
         Self::from_ref(A::with_len(R::new(label), len))
@@ -282,8 +293,8 @@ unsafe impl<'a, A, R, E, L> Send for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L> + Send + Sync,
-    L: 'a + Send + Sync,
     E: 'a + Send + Sync,
+    L: 'a + Send + Sync,
 {
 }
 
@@ -291,8 +302,8 @@ unsafe impl<'a, A, R, E, L> Sync for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L> + Send + Sync,
-    L: 'a + Send + Sync,
     E: 'a + Send + Sync,
+    L: 'a + Send + Sync,
 {
 }
 
@@ -300,8 +311,8 @@ impl<'a, A, R, E, L> AtomicArrayRef for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef + AtomicArrayRef,
     R: 'a + RefCounter<L>,
-    L: 'a,
     E: 'a,
+    L: 'a,
 {
     fn compare_and_swap(&self, current: Self, new: Self, order: Ordering) -> Self {
         Self::from_ref((*self.data).compare_and_swap(current.to_ref(), new.to_ref(), order))
