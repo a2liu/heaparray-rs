@@ -39,7 +39,8 @@ It provides two main features that provide the foundation for the rest:
   ```rust
   use heaparray::*;
   fn main() {
-      let dynamic = HeapArray::<u8,u32>::with_label(17,8, |_,_| 0);
+      let dynamic = HeapArray::<u8,u32>::with_label(17, 8, |_,_| 0);
+
       print!("{} [", dynamic.get_label());
       for i in 0..(dynamic.len()-1) {
           print!("{:?},", dynamic[i]);
