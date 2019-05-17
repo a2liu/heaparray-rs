@@ -3,7 +3,7 @@ pub use super::prelude::*;
 type RC<L> = ArcStruct<L>;
 type ArrPtr<'a, E, L> = TpArr<'a, E, RC<L>>;
 type Arr<E, L> = TpBlk<E, RC<L>>;
-type Inner<'a, E, L> = RcArray<'a, ArrPtr<'a, E, L>, ArcStruct<L>, Arr<E, L>, E, L>;
+type Inner<'a, E, L> = RcArray<'a, ArrPtr<'a, E, L>, RC<L>, Arr<E, L>, E, L>;
 
 /// Thin-pointer, atomic implementation of `generic::RcArray`.
 #[repr(C)]

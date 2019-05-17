@@ -1,25 +1,29 @@
-pub use super::prelude::*;
+use crate::memory_block::TPArrayBlock as TpBlk;
+use crate::naive_rc::generic::RcArray as GenRcArray;
+use crate::naive_rc::ref_counters::*;
+use crate::prelude::*;
+use crate::thin_array_ptr::ThinPtrArray as TpArr;
 
 type RC<L> = ArcStruct<L>;
-type ArrPtr<'a, E, L> = FpArr<'a, E, RC<L>>;
-type Arr<E, L> = FpBlk<E, RC<L>>;
-type Inner<'a, E, L> = RcArray<'a, ArrPtr<'a, E, L>, RC<L>, Arr<E, L>, E, L>;
+type ArrPtr<'a, E, L> = TpArr<'a, E, RC<L>>;
+type Arr<E, L> = TpBlk<E, RC<L>>;
+type Inner<'a, E, L> = GenRcArray<'a, ArrPtr<'a, E, L>, RC<L>, Arr<E, L>, E, L>;
 
-/// Fat-pointer, atomic implementation of `generic::RcArray`.
+///
 #[repr(C)]
-pub struct FpArcArray<'a, E, L = ()>(Inner<'a, E, L>);
+pub struct ArcArray<'a, E, L = ()>(Inner<'a, E, L>);
 
-impl<'a, E, L> BaseArrayRef for FpArcArray<'a, E, L> {
+impl<'a, E, L> BaseArrayRef for ArcArray<'a, E, L> {
     fn is_null(&self) -> bool {
         self.0.is_null()
     }
 }
-impl<'a, E, L> Clone for FpArcArray<'a, E, L> {
+impl<'a, E, L> Clone for ArcArray<'a, E, L> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
-impl<'a, E, L> ArrayRef for FpArcArray<'a, E, L> {
+impl<'a, E, L> ArrayRef for ArcArray<'a, E, L> {
     fn to_null(&mut self) {
         self.0.to_null()
     }
@@ -27,19 +31,19 @@ impl<'a, E, L> ArrayRef for FpArcArray<'a, E, L> {
         Self(Inner::null_ref())
     }
 }
-impl<'a, E, L> Index<usize> for FpArcArray<'a, E, L> {
+impl<'a, E, L> Index<usize> for ArcArray<'a, E, L> {
     type Output = E;
     fn index(&self, idx: usize) -> &E {
         self.0.index(idx)
     }
 }
-impl<'a, E, L> IndexMut<usize> for FpArcArray<'a, E, L> {
+impl<'a, E, L> IndexMut<usize> for ArcArray<'a, E, L> {
     fn index_mut(&mut self, idx: usize) -> &mut E {
         self.0.index_mut(idx)
     }
 }
 
-impl<'a, E, L> Container<(usize, E)> for FpArcArray<'a, E, L> {
+impl<'a, E, L> Container<(usize, E)> for ArcArray<'a, E, L> {
     fn add(&mut self, elem: (usize, E)) {
         self.0.add(elem)
     }
@@ -48,7 +52,7 @@ impl<'a, E, L> Container<(usize, E)> for FpArcArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> CopyMap<'a, usize, E> for FpArcArray<'a, E, L> {
+impl<'a, E, L> CopyMap<'a, usize, E> for ArcArray<'a, E, L> {
     fn get(&'a self, key: usize) -> Option<&'a E> {
         self.0.get(key)
     }
@@ -60,9 +64,9 @@ impl<'a, E, L> CopyMap<'a, usize, E> for FpArcArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> Array<'a, E> for FpArcArray<'a, E, L> {}
+impl<'a, E, L> Array<'a, E> for ArcArray<'a, E, L> {}
 
-impl<'a, E, L> LabelledArray<'a, E, L> for FpArcArray<'a, E, L> {
+impl<'a, E, L> LabelledArray<'a, E, L> for ArcArray<'a, E, L> {
     fn with_label<F>(label: L, len: usize, func: F) -> Self
     where
         F: FnMut(&mut L, usize) -> E,
@@ -86,7 +90,7 @@ impl<'a, E, L> LabelledArray<'a, E, L> for FpArcArray<'a, E, L> {
     }
 }
 
-impl<'a, E> MakeArray<'a, E> for FpArcArray<'a, E, ()>
+impl<'a, E> MakeArray<'a, E> for ArcArray<'a, E, ()>
 where
     E: 'a,
 {
@@ -98,7 +102,7 @@ where
     }
 }
 
-impl<'a, E, L> DefaultLabelledArray<'a, E, L> for FpArcArray<'a, E, L>
+impl<'a, E, L> DefaultLabelledArray<'a, E, L> for ArcArray<'a, E, L>
 where
     E: Default,
 {
@@ -107,5 +111,5 @@ where
     }
 }
 
-unsafe impl<'a, E, L> Send for FpArcArray<'a, E, L> where Inner<'a, E, L>: Send {}
-unsafe impl<'a, E, L> Sync for FpArcArray<'a, E, L> where Inner<'a, E, L>: Sync {}
+unsafe impl<'a, E, L> Send for ArcArray<'a, E, L> where Inner<'a, E, L>: Send {}
+unsafe impl<'a, E, L> Sync for ArcArray<'a, E, L> where Inner<'a, E, L>: Sync {}
