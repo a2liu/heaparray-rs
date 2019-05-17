@@ -1,7 +1,7 @@
+use crate::base::ThinPtrArray as TpArr;
 use crate::naive_rc::generic::RcArray as GenRcArray;
 use crate::naive_rc::ref_counters::*;
 use crate::prelude::*;
-use crate::thin_array_ptr::ThinPtrArray as TpArr;
 
 type RC<L> = ArcStruct<L>;
 type ArrPtr<'a, E, L> = TpArr<'a, E, RC<L>>;

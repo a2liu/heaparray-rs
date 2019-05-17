@@ -3,7 +3,7 @@
 //! This more similar to how arrays are defined in C or C++, and is less idiomatic
 //! in Rust, but may improve performance depending on your use case. Thus, it is
 //! not the standard implementation of `HeapArray`, but is still available for use
-//! via `use heaparray::thin_array_ptr::*;
+//! via `use heaparray::base::*;
 pub use crate::prelude::*;
 use core::sync::atomic::{AtomicPtr, Ordering};
 
@@ -14,14 +14,14 @@ use core::sync::atomic::{AtomicPtr, Ordering};
 ///
 /// Creating an array:
 /// ```rust
-/// use heaparray::thin_array_ptr::*;
+/// use heaparray::base::*;
 /// let len = 10;
 /// let array = ThinPtrArray::new(len, |idx| idx + 3);
 /// ```
 ///
 /// Indexing works as you would expect:
 /// ```rust
-/// # use heaparray::thin_array_ptr::*;
+/// # use heaparray::base::*;
 /// # let mut array = ThinPtrArray::new(10, |idx| idx + 3);
 /// array[3] = 2;
 /// assert!(array[3] == 2);
@@ -30,7 +30,7 @@ use core::sync::atomic::{AtomicPtr, Ordering};
 /// Notably, you can take ownership of objects back from the container:
 ///
 /// ```rust
-/// # use heaparray::thin_array_ptr::*;
+/// # use heaparray::base::*;
 /// let mut array = ThinPtrArray::new(10, |_| Vec::<u8>::new());
 /// let replacement_object = Vec::new();
 /// let owned_object = array.insert(0, replacement_object);
@@ -42,7 +42,7 @@ use core::sync::atomic::{AtomicPtr, Ordering};
 /// the array using the `ThinPtrArray::with_label` function:
 ///
 /// ```rust
-/// # use heaparray::thin_array_ptr::*;
+/// # use heaparray::base::*;
 /// struct MyLabel {
 ///     pub even: usize,
 ///     pub odd: usize,

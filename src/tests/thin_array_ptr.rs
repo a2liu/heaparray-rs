@@ -1,5 +1,5 @@
+use crate::base::ThinPtrArray;
 use crate::tests::prelude::*;
-use crate::thin_array_ptr::ThinPtrArray;
 
 type TestArray<'a, E, L = ()> = ThinPtrArray<'a, E, L>;
 

@@ -20,9 +20,9 @@
 pub(crate) mod prelude {
     pub(crate) use super::generic::*;
     pub(crate) use super::ref_counters::*;
-    pub(crate) use crate::fat_array_ptr::FatPtrArray as FpArr;
+    pub(crate) use crate::base::FatPtrArray as FpArr;
+    pub(crate) use crate::base::ThinPtrArray as TpArr;
     pub use crate::prelude::*;
-    pub(crate) use crate::thin_array_ptr::ThinPtrArray as TpArr;
 }
 
 mod fparc;

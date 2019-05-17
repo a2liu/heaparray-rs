@@ -1,4 +1,4 @@
-use crate::fat_array_ptr::FatPtrArray;
+use crate::base::FatPtrArray;
 use crate::tests::prelude::*;
 
 type TestArray<'a, E, L = ()> = FatPtrArray<'a, E, L>;

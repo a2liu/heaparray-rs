@@ -10,14 +10,14 @@ pub use crate::prelude::*;
 ///
 /// Creating an array:
 /// ```rust
-/// use heaparray::fat_array_ptr::*;
+/// use heaparray::base::*;
 /// let len = 10;
 /// let array = FatPtrArray::new(len, |idx| idx + 3);
 /// ```
 ///
 /// Indexing works as you would expect:
 /// ```rust
-/// # use heaparray::fat_array_ptr::*;
+/// # use heaparray::base::*;
 /// # let mut array = FatPtrArray::new(10, |idx| idx + 3);
 /// array[3] = 2;
 /// assert!(array[3] == 2);
@@ -26,7 +26,7 @@ pub use crate::prelude::*;
 /// Notably, you can take ownership of objects back from the container:
 ///
 /// ```rust
-/// # use heaparray::fat_array_ptr::*;
+/// # use heaparray::base::*;
 /// let mut array = FatPtrArray::new(10, |_| Vec::<u8>::new());
 /// let replacement_object = Vec::new();
 /// let owned_object = array.insert(0, replacement_object);
@@ -38,7 +38,7 @@ pub use crate::prelude::*;
 /// the array using the `FatPtrArray::with_label` function:
 ///
 /// ```rust
-/// # use heaparray::fat_array_ptr::*;
+/// # use heaparray::base::*;
 /// struct MyLabel {
 ///     pub even: usize,
 ///     pub odd: usize,

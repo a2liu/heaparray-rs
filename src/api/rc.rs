@@ -1,4 +1,4 @@
-use crate::fat_array_ptr::FatPtrArray as FpArr;
+use crate::base::FatPtrArray as FpArr;
 use crate::naive_rc::generic::RcArray as GenRcArray;
 use crate::naive_rc::ref_counters::*;
 use crate::prelude::*;

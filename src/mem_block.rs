@@ -1,10 +1,8 @@
+//! Contains the struct `MemBlock`, which handles pointer math and very low-level
+//! interactions with memory.
 use super::alloc_utils::*;
 use core::mem;
 use core::mem::ManuallyDrop;
-
-/// The value of null. Nullified pointers to memory blocks are overwritten
-/// with this value.
-const NULL: usize = core::usize::MAX;
 
 // TODO Make this function a const function when if statements are stabilized in
 // const functions
@@ -23,14 +21,28 @@ pub fn block_max_len<E, L>() -> usize {
 
 #[cfg(test)]
 pub fn check_null_ref<E, L>(arr: &MemBlock<E, L>, message: &'static str) {
-    assert!(arr as *const _ as usize != NULL, message);
+    assert!(!arr.is_null(), message);
 }
 
 /// An array block that can hold arbitrary information, and cannot be
 /// constructed on the stack. The `E` type can be repeated an arbitrary
 /// number of times, and the `L` type can be repeated exactly once.
+///
+/// It's not recommended to use this directly; instead, use the pointer
+/// types that refer to these, namely `HeapArray`, `FatPtrArray`, and
+/// `ThinPtrArray`.
+///
+/// # Invariants
+/// The code for this struct does little to no runtime checks for validity;
+/// thus, you need to do them yourself. Length checks, runtime validity
+/// checks, etc. all need to be done at runtime before using the methods
+/// associated with this type, as forgetting to do so leads to undefined
+/// behavior (likely a segmentation fault or an invalid pointer
+/// dereference). To avoid these errors, you can instead use the safe API
+/// provided by the `ThinPtrArray` and `FatPtrArray` structs, or by the
+/// `HeapArray` struct, which internally is implemented as a `FatPtrArray`.
 #[repr(C)]
-pub struct MemBlock<E, L> {
+pub struct MemBlock<E, L = ()> {
     /// Metadata about the block
     pub label: L,
     /// First element in the block
@@ -38,7 +50,12 @@ pub struct MemBlock<E, L> {
 }
 
 impl<E, L> MemBlock<E, L> {
-    /// Get size and alignment of the memory that this memory block uses.
+    /// The value of null. Nullified pointers to memory blocks are overwritten
+    /// with this value.
+    pub const NULL: usize = core::usize::MAX;
+
+    /// Get size and alignment of the memory that a block of length `len`
+    /// would need.
     pub fn memory_layout(len: usize) -> (usize, usize) {
         let l_layout = size_align::<Self>();
         if len <= 1 {
@@ -49,11 +66,22 @@ impl<E, L> MemBlock<E, L> {
         }
     }
 
-    /// Deallocates a reference to this struct, as well as all objects contained
-    /// in it.
+    /// Deallocates a reference to this struct, as well as all objects
+    /// contained in it. This function is safe given that the following
+    /// preconditions hold:
+    ///
+    /// - The reference `&self` is valid, and points to a valid instance
+    ///   of this type
+    /// - The memory block pointed to by `&self` was initialized with
+    ///   length of `len`
+    /// - The operation of dereferencing an element at index `i`, where
+    ///   `0 <= i < len`, accesses valid memory that has been
+    ///   properly initialized. This is NOT checked at runtime.
     pub unsafe fn dealloc<'a>(&'a mut self, len: usize) {
         #[cfg(test)]
         check_null_ref(self, "MemBlock::dealloc: Deallocating null pointer!");
+        let lbl = mem::transmute_copy::<L, L>(&self.label);
+        mem::drop(lbl);
         for i in 0..len {
             let val = mem::transmute_copy(self.get(i));
             mem::drop::<E>(val);
@@ -61,6 +89,18 @@ impl<E, L> MemBlock<E, L> {
         self.dealloc_lazy(len);
     }
 
+    /// Deallocates a reference to this struct, without running the
+    /// destructor of the elements it contains. This function is safe
+    /// given that the following preconditions hold:
+    ///
+    /// - The reference `&self` is valid, and points to a valid instance
+    ///   of this type
+    /// - The memory block pointed to by `&self` was initialized with length
+    ///   of `len`
+    ///
+    /// This function *may* leak memory; be sure to run destructors on
+    /// all initialized elements in this block before calling this method,
+    /// as they may in accessible afterwards if you don't.
     pub unsafe fn dealloc_lazy<'a>(&'a mut self, len: usize) {
         #[cfg(test)]
         check_null_ref(self, "MemBlock::dealloc: Deallocating null pointer!");
@@ -70,39 +110,87 @@ impl<E, L> MemBlock<E, L> {
     }
 
     /// Returns a null pointer to a memory block. Dereferencing it is undefined
-    /// behavior.
-    pub unsafe fn null_ptr() -> *mut Self {
-        NULL as *mut Self
+    /// behavior, and is by definition unsafe.
+    pub unsafe fn null_ref() -> *mut Self {
+        Self::NULL as *mut Self
     }
 
+    /// Returns a pointer to a new memory block on the heap with an
+    /// initialized label. Does not initialize memory, so use with care.
+    ///
+    /// If you use this function, remember to prevent the compiler from
+    /// running the destructor for the memory wasn't initialized. i.e.
+    /// something like this:
+    ///
+    /// ```rust
+    /// use heaparray::mem_block::MemBlock;
+    /// use core::mem;
+    /// let len = 100;
+    /// let block = unsafe { MemBlock::<usize, ()>::new((), len) };
+    /// for i in 0..len {
+    ///     let item = i * i;
+    ///     let garbage = mem::replace(unsafe { block.get(i) }, item);
+    ///     mem::forget(garbage);
+    /// }
+    /// ```
     pub unsafe fn new<'a>(label: L, len: usize) -> &'a mut Self {
         #[cfg(not(feature = "no-asserts"))]
         assert!(len <= block_max_len::<E, L>());
         let (size, align) = Self::memory_layout(len);
         let new_ptr = allocate::<Self>(size, align);
-        new_ptr.label = label;
+        let garbage = mem::replace(&mut new_ptr.label, label);
+        mem::forget(garbage);
         new_ptr
     }
 
-    pub unsafe fn new_init<'a, F>(label: L, len: usize, mut func: F) -> &'a mut Self
+    /// Returns a pointer to a labelled memory block, with elements initialized
+    /// using the provided function. Function is safe, because the following
+    /// invariants will always hold:
+    ///
+    /// - A memory access `block.get(i)` where `0 <= i < len` will always
+    ///   be valid.
+    /// - A memory access `block.label` will always be valid.
+    ///
+    /// However, note that *deallocating* the resulting block can *never*
+    /// be safe; there is not guarrantee provided by the type system
+    /// that the block you deallocate will have the length that you assume
+    /// it has.
+    pub fn new_init<'a, F>(label: L, len: usize, mut func: F) -> &'a mut Self
     where
         F: FnMut(&mut L, usize) -> E,
     {
-        let new_ptr = Self::new(label, len);
+        let new_ptr = unsafe { Self::new(label, len) };
         for i in 0..len {
             let item = func(&mut new_ptr.label, i);
-            let garbage = mem::replace(new_ptr.get(i), item);
+            let garbage = mem::replace(unsafe { new_ptr.get(i) }, item);
             mem::forget(garbage);
         }
         new_ptr
     }
 
+    /// Gets a mutable reference to the element at the index `idx` in this
+    /// memory block. This function will return a valid reference given
+    /// that the following preconditions hold:
+    ///
+    /// - The reference `&self` is valid, and points to
+    ///   a valid instance of this type
+    /// - The memory block pointed to by `&self` was initialized with a
+    ///   `len` of at least `idx + 1`
+    /// - The element at index `idx` was initialized; this can be acheived
+    ///   by calling `MemBlock::new_init(label, len, || { /* closure */ })`.
+    ///   or by initializing the values yourself.
     pub unsafe fn get<'a>(&'a self, idx: usize) -> &'a mut E {
         #[cfg(test)]
         check_null_ref(self, "MemBlock::get: Indexing on null pointer!");
         let element = &*self.elements as *const E as *mut E;
         let element = element.add(idx);
         &mut *element
+    }
+
+    pub unsafe fn get_label<'a>(&'a self) -> &'a mut L {
+        #[cfg(test)]
+        check_null_ref(self, "MemBlock::get_label: Indexing on null pointer!");
+        &mut *(&self.label as *const L as *mut L)
     }
 
     /// Generates an iterator from this memory block, which is inclusive
@@ -119,13 +207,13 @@ impl<E, L> MemBlock<E, L> {
     /// conditions results in undefined behavior. Additionally, the
     /// iterator that's created can potentially take ownership, and
     /// it's your job to prove that doing so is a valid operation.
-    pub unsafe fn iter<'a>(&'a self, len: usize) -> MemBlockIter<E, L> {
+    pub unsafe fn iter<'a, 'b>(&'a self, len: usize) -> MemBlockIter<'b, E, L> {
         #[cfg(test)]
         check_null_ref(self, "MemBlock::iter: Getting iterator on null pointer!");
         MemBlockIter {
             block: &mut *(self as *const Self as *mut Self),
-            end: self.get(len),
-            current: self.get(0),
+            end: &mut *(self.get(len) as *mut E),
+            current: &mut *(self.get(0) as *mut E),
         }
     }
     /// Generates a slice into this memory block. The following invariants
@@ -150,11 +238,35 @@ impl<E, L> MemBlock<E, L> {
         assert!(start <= end);
         core::slice::from_raw_parts_mut(self.get(start) as *mut E, end - start)
     }
+    /// Since this struct isn't a reference to contigous memory, but rather
+    /// the contiguous memory itself, it doesn't not implement the trait
+    /// `heaparray::BaseArrayRef`. However, it provides the same
+    /// functionality through this method.
+    pub fn is_null(&self) -> bool {
+        self as *const Self as usize == Self::NULL
+    }
 }
 
-impl<'a, E, L> crate::traits::BaseArrayRef for &'a mut MemBlock<E, L> {
-    fn is_null(&self) -> bool {
-        self as *const Self as usize == NULL
+impl<E, L> MemBlock<E, L>
+where
+    E: Clone,
+    L: Clone,
+{
+    /// Clones all the elements in this memory block, as well as the
+    /// label. This function is safe given that the following preconditions
+    /// are true:
+    ///
+    /// - The reference `&self` is valid, and points to a valid instance
+    ///   of this type
+    /// - The memory block pointed to by `&self` was initialized with length
+    ///   of `len`
+    /// - The element at index `i` was initialized, where `0 <= i < len`,
+    ///   for all `i`
+    /// - The operation of dereferencing an element at index `i`, where
+    ///   `0 <= i < len`, accesses valid memory that has been
+    ///   properly initialized. This is NOT checked at runtime.
+    pub unsafe fn clone<'a, 'b>(&'a self, len: usize) -> &'b mut Self {
+        Self::new_init(self.label.clone(), len, |_, i| self.get(i).clone())
     }
 }
 
@@ -171,18 +283,18 @@ impl<'a, E, L> MemBlockIter<'a, E, L> {
     /// Creates an owned version of this iterator that takes ownership
     /// of the memory block it has a reference to and deallocates it
     /// when done iterating.
-    pub fn to_owned(self) -> MbIterOwned<'a, E, L> {
-        MbIterOwned { iter: self }
+    pub fn to_owned(self) -> MemBlockIterOwned<'a, E, L> {
+        MemBlockIterOwned { iter: self }
     }
     /// Creates a borrow version of this iterator that returns references
     /// to the stuff inside of it.
-    pub fn to_ref(self) -> MbIterRef<'a, E, L> {
-        MbIterRef { iter: self }
+    pub fn to_ref(self) -> MemBlockIterRef<'a, E, L> {
+        MemBlockIterRef { iter: self }
     }
     /// Creates a mutable borrow version of this iterator that returns
     /// mutable references to the stuff inside of it.
-    pub fn to_mut(self) -> MbIterRefMut<'a, E, L> {
-        MbIterRefMut { iter: self }
+    pub fn to_mut(self) -> MemBlockIterMut<'a, E, L> {
+        MemBlockIterMut { iter: self }
     }
 }
 
@@ -190,11 +302,11 @@ impl<'a, E, L> MemBlockIter<'a, E, L> {
 /// block by value and then deallocates the block once this iterator
 /// goes out of scope.
 #[repr(transparent)]
-pub struct MbIterOwned<'a, E, L> {
+pub struct MemBlockIterOwned<'a, E, L> {
     iter: MemBlockIter<'a, E, L>,
 }
 
-impl<'a, E, L> Iterator for MbIterOwned<'a, E, L> {
+impl<'a, E, L> Iterator for MemBlockIterOwned<'a, E, L> {
     type Item = E;
     fn next(&mut self) -> Option<E> {
         let curr = self.iter.current as *mut E;
@@ -211,7 +323,7 @@ impl<'a, E, L> Iterator for MbIterOwned<'a, E, L> {
     }
 }
 
-impl<'a, E, L> Drop for MbIterOwned<'a, E, L> {
+impl<'a, E, L> Drop for MemBlockIterOwned<'a, E, L> {
     fn drop(&mut self) {
         let end = self.iter.end as *mut E;
         let begin = &mut *self.iter.block.elements as *mut E as usize;
@@ -223,11 +335,11 @@ impl<'a, E, L> Drop for MbIterOwned<'a, E, L> {
 /// Borrow version of `MemBlockIter` that returns references to
 /// the elements in the block.
 #[repr(transparent)]
-pub struct MbIterRef<'a, E, L> {
+pub struct MemBlockIterRef<'a, E, L> {
     iter: MemBlockIter<'a, E, L>,
 }
 
-impl<'a, E, L> Iterator for MbIterRef<'a, E, L> {
+impl<'a, E, L> Iterator for MemBlockIterRef<'a, E, L> {
     type Item = &'a E;
     fn next(&mut self) -> Option<&'a E> {
         let curr = self.iter.current as *mut E;
@@ -247,11 +359,11 @@ impl<'a, E, L> Iterator for MbIterRef<'a, E, L> {
 /// Mutable borrow version of `MemBlockIter` that returns mutable
 /// references to the elements in the block.
 #[repr(transparent)]
-pub struct MbIterRefMut<'a, E, L> {
+pub struct MemBlockIterMut<'a, E, L> {
     iter: MemBlockIter<'a, E, L>,
 }
 
-impl<'a, E, L> Iterator for MbIterRefMut<'a, E, L> {
+impl<'a, E, L> Iterator for MemBlockIterMut<'a, E, L> {
     type Item = &'a mut E;
     fn next(&mut self) -> Option<&'a mut E> {
         let curr = self.iter.current as *mut E;

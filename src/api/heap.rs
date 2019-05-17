@@ -1,4 +1,4 @@
-use crate::fat_array_ptr::FatPtrArray;
+use crate::base::FatPtrArray;
 use crate::prelude::*;
 
 /// Heap-allocated array, with array size stored with the pointer to the memory.

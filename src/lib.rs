@@ -141,16 +141,13 @@ extern crate containers_rs as containers;
 
 pub mod alloc_utils;
 mod api;
-pub mod fat_array_ptr;
-pub mod mem_blk;
-pub mod memory_block;
+pub mod base;
+pub mod mem_block;
 pub mod naive_rc;
-pub mod thin_array_ptr;
 mod traits;
 
 mod prelude {
-    pub(crate) use super::mem_blk::*;
-    pub(crate) use super::memory_block::*;
+    pub(crate) use super::mem_block::*;
     #[cfg(test)]
     pub(crate) use super::test_utils::*;
     pub use super::traits::*;
