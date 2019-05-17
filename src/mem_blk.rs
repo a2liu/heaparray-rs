@@ -128,6 +128,28 @@ impl<E, L> MemBlock<E, L> {
             current: self.get(0),
         }
     }
+    /// Generates a slice into this memory block. The following invariants
+    /// must hold:
+    ///
+    /// - Mutual exclusivity of mutable slices; for every element in the
+    ///   block, there can be at most one mutable reference to it at
+    ///   any given time.
+    /// - `start` must be less than or equal to `end`. This is checked
+    ///   at runtime unless this crate is build with the feature
+    ///   `no-asserts`.
+    /// - The operation of dereferencing an element at index `i`, where
+    ///   `start <= i < end`, accesses valid memory that has been
+    ///   properly initialized. This is NOT checked at runtime.
+    pub unsafe fn get_slice<'a>(&'a self, start: usize, end: usize) -> &'a mut [E] {
+        #[cfg(test)]
+        check_null_ref(
+            self,
+            "MemBlock::get_slice: Getting slice into null pointer!",
+        );
+        #[cfg(not(feature = "no-asserts"))]
+        assert!(start <= end);
+        core::slice::from_raw_parts_mut(self.get(start) as *mut E, end - start)
+    }
 }
 
 impl<'a, E, L> crate::traits::BaseArrayRef for &'a mut MemBlock<E, L> {
@@ -136,6 +158,9 @@ impl<'a, E, L> crate::traits::BaseArrayRef for &'a mut MemBlock<E, L> {
     }
 }
 
+/// A struct that allows for iteration over a `MemBlock`. Uses safe
+/// functions because its construction is unsafe, so once you've
+/// constructed it you purportedly know what you're doing.
 pub struct MemBlockIter<'a, E, L> {
     block: &'a mut MemBlock<E, L>,
     end: &'a mut E,
@@ -143,17 +168,27 @@ pub struct MemBlockIter<'a, E, L> {
 }
 
 impl<'a, E, L> MemBlockIter<'a, E, L> {
+    /// Creates an owned version of this iterator that takes ownership
+    /// of the memory block it has a reference to and deallocates it
+    /// when done iterating.
     pub fn to_owned(self) -> MbIterOwned<'a, E, L> {
         MbIterOwned { iter: self }
     }
+    /// Creates a borrow version of this iterator that returns references
+    /// to the stuff inside of it.
     pub fn to_ref(self) -> MbIterRef<'a, E, L> {
         MbIterRef { iter: self }
     }
+    /// Creates a mutable borrow version of this iterator that returns
+    /// mutable references to the stuff inside of it.
     pub fn to_mut(self) -> MbIterRefMut<'a, E, L> {
         MbIterRefMut { iter: self }
     }
 }
 
+/// Owned version of `MemBlockIter` that returns the items in the memory
+/// block by value and then deallocates the block once this iterator
+/// goes out of scope.
 #[repr(transparent)]
 pub struct MbIterOwned<'a, E, L> {
     iter: MemBlockIter<'a, E, L>,
@@ -165,9 +200,6 @@ impl<'a, E, L> Iterator for MbIterOwned<'a, E, L> {
         let curr = self.iter.current as *mut E;
         let end = self.iter.end as *mut E;
         if curr == end {
-            let begin = &mut *self.iter.block.elements as *mut E as usize;
-            let len = (end as usize) - begin;
-            unsafe { self.iter.block.dealloc_lazy(len) };
             None
         } else {
             unsafe {
@@ -179,6 +211,17 @@ impl<'a, E, L> Iterator for MbIterOwned<'a, E, L> {
     }
 }
 
+impl<'a, E, L> Drop for MbIterOwned<'a, E, L> {
+    fn drop(&mut self) {
+        let end = self.iter.end as *mut E;
+        let begin = &mut *self.iter.block.elements as *mut E as usize;
+        let len = (end as usize) - begin;
+        unsafe { self.iter.block.dealloc_lazy(len) };
+    }
+}
+
+/// Borrow version of `MemBlockIter` that returns references to
+/// the elements in the block.
 #[repr(transparent)]
 pub struct MbIterRef<'a, E, L> {
     iter: MemBlockIter<'a, E, L>,
@@ -201,6 +244,8 @@ impl<'a, E, L> Iterator for MbIterRef<'a, E, L> {
     }
 }
 
+/// Mutable borrow version of `MemBlockIter` that returns mutable
+/// references to the elements in the block.
 #[repr(transparent)]
 pub struct MbIterRefMut<'a, E, L> {
     iter: MemBlockIter<'a, E, L>,
