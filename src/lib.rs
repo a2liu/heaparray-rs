@@ -142,6 +142,7 @@ extern crate containers_rs as containers;
 pub mod alloc_utils;
 mod api;
 pub mod fat_array_ptr;
+mod mem_blk;
 pub mod memory_block;
 pub mod naive_rc;
 pub mod thin_array_ptr;
