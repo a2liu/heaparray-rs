@@ -1,7 +1,6 @@
-use crate::naive_rc::FpArcArray;
-use crate::tests::prelude::*;
+use crate::naive_rc::*;
 
-type TestArray<'a, E, L = ()> = FpArcArray<'a, E, L>;
+type TestArray<'a, E, L = ()> = FpRcArray<'a, E, L>;
 
 #[test]
 fn null_test() {
