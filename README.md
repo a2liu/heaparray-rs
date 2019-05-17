@@ -3,11 +3,11 @@ This crate aims to give people better control of how they want to allocate memor
 by providing a customizable way to allocate blocks of memory, that optionally contains
 metadata about the block itself.
 
-It provides two main features that provide the foundation for the rest:
+It has two main features that provide the foundation for the rest:
 
 - **Storing data next to an array:** From the
-  [Rust documentation on exotically sized types](https://doc.rust-lang.org/nomicon/exotic-sizes.html), at the end of the section on dynamically-sized
-  types:
+  [Rust documentation on exotically sized types](https://doc.rust-lang.org/nomicon/exotic-sizes.html),
+  at the end of the section on dynamically-sized types:
 
   > (Yes, custom DSTs are a largely half-baked feature for now.)
 

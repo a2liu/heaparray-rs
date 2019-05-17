@@ -3,7 +3,7 @@
 //! by providing a customizable way to allocate blocks of memory, that optionally contains
 //! metadata about the block itself.
 //!
-//! It provides two main features that provide the foundation for the rest:
+//! It has two main features that provide the foundation for the rest:
 //!
 //! - **Storing data next to an array:** From the
 //!   [Rust documentation on exotically sized types](https://doc.rust-lang.org/nomicon/exotic-sizes.html), at the end of the section on dynamically-sized
