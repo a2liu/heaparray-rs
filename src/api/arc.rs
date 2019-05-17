@@ -9,7 +9,7 @@ type ArrPtr<'a, E, L> = TpArr<'a, E, RC<L>>;
 type Arr<E, L> = TpBlk<E, RC<L>>;
 type Inner<'a, E, L> = GenRcArray<'a, ArrPtr<'a, E, L>, RC<L>, Arr<E, L>, E, L>;
 
-///
+/// Atomically reference counted array.
 #[repr(C)]
 pub struct ArcArray<'a, E, L = ()>(Inner<'a, E, L>);
 

@@ -9,7 +9,7 @@ type ArrPtr<'a, E, L> = FpArr<'a, E, RC<L>>;
 type Arr<E, L> = FpBlk<E, RC<L>>;
 type Inner<'a, E, L> = GenRcArray<'a, ArrPtr<'a, E, L>, RC<L>, Arr<E, L>, E, L>;
 
-///
+/// Reference counted array.
 #[repr(C)]
 pub struct RcArray<'a, E, L = ()>(Inner<'a, E, L>);
 
