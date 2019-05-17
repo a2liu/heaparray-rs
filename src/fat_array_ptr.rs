@@ -76,15 +76,6 @@ impl<'a, E, L> BaseArrayRef for FatPtrArray<'a, E, L> {
 }
 
 impl<'a, E, L> UnsafeArrayRef<'a, FPArrayBlock<E, L>> for FatPtrArray<'a, E, L> {
-    unsafe fn from_raw_parts(ptr: &'a mut FPArrayBlock<E, L>) -> Self {
-        Self { data: ptr }
-    }
-    unsafe fn to_null<'b>(&mut self) -> &'b mut FPArrayBlock<E, L> {
-        let output = mem::replace(&mut *self, Self::null_ref());
-        let data = output.data as *mut FPArrayBlock<E, L>;
-        mem::forget(output);
-        &mut *data
-    }
     unsafe fn null_ref() -> Self {
         Self {
             data: &mut *(FPArrayBlock::null_ptr()),

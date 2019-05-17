@@ -1,6 +1,3 @@
-// #[cfg(test)]
-// use super::tests::*;
-
 /// Array with an optional label struct stored next to the data.
 pub trait LabelledArray<'a, E, L>: containers::Array<'a, E>
 where
@@ -37,33 +34,3 @@ where
     /// Create a new array, initialized to default values.
     fn with_len(label: L, len: usize) -> Self;
 }
-
-// #[trait_tests]
-// pub trait LabelledArrayTest<'a>: LabelledArray<'a, Load, LabelLoad> + ArrayTest<'a> {
-//     fn with_label_test() {
-//         let bfr = before_alloc();
-//         let arr = Self::with_label(LabelLoad::default(), LENGTH, |_, _| Load::default());
-//         let check = Load::default();
-//         for i in 0..arr.len() {
-//             assert!(arr[i] == check);
-//         }
-//         assert!(*arr.get_label() == LabelLoad::default());
-//         after_alloc(arr, bfr);
-//     }
-// }
-//
-// #[trait_tests]
-// pub trait DefaultLabelledArrayTest<'a>:
-//     DefaultLabelledArray<'a, Load, LabelLoad> + ArrayTest<'a>
-// {
-//     fn with_label_test() {
-//         let bfr = before_alloc();
-//         let arr = Self::with_len(LabelLoad::default(), LENGTH);
-//         let check = Load::default();
-//         for i in 0..arr.len() {
-//             assert!(arr[i] == check);
-//         }
-//         assert!(*arr.get_label() == LabelLoad::default());
-//         after_alloc(arr, bfr);
-//     }
-// }

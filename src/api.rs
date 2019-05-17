@@ -78,12 +78,6 @@ where
     }
 }
 impl<'a, E, L> UnsafeArrayRef<'a, FPArrayBlock<E, L>> for HeapArray<'a, E, L> {
-    unsafe fn from_raw_parts(ptr: &'a mut FPArrayBlock<E, L>) -> Self {
-        Self(Inner::from_raw_parts(ptr))
-    }
-    unsafe fn to_null<'b>(&mut self) -> &'b mut FPArrayBlock<E, L> {
-        self.0.to_null()
-    }
     unsafe fn null_ref() -> Self {
         Self(Inner::null_ref())
     }

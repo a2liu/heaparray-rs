@@ -80,11 +80,6 @@ impl<'a, E, L> ThinPtrArray<'a, E, L> {
             data: ManuallyDrop::new(unsafe { &mut *ptr }),
         }
     }
-    fn from_ref(ptr: &'a mut TPArrayBlock<E, L>) -> Self {
-        Self {
-            data: ManuallyDrop::new(ptr),
-        }
-    }
     fn get_ref<'b>(&self) -> &'b mut TPArrayBlock<E, L> {
         let ret = unsafe { mem::transmute_copy(&self.data) };
         ret
@@ -100,17 +95,6 @@ impl<'a, E, L> ThinPtrArray<'a, E, L> {
 }
 
 impl<'a, E, L> UnsafeArrayRef<'a, TPArrayBlock<E, L>> for ThinPtrArray<'a, E, L> {
-    unsafe fn from_raw_parts(ptr: &'a mut TPArrayBlock<E, L>) -> Self {
-        Self::from_ref(ptr)
-    }
-    unsafe fn to_null<'b>(&mut self) -> &'b mut TPArrayBlock<E, L> {
-        let old = mem::replace(&mut *self, Self::null_ref());
-        let ptr = mem::transmute_copy(*old.data);
-        // We want to prevent the deallocation from being run, so we
-        // need to forget the old version of this struct
-        mem::forget(old);
-        ptr
-    }
     unsafe fn null_ref() -> Self {
         Self {
             data: ManuallyDrop::new(&mut *(TPArrayBlock::null_ptr())),
