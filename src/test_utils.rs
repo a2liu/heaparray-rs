@@ -1,8 +1,8 @@
 pub use core::mem;
 
 pub const LENGTH: usize = 10;
-pub type Load = Light;
-pub type LabelLoad = Light;
+pub type Load = Large;
+pub type LabelLoad = Large;
 
 pub trait ArrayTest<'a>: containers::Array<'a, Load> + Sized {
     fn get_self(len: usize) -> Self;
