@@ -5,6 +5,11 @@ use crate::prelude::*;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 
+// A is the array reference that this type wraps
+// R is the reference counter for the label of this type
+// L is the label of this type
+// E is the element that this type is an array of
+// B is the type that A dereferences to using its `.to_null()` method.
 /// `RcArray` is a generic, implementation-agnositc array. It uses traits to
 /// handle literally everything. Implementing your own version is not recommended.
 #[repr(C)]
@@ -46,6 +51,9 @@ where
         let ret = unsafe { mem::transmute_copy(&self.data) };
         mem::forget(self);
         ret
+    }
+    pub fn ref_count(&self) -> usize {
+        self.data.get_label().counter()
     }
 }
 
@@ -93,10 +101,12 @@ where
             return;
         }
         let ref_count = self.data.get_label_mut().decrement();
+        let other = mem::replace(self, Self::null_ref());
         if ref_count == 0 {
-            let to_drop = mem::replace(&mut *self.data, unsafe { A::null_ref() });
+            let to_drop: A = unsafe { mem::transmute_copy(&*other.data) };
             mem::drop(to_drop);
         }
+        mem::forget(other);
     }
 
     fn null_ref() -> Self {
@@ -143,6 +153,7 @@ where
 {
     fn drop(&mut self) {
         self.to_null();
+        mem::forget(self);
     }
 }
 

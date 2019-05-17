@@ -1,11 +1,11 @@
 pub use core::mem;
-pub use trait_tests::*;
+//pub use trait_tests::*;
 
-pub const LENGTH: usize = 1000;
+pub const LENGTH: usize = 10;
 pub type Load = Light;
 pub type LabelLoad = Light;
 
-#[trait_tests]
+//#[trait_tests]
 pub trait ArrayTest<'a>: containers::Array<'a, Load> + Sized {
     fn get_self(len: usize) -> Self;
 }

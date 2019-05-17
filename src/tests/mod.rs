@@ -1,6 +1,7 @@
 #[allow(dead_code)]
 pub(crate) mod monitor;
 
+mod array_ref;
 mod fat_array_ptr;
 mod thin_array_ptr;
 

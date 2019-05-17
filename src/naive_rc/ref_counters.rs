@@ -15,6 +15,7 @@ pub trait RefCounter<T> {
     fn decrement(&self) -> usize;
     /// Increments the reference counter by one and returns its current value
     fn increment(&self) -> usize;
+    fn counter(&self) -> usize;
     fn get_data(&self) -> &T;
     fn get_data_mut(&mut self) -> &mut T;
 }
@@ -46,6 +47,9 @@ impl<T> RefCounter<T> for RcStruct<T> {
         }
         self.counter
     }
+    fn counter(&self) -> usize {
+        self.counter
+    }
     fn get_data(&self) -> &T {
         &self.data
     }
@@ -68,10 +72,13 @@ impl<T> RefCounter<T> for ArcStruct<T> {
         }
     }
     fn decrement(&self) -> usize {
-        self.counter.fetch_sub(1, Ordering::Relaxed) - 1
+        self.counter.fetch_sub(1, Ordering::SeqCst) - 1
     }
     fn increment(&self) -> usize {
-        self.counter.fetch_add(1, Ordering::Relaxed) + 1
+        self.counter.fetch_add(1, Ordering::SeqCst) + 1
+    }
+    fn counter(&self) -> usize {
+        self.counter.load(Ordering::SeqCst)
     }
     fn get_data(&self) -> &T {
         &self.data
