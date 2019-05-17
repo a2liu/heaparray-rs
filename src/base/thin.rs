@@ -154,7 +154,7 @@ where
 impl<'a, E, L> Drop for ThinPtrArray<'a, E, L> {
     fn drop(&mut self) {
         #[cfg(test)]
-        debug_assert!(!self.is_null());
+        assert!(!self.is_null());
         let len = self.len();
         let mut_ref = &mut self.data;
         unsafe { mut_ref.dealloc(len) };
@@ -255,6 +255,7 @@ where
 }
 
 impl<'a, E, L> BaseArrayRef for ThinPtrArray<'a, E, L> {
+    #[inline]
     fn is_null(&self) -> bool {
         self.data.is_null()
     }

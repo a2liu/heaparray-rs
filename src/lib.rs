@@ -142,9 +142,13 @@ extern crate containers_rs as containers;
 pub mod alloc_utils;
 mod api;
 pub mod base;
+mod black_box;
 pub mod mem_block;
 pub mod naive_rc;
 mod traits;
+
+#[cfg(feature = "real-black-box")]
+extern crate test;
 
 mod prelude {
     pub(crate) use super::mem_block::*;

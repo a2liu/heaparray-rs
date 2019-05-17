@@ -74,6 +74,7 @@ where
     E: 'a,
     L: 'a,
 {
+    #[inline]
     fn is_null(&self) -> bool {
         (*self.data).is_null()
     }

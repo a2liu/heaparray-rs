@@ -9,6 +9,7 @@ type Inner<'a, E, L> = RcArray<'a, ArrPtr<'a, E, L>, RC<L>, E, L>;
 pub struct FpArcArray<'a, E, L = ()>(Inner<'a, E, L>);
 
 impl<'a, E, L> BaseArrayRef for FpArcArray<'a, E, L> {
+    #[inline]
     fn is_null(&self) -> bool {
         self.0.is_null()
     }

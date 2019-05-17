@@ -71,6 +71,7 @@ where
 }
 
 impl<'a, E, L> BaseArrayRef for FatPtrArray<'a, E, L> {
+    #[inline]
     fn is_null(&self) -> bool {
         self.data.is_null()
     }

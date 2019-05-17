@@ -3,6 +3,7 @@
 use super::alloc_utils::*;
 use core::mem;
 use core::mem::ManuallyDrop;
+use core::ptr;
 
 // TODO Make this function a const function when if statements are stabilized in
 // const functions
@@ -21,7 +22,6 @@ pub fn block_max_len<E, L>() -> usize {
 
 #[cfg(test)]
 pub fn check_null_ref<E, L>(arr: &MemBlock<E, L>, message: &'static str) {
-    // println!("about to check!");
     assert!(!arr.is_null(), message);
 }
 
@@ -244,7 +244,14 @@ impl<E, L> MemBlock<E, L> {
     /// `heaparray::BaseArrayRef`. However, it provides the same
     /// functionality through this method.
     pub fn is_null(&self) -> bool {
-        self as *const Self as usize == Self::NULL
+        use crate::black_box::black_box;
+        let ret = unsafe {
+            ptr::eq(
+                ptr::read_volatile(&black_box(self)) as *const Self,
+                black_box(Self::NULL) as *const Self,
+            )
+        };
+        ret
     }
 }
 
