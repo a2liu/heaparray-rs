@@ -1,8 +1,9 @@
 # TODO
-- [ ] Get a single implementation of memory block. This allows for
+- [X] Get a single implementation of memory block. This allows for
   a more explicit description of the memory layout and a consolidation of existing
   code into a more manageable generalization. Also reduces usage of `unsafe`
   keyword.
+- [ ] Slice support, to make iterator implementation reaaaaaally easy.
 - [ ] Get implementations of standard things like iteration and `Debug` output.
 - [X] Write pointer types to arrays that are easier to use than raw references
   - [X] `clone_from` for both  
