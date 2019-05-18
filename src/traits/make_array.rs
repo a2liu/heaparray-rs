@@ -9,7 +9,7 @@
 ///     assert!(array[i] == i * i);
 /// }
 /// ```
-pub trait MakeArray<E>: containers::Array<E> {
+pub trait MakeArray<E>: containers::CopyMap<usize, E> {
     /// Create a new array, with values initialized using a provided function.
     fn new<F>(len: usize, func: F) -> Self
     where

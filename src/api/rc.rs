@@ -7,7 +7,8 @@ type RC<L> = RcStruct<L>;
 type ArrPtr<'a, E, L> = FpArr<'a, E, RC<L>>;
 type Inner<'a, E, L> = GenRcArray<'a, ArrPtr<'a, E, L>, RC<L>, E, L>;
 
-/// Reference counted array.
+/// Reference counted array. Implemented as a fat pointer to a
+/// reference-counted array. For more details, see docs on `heaparray::naive_rc::generic::RcArray`
 #[repr(C)]
 pub struct RcArray<'a, E, L = ()>(Inner<'a, E, L>);
 
@@ -21,6 +22,7 @@ impl<'a, E, L> Clone for RcArray<'a, E, L> {
         Self(self.0.clone())
     }
 }
+
 impl<'a, E, L> ArrayRef for RcArray<'a, E, L> {
     fn to_null(&mut self) {
         self.0.to_null()
@@ -29,22 +31,15 @@ impl<'a, E, L> ArrayRef for RcArray<'a, E, L> {
         Self(Inner::null_ref())
     }
 }
+
 impl<'a, E, L> Index<usize> for RcArray<'a, E, L> {
     type Output = E;
     fn index(&self, idx: usize) -> &E {
         self.0.index(idx)
     }
 }
-impl<'a, E, L> IndexMut<usize> for RcArray<'a, E, L> {
-    fn index_mut(&mut self, idx: usize) -> &mut E {
-        self.0.index_mut(idx)
-    }
-}
 
-impl<'a, E, L> Container<(usize, E)> for RcArray<'a, E, L> {
-    fn add(&mut self, elem: (usize, E)) {
-        self.0.add(elem)
-    }
+impl<'a, E, L> Container for RcArray<'a, E, L> {
     fn len(&self) -> usize {
         self.0.len()
     }
@@ -62,8 +57,6 @@ impl<'a, E, L> CopyMap<usize, E> for RcArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> Array<E> for RcArray<'a, E, L> {}
-
 impl<'a, E, L> LabelledArray<E, L> for RcArray<'a, E, L> {
     fn with_label<F>(label: L, len: usize, func: F) -> Self
     where
@@ -77,14 +70,17 @@ impl<'a, E, L> LabelledArray<E, L> for RcArray<'a, E, L> {
     fn get_label(&self) -> &L {
         self.0.get_label()
     }
-    fn get_label_mut(&mut self) -> &mut L {
-        self.0.get_label_mut()
-    }
     unsafe fn get_label_unsafe(&self) -> &mut L {
         self.0.get_label_unsafe()
     }
     unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
         self.0.get_unsafe(idx)
+    }
+}
+
+impl<'a, E, L> LabelledArrayRefMut<E, L> for RcArray<'a, E, L> {
+    fn get_label_mut(&mut self) -> Option<&mut L> {
+        self.0.get_label_mut()
     }
 }
 

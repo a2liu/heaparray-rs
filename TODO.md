@@ -1,15 +1,16 @@
 # TODO
-- [ ] Is the ArcArray implementation safe? If I have a reference to the
-  array, doesn't that mean I have ownership of the reference? So the
-  `IndexMut` method can't be safe right?
-- [X] Get a single implementation of memory block. This allows for
-  a more explicit description of the memory layout and a consolidation of
-  existing code into a more manageable generalization. Also reduces usage
-  of `unsafe` keyword.
+- [ ] Separate `LabelledArray` into `LabelledArray` and `LabelledArrayMut`,
+  and remove `Array` requirement from `LabelledArray` (change it to `CopyMap`)
+- [ ] Remove implementations of `IndexMut`, `get_label_mut`, etc. from
+  `heaparray::naive_rc::generic::RcArray`
 - [ ] Slice support, to make iterator implementation reaaaaaally easy.
   - [ ] Use slices for borrow and mutable borrow iteration, and a custom
     struct for owned iteration.
 - [ ] Get implementations of standard things like iteration and `Debug` output.
+- [X] Get a single implementation of memory block. This allows for
+  a more explicit description of the memory layout and a consolidation of
+  existing code into a more manageable generalization. Also reduces usage
+  of `unsafe` keyword.
 - [X] Write pointer types to arrays that are easier to use than raw references
   - [X] `clone_from` for both  
   - [X] Write a modified global allocator to handle allocations during testing  

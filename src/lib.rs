@@ -155,7 +155,7 @@ mod prelude {
     #[cfg(test)]
     pub(crate) use super::test_utils::*;
     pub use super::traits::*;
-    pub use containers::{Array, Container, CopyMap};
+    pub use containers::{Container, CopyMap};
     pub(crate) use core::mem;
     pub(crate) use core::mem::ManuallyDrop;
     pub(crate) use core::ops::{Index, IndexMut};

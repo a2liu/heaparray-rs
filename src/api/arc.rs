@@ -2,12 +2,14 @@ use crate::base::ThinPtrArray as TpArr;
 use crate::naive_rc::generic::RcArray as GenRcArray;
 use crate::naive_rc::ref_counters::*;
 use crate::prelude::*;
+use core::sync::atomic::Ordering;
 
 type RC<L> = ArcStruct<L>;
 type ArrPtr<'a, E, L> = TpArr<'a, E, RC<L>>;
 type Inner<'a, E, L> = GenRcArray<'a, ArrPtr<'a, E, L>, RC<L>, E, L>;
 
-/// Atomically reference counted array.
+/// Atomically reference counted array.  Implemented as a thin pointer to a
+/// reference-counted array. For more details, see docs on `heaparray::naive_rc::generic::RcArray`
 #[repr(C)]
 pub struct ArcArray<'a, E, L = ()>(Inner<'a, E, L>);
 
@@ -16,11 +18,13 @@ impl<'a, E, L> BaseArrayRef for ArcArray<'a, E, L> {
         self.0.is_null()
     }
 }
+
 impl<'a, E, L> Clone for ArcArray<'a, E, L> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
+
 impl<'a, E, L> ArrayRef for ArcArray<'a, E, L> {
     fn to_null(&mut self) {
         self.0.to_null()
@@ -29,22 +33,15 @@ impl<'a, E, L> ArrayRef for ArcArray<'a, E, L> {
         Self(Inner::null_ref())
     }
 }
+
 impl<'a, E, L> Index<usize> for ArcArray<'a, E, L> {
     type Output = E;
     fn index(&self, idx: usize) -> &E {
         self.0.index(idx)
     }
 }
-impl<'a, E, L> IndexMut<usize> for ArcArray<'a, E, L> {
-    fn index_mut(&mut self, idx: usize) -> &mut E {
-        self.0.index_mut(idx)
-    }
-}
 
-impl<'a, E, L> Container<(usize, E)> for ArcArray<'a, E, L> {
-    fn add(&mut self, elem: (usize, E)) {
-        self.0.add(elem)
-    }
+impl<'a, E, L> Container for ArcArray<'a, E, L> {
     fn len(&self) -> usize {
         self.0.len()
     }
@@ -62,8 +59,6 @@ impl<'a, E, L> CopyMap<usize, E> for ArcArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> Array<E> for ArcArray<'a, E, L> {}
-
 impl<'a, E, L> LabelledArray<E, L> for ArcArray<'a, E, L> {
     fn with_label<F>(label: L, len: usize, func: F) -> Self
     where
@@ -77,14 +72,17 @@ impl<'a, E, L> LabelledArray<E, L> for ArcArray<'a, E, L> {
     fn get_label(&self) -> &L {
         self.0.get_label()
     }
-    fn get_label_mut(&mut self) -> &mut L {
-        self.0.get_label_mut()
-    }
     unsafe fn get_label_unsafe(&self) -> &mut L {
         self.0.get_label_unsafe()
     }
     unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
         self.0.get_unsafe(idx)
+    }
+}
+
+impl<'a, E, L> LabelledArrayRefMut<E, L> for ArcArray<'a, E, L> {
+    fn get_label_mut(&mut self) -> Option<&mut L> {
+        self.0.get_label_mut()
     }
 }
 
@@ -111,3 +109,50 @@ where
 
 unsafe impl<'a, E, L> Send for ArcArray<'a, E, L> where Inner<'a, E, L>: Send {}
 unsafe impl<'a, E, L> Sync for ArcArray<'a, E, L> where Inner<'a, E, L>: Sync {}
+
+impl<'a, E, L> AtomicArrayRef for ArcArray<'a, E, L> {
+    fn compare_and_swap(&self, current: Self, new: Self, order: Ordering) -> Self {
+        let Self(current) = current;
+        let Self(new) = new;
+        Self(self.0.compare_and_swap(current, new, order))
+    }
+    fn compare_exchange(
+        &self,
+        current: Self,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        let Self(current) = current;
+        let Self(new) = new;
+        match self.0.compare_exchange(current, new, success, failure) {
+            Ok(r) => Ok(Self(r)),
+            Err(r) => Err(Self(r)),
+        }
+    }
+    fn compare_exchange_weak(
+        &self,
+        current: Self,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        let Self(current) = current;
+        let Self(new) = new;
+        match self.0.compare_exchange_weak(current, new, success, failure) {
+            Ok(r) => Ok(Self(r)),
+            Err(r) => Err(Self(r)),
+        }
+    }
+    fn load(&self, order: Ordering) -> Self {
+        Self(self.0.load(order))
+    }
+    fn store(&self, ptr: Self, order: Ordering) {
+        let Self(ptr) = ptr;
+        self.0.store(ptr, order)
+    }
+    fn swap(&self, ptr: Self, order: Ordering) -> Self {
+        let Self(ptr) = ptr;
+        Self(self.0.swap(ptr, order))
+    }
+}

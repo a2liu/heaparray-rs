@@ -141,19 +141,13 @@ impl<'a, E, L> Drop for FatPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> Container<(usize, E)> for FatPtrArray<'a, E, L> {
-    fn add(&mut self, elem: (usize, E)) {
-        self[elem.0] = elem.1;
-    }
+impl<'a, E, L> Container for FatPtrArray<'a, E, L> {
     fn len(&self) -> usize {
         self.len
     }
 }
 
-impl<'a, E, L> CopyMap<usize, E> for FatPtrArray<'a, E, L>
-where
-    E: 'a,
-{
+impl<'a, E, L> CopyMap<usize, E> for FatPtrArray<'a, E, L> {
     fn get(&self, key: usize) -> Option<&E> {
         if key > self.len() {
             None
@@ -177,8 +171,7 @@ where
     }
 }
 
-impl<'a, E, L> Array<E> for FatPtrArray<'a, E, L> {}
-impl<'a, E> MakeArray<E> for FatPtrArray<'a, E, ()> where {
+impl<'a, E> MakeArray<E> for FatPtrArray<'a, E, ()> {
     fn new<F>(len: usize, mut func: F) -> Self
     where
         F: FnMut(usize) -> E,
@@ -187,7 +180,7 @@ impl<'a, E> MakeArray<E> for FatPtrArray<'a, E, ()> where {
     }
 }
 
-impl<'a, E, L> LabelledArray<E, L> for FatPtrArray<'a, E, L> where {
+impl<'a, E, L> LabelledArray<E, L> for FatPtrArray<'a, E, L> {
     fn with_label<F>(label: L, len: usize, func: F) -> Self
     where
         F: FnMut(&mut L, usize) -> E,
@@ -204,14 +197,17 @@ impl<'a, E, L> LabelledArray<E, L> for FatPtrArray<'a, E, L> where {
     fn get_label(&self) -> &L {
         &self.data.label
     }
-    fn get_label_mut(&mut self) -> &mut L {
-        &mut self.data.label
-    }
     unsafe fn get_label_unsafe(&self) -> &mut L {
         self.data.get_label()
     }
     unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
         self.data.get(idx)
+    }
+}
+
+impl<'a, E, L> LabelledArrayMut<E, L> for FatPtrArray<'a, E, L> {
+    fn get_label_mut(&mut self) -> &mut L {
+        &mut self.data.label
     }
 }
 

@@ -166,16 +166,13 @@ impl<'a, E, L> Drop for ThinPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> Container<(usize, E)> for ThinPtrArray<'a, E, L> {
-    fn add(&mut self, elem: (usize, E)) {
-        self[elem.0] = elem.1;
-    }
+impl<'a, E, L> Container for ThinPtrArray<'a, E, L> {
     fn len(&self) -> usize {
         self.data.label.len
     }
 }
 
-impl<'a, E, L> CopyMap<usize, E, (usize, E)> for ThinPtrArray<'a, E, L> {
+impl<'a, E, L> CopyMap<usize, E> for ThinPtrArray<'a, E, L> {
     fn get(&self, key: usize) -> Option<&E> {
         if key > self.len() {
             None
@@ -198,8 +195,6 @@ impl<'a, E, L> CopyMap<usize, E, (usize, E)> for ThinPtrArray<'a, E, L> {
         }
     }
 }
-
-impl<'a, E, L> Array<E> for ThinPtrArray<'a, E, L> {}
 
 impl<'a, E> MakeArray<E> for ThinPtrArray<'a, E, ()> where {
     fn new<F>(len: usize, mut func: F) -> Self
@@ -232,14 +227,17 @@ impl<'a, E, L> LabelledArray<E, L> for ThinPtrArray<'a, E, L> {
     fn get_label(&self) -> &L {
         &self.data.label.label
     }
-    fn get_label_mut(&mut self) -> &mut L {
-        &mut self.data.label.label
-    }
     unsafe fn get_label_unsafe(&self) -> &mut L {
         &mut self.data.get_label().label
     }
     unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
         self.data.get(idx)
+    }
+}
+
+impl<'a, E, L> LabelledArrayMut<E, L> for ThinPtrArray<'a, E, L> {
+    fn get_label_mut(&mut self) -> &mut L {
+        &mut self.data.label.label
     }
 }
 

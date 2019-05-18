@@ -108,7 +108,7 @@ where
         if self.is_null() {
             return;
         } else {
-            let ref_count = self.data.get_label_mut().decrement();
+            let ref_count = self.data.get_label().decrement();
 
             // Set this reference to null
             let other = mem::replace(self, Self::null_ref());
@@ -128,7 +128,7 @@ where
 
 impl<'a, A, R, E, L> Index<usize> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + Index<usize, Output = E>,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -137,19 +137,6 @@ where
     fn index(&self, idx: usize) -> &E {
         self.check_null();
         &self.data[idx]
-    }
-}
-
-impl<'a, A, R, E, L> IndexMut<usize> for RcArray<'a, A, R, E, L>
-where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
-{
-    fn index_mut(&mut self, idx: usize) -> &mut E {
-        self.check_null();
-        &mut self.data[idx]
     }
 }
 
@@ -166,17 +153,13 @@ where
     }
 }
 
-impl<'a, A, R, E, L> Container<(usize, E)> for RcArray<'a, A, R, E, L>
+impl<'a, A, R, E, L> Container for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
-    fn add(&mut self, elem: (usize, E)) {
-        self.check_null();
-        self[elem.0] = elem.1;
-    }
     fn len(&self) -> usize {
         self.check_null();
         self.data.len()
@@ -192,37 +175,24 @@ where
 {
     fn get(&self, key: usize) -> Option<&E> {
         self.check_null();
-        if key > self.len() {
-            None
-        } else {
-            Some(&self[key])
-        }
+        self.data.get(key)
     }
     fn get_mut(&mut self, key: usize) -> Option<&mut E> {
         self.check_null();
-        if key > self.len() {
-            None
+        if self.data.get_label().counter() == 1 {
+            self.data.get_mut(key)
         } else {
-            Some(&mut self[key])
+            None
         }
     }
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
         self.check_null();
-        if key > self.len() {
-            None
+        if self.data.get_label().counter() == 1 {
+            self.data.insert(key, value)
         } else {
-            Some(mem::replace(&mut self[key], value))
+            None
         }
     }
-}
-
-impl<'a, A, R, E, L> Array<E> for RcArray<'a, A, R, E, L>
-where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
-{
 }
 
 impl<'a, A, R, E, L> LabelledArray<E, L> for RcArray<'a, A, R, E, L>
@@ -248,15 +218,28 @@ where
         self.check_null();
         self.data.get_label().get_data()
     }
-    fn get_label_mut(&mut self) -> &mut L {
-        self.check_null();
-        self.data.get_label_mut().get_data_mut()
-    }
     unsafe fn get_label_unsafe(&self) -> &mut L {
         self.data.get_label_unsafe().get_data_mut()
     }
     unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
         self.data.get_unsafe(idx)
+    }
+}
+
+impl<'a, A, R, E, L> LabelledArrayRefMut<E, L> for RcArray<'a, A, R, E, L>
+where
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + LabelledArrayMut<E, R>,
+    R: 'a + RefCounter<L>,
+    E: 'a,
+    L: 'a,
+{
+    fn get_label_mut(&mut self) -> Option<&mut L> {
+        self.check_null();
+        if self.data.get_label().counter() == 1 {
+            Some(self.data.get_label_mut().get_data_mut())
+        } else {
+            None
+        }
     }
 }
 
