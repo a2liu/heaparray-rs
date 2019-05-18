@@ -217,6 +217,7 @@ impl<E, L> MemBlock<E, L> {
             current: &mut *(self.get(0) as *mut E),
         }
     }
+
     /// Generates a slice into this memory block. The following invariants
     /// must hold:
     ///
@@ -239,6 +240,17 @@ impl<E, L> MemBlock<E, L> {
         assert!(start <= end);
         core::slice::from_raw_parts_mut(self.get(start) as *mut E, end - start)
     }
+
+    /// Generates a slice into this memory block. The following invariants
+    /// must hold:
+    ///
+    /// - The operation of dereferencing an element at index `i`, where
+    ///   `0 <= i < len`, accesses valid memory that has been
+    ///   properly initialized. This is NOT checked at runtime.
+    pub unsafe fn as_slice<'a>(&'a self, len: usize) -> &'a mut [E] {
+        self.get_slice(0, len)
+    }
+
     /// Since this struct isn't a reference to contigous memory, but rather
     /// the contiguous memory itself, it doesn't not implement the trait
     /// `heaparray::BaseArrayRef`. However, it provides the same
