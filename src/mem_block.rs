@@ -246,6 +246,18 @@ impl<E, L> MemBlock<E, L> {
     pub fn is_null(&self) -> bool {
         use crate::black_box::black_box;
         let ret = unsafe {
+            // Rust does some funky optimizations behind the scenes that
+            // in most cases would be useful, but because we don't
+            // maintain the typical invariants of Rust references in this
+            // codebase, we need to wrap some of the values in black
+            // boxes.
+            //
+            // I don't know whether it's better to use this system or
+            // to use the provided function, `core::ptr::null()`. My
+            // current rationale is that `usize::MAX` is a reasonable
+            // value for "never going to be seen in the wild so if we
+            // do it's an error". But I could definitely change it very
+            // easily, and I'm very willing to.
             ptr::eq(
                 ptr::read_volatile(&black_box(self)) as *const Self,
                 black_box(Self::NULL) as *const Self,
