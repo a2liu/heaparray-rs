@@ -1,4 +1,7 @@
 # TODO
+- [ ] Is the ArcArray implementation safe? If I have a reference to the
+  array, doesn't that mean I have ownership of the reference? So the
+  `IndexMut` method can't be safe right?
 - [X] Get a single implementation of memory block. This allows for
   a more explicit description of the memory layout and a consolidation of
   existing code into a more manageable generalization. Also reduces usage
