@@ -149,18 +149,18 @@ impl<'a, E, L> Container<(usize, E)> for FatPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> CopyMap<'a, usize, E> for FatPtrArray<'a, E, L>
+impl<'a, E, L> CopyMap<usize, E> for FatPtrArray<'a, E, L>
 where
     E: 'a,
 {
-    fn get(&'a self, key: usize) -> Option<&'a E> {
+    fn get(&self, key: usize) -> Option<&E> {
         if key > self.len() {
             None
         } else {
             Some(&self[key])
         }
     }
-    fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
+    fn get_mut(&mut self, key: usize) -> Option<&mut E> {
         if key > self.len() {
             None
         } else {
@@ -176,12 +176,8 @@ where
     }
 }
 
-impl<'a, E, L> Array<'a, E> for FatPtrArray<'a, E, L> where E: 'a {}
-
-impl<'a, E> MakeArray<'a, E> for FatPtrArray<'a, E, ()>
-where
-    E: 'a,
-{
+impl<'a, E, L> Array<E> for FatPtrArray<'a, E, L> {}
+impl<'a, E> MakeArray<E> for FatPtrArray<'a, E, ()> where {
     fn new<F>(len: usize, mut func: F) -> Self
     where
         F: FnMut(usize) -> E,
@@ -190,10 +186,7 @@ where
     }
 }
 
-impl<'a, E, L> LabelledArray<'a, E, L> for FatPtrArray<'a, E, L>
-where
-    E: 'a,
-{
+impl<'a, E, L> LabelledArray<E, L> for FatPtrArray<'a, E, L> where {
     fn with_label<F>(label: L, len: usize, func: F) -> Self
     where
         F: FnMut(&mut L, usize) -> E,
@@ -221,9 +214,9 @@ where
     }
 }
 
-impl<'a, E, L> DefaultLabelledArray<'a, E, L> for FatPtrArray<'a, E, L>
+impl<'a, E, L> DefaultLabelledArray<E, L> for FatPtrArray<'a, E, L>
 where
-    E: 'a + Default,
+    E: Default,
 {
     fn with_len(label: L, len: usize) -> Self {
         Self::with_label(label, len, |_, _| E::default())

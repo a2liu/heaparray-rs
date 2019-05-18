@@ -175,15 +175,15 @@ impl<'a, E, L> Container<(usize, E)> for ThinPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> CopyMap<'a, usize, E, (usize, E)> for ThinPtrArray<'a, E, L> {
-    fn get(&'a self, key: usize) -> Option<&'a E> {
+impl<'a, E, L> CopyMap<usize, E, (usize, E)> for ThinPtrArray<'a, E, L> {
+    fn get(&self, key: usize) -> Option<&E> {
         if key > self.len() {
             None
         } else {
             Some(&self[key])
         }
     }
-    fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
+    fn get_mut(&mut self, key: usize) -> Option<&mut E> {
         if key > self.len() {
             None
         } else {
@@ -199,12 +199,9 @@ impl<'a, E, L> CopyMap<'a, usize, E, (usize, E)> for ThinPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> Array<'a, E> for ThinPtrArray<'a, E, L> {}
+impl<'a, E, L> Array<E> for ThinPtrArray<'a, E, L> {}
 
-impl<'a, E> MakeArray<'a, E> for ThinPtrArray<'a, E, ()>
-where
-    E: 'a,
-{
+impl<'a, E> MakeArray<E> for ThinPtrArray<'a, E, ()> where {
     fn new<F>(len: usize, mut func: F) -> Self
     where
         F: FnMut(usize) -> E,
@@ -213,7 +210,7 @@ where
     }
 }
 
-impl<'a, E, L> LabelledArray<'a, E, L> for ThinPtrArray<'a, E, L> {
+impl<'a, E, L> LabelledArray<E, L> for ThinPtrArray<'a, E, L> {
     fn with_label<F>(label: L, len: usize, mut func: F) -> Self
     where
         F: FnMut(&mut L, usize) -> E,
@@ -246,9 +243,9 @@ impl<'a, E, L> LabelledArray<'a, E, L> for ThinPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> DefaultLabelledArray<'a, E, L> for ThinPtrArray<'a, E, L>
+impl<'a, E, L> DefaultLabelledArray<E, L> for ThinPtrArray<'a, E, L>
 where
-    E: 'a + Default,
+    E: Default,
 {
     fn with_len(label: L, len: usize) -> Self {
         Self::with_label(label, len, |_, _| E::default())

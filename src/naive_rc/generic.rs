@@ -26,7 +26,7 @@ use core::sync::atomic::Ordering;
 #[repr(C)]
 pub struct RcArray<'a, A, R, E, L = ()>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -37,7 +37,7 @@ where
 
 impl<'a, A, R, E, L> RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -69,7 +69,7 @@ where
 
 impl<'a, A, R, E, L> BaseArrayRef for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -82,7 +82,7 @@ where
 
 impl<'a, A, R, E, L> Clone for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -99,7 +99,7 @@ where
 
 impl<'a, A, R, E, L> ArrayRef for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -128,7 +128,7 @@ where
 
 impl<'a, A, R, E, L> Index<usize> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -142,7 +142,7 @@ where
 
 impl<'a, A, R, E, L> IndexMut<usize> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -155,7 +155,7 @@ where
 
 impl<'a, A, R, E, L> Drop for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -168,7 +168,7 @@ where
 
 impl<'a, A, R, E, L> Container<(usize, E)> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -183,14 +183,14 @@ where
     }
 }
 
-impl<'a, A, R, E, L> CopyMap<'a, usize, E> for RcArray<'a, A, R, E, L>
+impl<'a, A, R, E, L> CopyMap<usize, E> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
-    fn get(&'a self, key: usize) -> Option<&'a E> {
+    fn get(&self, key: usize) -> Option<&E> {
         self.check_null();
         if key > self.len() {
             None
@@ -198,7 +198,7 @@ where
             Some(&self[key])
         }
     }
-    fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
+    fn get_mut(&mut self, key: usize) -> Option<&mut E> {
         self.check_null();
         if key > self.len() {
             None
@@ -216,18 +216,18 @@ where
     }
 }
 
-impl<'a, A, R, E, L> Array<'a, E> for RcArray<'a, A, R, E, L>
+impl<'a, A, R, E, L> Array<E> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
 }
 
-impl<'a, A, R, E, L> LabelledArray<'a, E, L> for RcArray<'a, A, R, E, L>
+impl<'a, A, R, E, L> LabelledArray<E, L> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -260,9 +260,9 @@ where
     }
 }
 
-impl<'a, A, R, E> MakeArray<'a, E> for RcArray<'a, A, R, E, ()>
+impl<'a, A, R, E> MakeArray<E> for RcArray<'a, A, R, E, ()>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<()>,
     E: 'a,
 {
@@ -274,13 +274,9 @@ where
     }
 }
 
-impl<'a, A, R, E, L> DefaultLabelledArray<'a, E, L> for RcArray<'a, A, R, E, L>
+impl<'a, A, R, E, L> DefaultLabelledArray<E, L> for RcArray<'a, A, R, E, L>
 where
-    A: 'a
-        + DefaultLabelledArray<'a, E, R>
-        + LabelledArray<'a, E, R>
-        + BaseArrayRef
-        + UnsafeArrayRef,
+    A: 'a + DefaultLabelledArray<E, R> + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a + Default,
     L: 'a,
@@ -292,7 +288,7 @@ where
 
 unsafe impl<'a, A, R, E, L> Send for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L> + Send + Sync,
     E: 'a + Send + Sync,
     L: 'a + Send + Sync,
@@ -301,7 +297,7 @@ where
 
 unsafe impl<'a, A, R, E, L> Sync for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
     R: 'a + RefCounter<L> + Send + Sync,
     E: 'a + Send + Sync,
     L: 'a + Send + Sync,
@@ -310,7 +306,7 @@ where
 
 impl<'a, A, R, E, L> AtomicArrayRef for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<'a, E, R> + BaseArrayRef + UnsafeArrayRef + AtomicArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + AtomicArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,

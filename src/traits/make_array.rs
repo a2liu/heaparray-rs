@@ -9,10 +9,7 @@
 ///     assert!(array[i] == i * i);
 /// }
 /// ```
-pub trait MakeArray<'a, E>: containers::Array<'a, E>
-where
-    E: 'a,
-{
+pub trait MakeArray<E>: containers::Array<E> {
     /// Create a new array, with values initialized using a provided function.
     fn new<F>(len: usize, func: F) -> Self
     where

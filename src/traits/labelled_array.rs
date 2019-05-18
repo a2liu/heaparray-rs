@@ -1,8 +1,5 @@
 /// Array with an optional label struct stored next to the data.
-pub trait LabelledArray<'a, E, L>: containers::Array<'a, E>
-where
-    E: 'a,
-{
+pub trait LabelledArray<E, L>: containers::Array<E> {
     /// Create a new array, with values initialized using a provided function, and label
     /// initialized to a provided value.
     fn with_label<F>(label: L, len: usize, func: F) -> Self
@@ -27,9 +24,9 @@ where
 }
 
 /// Trait for a labelled array with a default value.
-pub trait DefaultLabelledArray<'a, E, L>: LabelledArray<'a, E, L>
+pub trait DefaultLabelledArray<E, L>: LabelledArray<E, L>
 where
-    E: 'a + Default,
+    E: Default,
 {
     /// Create a new array, initialized to default values.
     fn with_len(label: L, len: usize) -> Self;

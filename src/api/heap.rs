@@ -103,11 +103,11 @@ impl<'a, E, L> Container<(usize, E)> for HeapArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> CopyMap<'a, usize, E> for HeapArray<'a, E, L> {
-    fn get(&'a self, key: usize) -> Option<&'a E> {
+impl<'a, E, L> CopyMap<usize, E> for HeapArray<'a, E, L> {
+    fn get(&self, key: usize) -> Option<&E> {
         self.0.get(key)
     }
-    fn get_mut(&'a mut self, key: usize) -> Option<&'a mut E> {
+    fn get_mut(&mut self, key: usize) -> Option<&mut E> {
         self.0.get_mut(key)
     }
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
@@ -115,9 +115,9 @@ impl<'a, E, L> CopyMap<'a, usize, E> for HeapArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> Array<'a, E> for HeapArray<'a, E, L> {}
+impl<'a, E, L> Array<E> for HeapArray<'a, E, L> {}
 
-impl<'a, E, L> LabelledArray<'a, E, L> for HeapArray<'a, E, L> {
+impl<'a, E, L> LabelledArray<E, L> for HeapArray<'a, E, L> {
     fn with_label<F>(label: L, len: usize, func: F) -> Self
     where
         F: FnMut(&mut L, usize) -> E,
@@ -141,7 +141,7 @@ impl<'a, E, L> LabelledArray<'a, E, L> for HeapArray<'a, E, L> {
     }
 }
 
-impl<'a, E> MakeArray<'a, E> for HeapArray<'a, E, ()>
+impl<'a, E> MakeArray<E> for HeapArray<'a, E, ()>
 where
     E: 'a,
 {
@@ -153,7 +153,7 @@ where
     }
 }
 
-impl<'a, E, L> DefaultLabelledArray<'a, E, L> for HeapArray<'a, E, L>
+impl<'a, E, L> DefaultLabelledArray<E, L> for HeapArray<'a, E, L>
 where
     E: Default,
 {
