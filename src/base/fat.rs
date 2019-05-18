@@ -222,3 +222,28 @@ where
         Self::with_label(label, len, |_, _| E::default())
     }
 }
+
+impl<'a, E, L> SliceArray<E> for FatPtrArray<'a, E, L> {
+    fn as_slice(&self) -> &[E] {
+        unsafe { self.data.as_slice(self.len()) }
+    }
+    fn as_slice_mut(&mut self) -> &mut [E] {
+        unsafe { self.data.as_slice(self.len()) }
+    }
+}
+
+impl<'a, 'b, E, L> IntoIterator for &'b FatPtrArray<'a, E, L> {
+    type Item = &'b E;
+    type IntoIter = core::slice::Iter<'b, E>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.as_slice().into_iter()
+    }
+}
+
+impl<'a, 'b, E, L> IntoIterator for &'b mut FatPtrArray<'a, E, L> {
+    type Item = &'b mut E;
+    type IntoIter = core::slice::IterMut<'b, E>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.as_slice_mut().into_iter()
+    }
+}

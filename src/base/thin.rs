@@ -4,7 +4,7 @@
 //! in Rust, but may improve performance depending on your use case. Thus, it is
 //! not the standard implementation of `HeapArray`, but is still available for use
 //! via `use heaparray::base::*;
-use super::iter::{ThinPtrArrayIterMut, ThinPtrArrayIterOwned, ThinPtrArrayIterRef};
+use super::iter::ThinPtrArrayIterOwned;
 use crate::prelude::*;
 use core::sync::atomic::{AtomicPtr, Ordering};
 
@@ -263,25 +263,33 @@ impl<'a, E, L> IntoIterator for ThinPtrArray<'a, E, L> {
     type IntoIter = ThinPtrArrayIterOwned<'a, E, L>;
     fn into_iter(self) -> Self::IntoIter {
         let iter = unsafe { mem::transmute_copy(&self.data.iter(self.len())) };
-        //let iter = ThinPtrArrayIterOwned(unsafe { self.data.iter(self.len()).to_owned() });
         mem::forget(self);
         iter
     }
 }
 
+impl<'a, E, L> SliceArray<E> for ThinPtrArray<'a, E, L> {
+    fn as_slice(&self) -> &[E] {
+        unsafe { self.data.as_slice(self.len()) }
+    }
+    fn as_slice_mut(&mut self) -> &mut [E] {
+        unsafe { self.data.as_slice(self.len()) }
+    }
+}
+
 impl<'a, 'b, E, L> IntoIterator for &'b ThinPtrArray<'a, E, L> {
     type Item = &'b E;
-    type IntoIter = ThinPtrArrayIterRef<'b, E, L>;
+    type IntoIter = core::slice::Iter<'b, E>;
     fn into_iter(self) -> Self::IntoIter {
-        ThinPtrArrayIterRef(unsafe { self.data.iter(self.len()).to_ref() })
+        self.as_slice().into_iter()
     }
 }
 
 impl<'a, 'b, E, L> IntoIterator for &'b mut ThinPtrArray<'a, E, L> {
     type Item = &'b mut E;
-    type IntoIter = ThinPtrArrayIterMut<'b, E, L>;
+    type IntoIter = core::slice::IterMut<'b, E>;
     fn into_iter(self) -> Self::IntoIter {
-        ThinPtrArrayIterMut(unsafe { self.data.iter(self.len()).to_mut() })
+        self.as_slice_mut().into_iter()
     }
 }
 
