@@ -4,7 +4,8 @@
 //! in Rust, but may improve performance depending on your use case. Thus, it is
 //! not the standard implementation of `HeapArray`, but is still available for use
 //! via `use heaparray::base::*;
-pub use crate::prelude::*;
+use super::iter::{ThinPtrArrayIterMut, ThinPtrArrayIterOwned, ThinPtrArrayIterRef};
+use crate::prelude::*;
 use core::sync::atomic::{AtomicPtr, Ordering};
 
 /// Heap-allocated array, with array size stored alongside the memory block
@@ -257,6 +258,33 @@ where
 impl<'a, E, L> BaseArrayRef for ThinPtrArray<'a, E, L> {
     fn is_null(&self) -> bool {
         self.data.is_null()
+    }
+}
+
+impl<'a, E, L> IntoIterator for ThinPtrArray<'a, E, L> {
+    type Item = E;
+    type IntoIter = ThinPtrArrayIterOwned<'a, E, L>;
+    fn into_iter(self) -> Self::IntoIter {
+        let iter = unsafe { mem::transmute_copy(&self.data.iter(self.len())) };
+        //let iter = ThinPtrArrayIterOwned(unsafe { self.data.iter(self.len()).to_owned() });
+        mem::forget(self);
+        iter
+    }
+}
+
+impl<'a, 'b, E, L> IntoIterator for &'b ThinPtrArray<'a, E, L> {
+    type Item = &'b E;
+    type IntoIter = ThinPtrArrayIterRef<'b, E, L>;
+    fn into_iter(self) -> Self::IntoIter {
+        ThinPtrArrayIterRef(unsafe { self.data.iter(self.len()).to_ref() })
+    }
+}
+
+impl<'a, 'b, E, L> IntoIterator for &'b mut ThinPtrArray<'a, E, L> {
+    type Item = &'b mut E;
+    type IntoIter = ThinPtrArrayIterMut<'b, E, L>;
+    fn into_iter(self) -> Self::IntoIter {
+        ThinPtrArrayIterMut(unsafe { self.data.iter(self.len()).to_mut() })
     }
 }
 

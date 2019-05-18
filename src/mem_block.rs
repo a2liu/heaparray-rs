@@ -208,7 +208,7 @@ impl<E, L> MemBlock<E, L> {
     /// conditions results in undefined behavior. Additionally, the
     /// iterator that's created can potentially take ownership, and
     /// it's your job to prove that doing so is a valid operation.
-    pub unsafe fn iter<'a, 'b>(&'a self, len: usize) -> MemBlockIter<'b, E, L> {
+    pub unsafe fn iter<'a>(&'a self, len: usize) -> MemBlockIter<'a, E, L> {
         #[cfg(test)]
         check_null_ref(self, "MemBlock::iter: Getting iterator on null pointer!");
         MemBlockIter {
