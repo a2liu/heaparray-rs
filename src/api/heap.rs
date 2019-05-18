@@ -1,3 +1,4 @@
+use super::iter::HeapArrayIterOwned;
 use crate::base::FatPtrArray;
 use crate::prelude::*;
 
@@ -159,6 +160,14 @@ where
 {
     fn with_len(label: L, len: usize) -> Self {
         Self(Inner::with_len(label, len))
+    }
+}
+
+impl<'a, E, L> IntoIterator for HeapArray<'a, E, L> {
+    type Item = E;
+    type IntoIter = HeapArrayIterOwned<'a, E, L>;
+    fn into_iter(self) -> Self::IntoIter {
+        HeapArrayIterOwned(self.0.into_iter())
     }
 }
 

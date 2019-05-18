@@ -1,5 +1,6 @@
 mod arc;
 mod heap;
+pub mod iter;
 mod rc;
 
 pub use crate::prelude::*;

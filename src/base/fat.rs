@@ -2,6 +2,7 @@
 //!
 //! This is the typical representation of unsized references in Rust,
 //! and is thus also the default implementation of `HeapArray` as imported by `use heaparray::*;`
+use super::iter::FatPtrArrayIterOwned;
 pub use crate::prelude::*;
 
 /// Heap-allocated array, with array size stored with the pointer to the memory.
@@ -220,6 +221,16 @@ where
 {
     fn with_len(label: L, len: usize) -> Self {
         Self::with_label(label, len, |_, _| E::default())
+    }
+}
+
+impl<'a, E, L> IntoIterator for FatPtrArray<'a, E, L> {
+    type Item = E;
+    type IntoIter = FatPtrArrayIterOwned<'a, E, L>;
+    fn into_iter(self) -> Self::IntoIter {
+        let iter = unsafe { mem::transmute_copy(&self.data.iter(self.len())) };
+        mem::forget(self);
+        iter
     }
 }
 
