@@ -271,8 +271,8 @@ impl<E, L> MemBlock<E, L> {
             // do it's an error". But I could definitely change it very
             // easily, and I'm very willing to.
             ptr::eq(
-                ptr::read_volatile(&black_box(self)) as *const Self,
-                black_box(Self::NULL) as *const Self,
+                black_box(self) as *const Self,
+                black_box(black_box(Self::NULL) as *const Self),
             )
         };
         ret

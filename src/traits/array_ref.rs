@@ -51,17 +51,18 @@ pub trait ArrayRef: BaseArrayRef + Clone {
 /// For mor details on the expected behavior of these methods, see the
 /// documentation for `std::sync::atomic::AtomicPtr`.
 pub trait AtomicArrayRef: BaseArrayRef + Sized {
-    fn compare_and_swap(&self, current: Self, new: Self, order: Ordering) -> Self;
+    fn as_ref(&self) -> usize;
+    fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self;
     fn compare_exchange(
         &self,
-        current: Self,
+        current: usize,
         new: Self,
         success: Ordering,
         failure: Ordering,
     ) -> Result<Self, Self>;
     fn compare_exchange_weak(
         &self,
-        current: Self,
+        current: usize,
         new: Self,
         success: Ordering,
         failure: Ordering,

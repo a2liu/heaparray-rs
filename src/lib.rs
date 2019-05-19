@@ -44,12 +44,7 @@
 //!
 //!   fn main() {
 //!       let dynamic = HeapArray::<u8,u32>::with_label(17, 8, |_,_| 0);
-//!
-//!       print!("{} [", dynamic.get_label());
-//!       for i in 0..(dynamic.len()-1) {
-//!           print!("{:?},", dynamic[i]);
-//!       }
-//!       println!("{:?}]", dynamic[dynamic.len()-1]);
+//!       println!("{:?}", dynamic);
 //!   }
 //!   ```
 //!
@@ -143,6 +138,7 @@ mod prelude {
     pub(crate) use super::test_utils::*;
     pub use super::traits::*;
     pub use containers::{Container, CopyMap};
+    pub(crate) use core::fmt;
     pub(crate) use core::mem;
     pub(crate) use core::mem::ManuallyDrop;
     pub(crate) use core::ops::{Index, IndexMut};

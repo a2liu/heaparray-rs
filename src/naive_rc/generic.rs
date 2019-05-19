@@ -2,7 +2,7 @@
 //! reference-counted array.
 
 use super::ref_counters::*;
-use crate::prelude::*;
+pub use crate::prelude::*;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 
@@ -18,7 +18,10 @@ use core::sync::atomic::Ordering;
 /// L: The label that is associated with this array.
 /// ```
 ///
-/// Since this struct is generic, feel free to go ham with implementation details.
+/// # Implementation
+/// Reference counting is done by a struct stored directly next to the data;
+/// this means that this struct is *a single pointer indirection* from its underlying
+/// data.
 #[repr(C)]
 pub struct RcArray<'a, A, R, E, L = ()>
 where
@@ -60,6 +63,25 @@ where
     }
     pub fn ref_count(&self) -> usize {
         self.data.get_label().counter()
+    }
+    pub fn to_owned(self) -> Result<A, Self> {
+        if self.is_null() || self.ref_count() > 1 {
+            Err(self)
+        } else {
+            Ok(self.to_ref())
+        }
+    }
+}
+
+impl<'a, A, R, E, L> RcArray<'a, A, R, E, L>
+where
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + Clone,
+    R: 'a + RefCounter<L>,
+    E: 'a,
+    L: 'a,
+{
+    pub fn make_owned(&self) -> A {
+        (*self.data).clone()
     }
 }
 
@@ -280,6 +302,39 @@ where
     }
 }
 
+impl<'a, A, R, E, L> SliceArrayRef<E> for RcArray<'a, A, R, E, L>
+where
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + SliceArray<E>,
+    R: 'a + RefCounter<L> + Send + Sync,
+    E: 'a + Send + Sync,
+    L: 'a + Send + Sync,
+{
+    fn as_slice(&self) -> &[E] {
+        self.data.as_slice()
+    }
+    fn as_slice_mut(&mut self) -> Option<&mut [E]> {
+        if self.is_null() {
+            None
+        } else {
+            Some(self.data.as_slice_mut())
+        }
+    }
+}
+
+impl<'a, 'b, A, R, E, L> IntoIterator for &'b RcArray<'a, A, R, E, L>
+where
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + SliceArray<E>,
+    R: 'a + RefCounter<L> + Send + Sync,
+    E: 'a + Send + Sync,
+    L: 'a + Send + Sync,
+{
+    type Item = &'b E;
+    type IntoIter = core::slice::Iter<'b, E>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.as_slice().into_iter()
+    }
+}
+
 unsafe impl<'a, A, R, E, L> Send for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
@@ -305,29 +360,32 @@ where
     E: 'a,
     L: 'a,
 {
-    fn compare_and_swap(&self, current: Self, new: Self, order: Ordering) -> Self {
-        Self::from_ref((*self.data).compare_and_swap(current.to_ref(), new.to_ref(), order))
+    fn as_ref(&self) -> usize {
+        self.data.as_ref()
+    }
+    fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self {
+        Self::from_ref((*self.data).compare_and_swap(current, new.to_ref(), order))
     }
     fn compare_exchange(
         &self,
-        current: Self,
+        current: usize,
         new: Self,
         success: Ordering,
         failure: Ordering,
     ) -> Result<Self, Self> {
-        match (*self.data).compare_exchange(current.to_ref(), new.to_ref(), success, failure) {
+        match (*self.data).compare_exchange(current, new.to_ref(), success, failure) {
             Ok(data) => Ok(Self::from_ref(data)),
             Err(data) => Err(Self::from_ref(data)),
         }
     }
     fn compare_exchange_weak(
         &self,
-        current: Self,
+        current: usize,
         new: Self,
         success: Ordering,
         failure: Ordering,
     ) -> Result<Self, Self> {
-        match (*self.data).compare_exchange_weak(current.to_ref(), new.to_ref(), success, failure) {
+        match (*self.data).compare_exchange_weak(current, new.to_ref(), success, failure) {
             Ok(data) => Ok(Self::from_ref(data)),
             Err(data) => Err(Self::from_ref(data)),
         }

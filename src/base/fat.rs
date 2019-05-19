@@ -254,3 +254,18 @@ impl<'a, 'b, E, L> IntoIterator for &'b mut FatPtrArray<'a, E, L> {
         self.as_slice_mut().into_iter()
     }
 }
+
+impl<'a, E, L> fmt::Debug for FatPtrArray<'a, E, L>
+where
+    E: fmt::Debug,
+    L: fmt::Debug,
+{
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter
+            .debug_struct("ThinPtrArray")
+            .field("label", &self.get_label())
+            .field("len", &self.len())
+            .field("elements", &self.as_slice())
+            .finish()
+    }
+}
