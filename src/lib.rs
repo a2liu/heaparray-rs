@@ -145,7 +145,7 @@ pub mod base;
 mod black_box;
 pub mod mem_block;
 pub mod naive_rc;
-mod traits;
+pub mod traits;
 
 #[cfg(feature = "real-black-box")]
 extern crate test;

@@ -1,7 +1,7 @@
 # TODO
-- [ ] Separate `LabelledArray` into `LabelledArray` and `LabelledArrayMut`,
+- [X] Separate `LabelledArray` into `LabelledArray` and `LabelledArrayMut`,
   and remove `Array` requirement from `LabelledArray` (change it to `CopyMap`)
-- [ ] Remove implementations of `IndexMut`, `get_label_mut`, etc. from
+- [X] Remove implementations of `IndexMut`, `get_label_mut`, etc. from
   `heaparray::naive_rc::generic::RcArray`
 - [ ] Slice support, to make iterator implementation reaaaaaally easy.
   - [ ] Use slices for borrow and mutable borrow iteration, and a custom
