@@ -15,25 +15,9 @@
 //! let another_ref = ArrayRef::clone(&array_ref);
 //! ```
 
-/// publicly include this before every reference counting module, as it contains
-/// all the traits necessary to use the structures correctly.
-pub(crate) mod prelude {
-    pub(crate) use super::generic::*;
-    pub(crate) use super::ref_counters::*;
-    pub(crate) use crate::base::FatPtrArray as FpArr;
-    pub(crate) use crate::base::ThinPtrArray as TpArr;
-    pub use crate::prelude::*;
-}
-
-mod fparc;
-mod fprc;
 pub mod generic;
 pub mod ref_counters;
-mod tparc;
-mod tprc;
+mod types;
 
 pub use crate::prelude::*;
-pub use fparc::*;
-pub use fprc::*;
-pub use tparc::*;
-pub use tprc::*;
+pub use types::*;

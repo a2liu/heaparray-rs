@@ -1,9 +1,4 @@
-mod arc;
-mod heap;
-pub mod iter;
-mod rc;
-
+pub use crate::base::FatPtrArray as HeapArray;
+pub use crate::naive_rc::FpRcArray as RcArray;
+pub use crate::naive_rc::TpArcArray as ArcArray;
 pub use crate::prelude::*;
-pub use arc::ArcArray;
-pub use heap::HeapArray;
-pub use rc::RcArray;

@@ -1,17 +1,13 @@
 //! Contains definition for `RcArray`, which is an implementation-agnositc,
 //! reference-counted array.
+
 use super::ref_counters::*;
 use crate::prelude::*;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 
-// A is the array reference that this type wraps
-// R is the reference counter for the label of this type
-// L is the label of this type
-// E is the element that this type is an array of
-// B is the type that A dereferences to using its `.to_null()` method.
-/// `RcArray` is a generic, implementation-agnositc array. It uses traits to
-/// handle literally everything.
+/// `RcArray` is a generic, implementation-agnositc array. It contains
+/// logic for enforcing type safety.
 ///
 /// The type parameters are, in order:
 ///
@@ -149,7 +145,6 @@ where
 {
     fn drop(&mut self) {
         self.to_null();
-        mem::forget(self);
     }
 }
 

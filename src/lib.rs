@@ -123,20 +123,7 @@
 //!         }
 //!     });
 //! ```
-//!
-//! ## Use of `unsafe` Keyword
-//! This library relies heavily on the use of the `unsafe` keyword to do both
-//! reference counting and atomic operations; there are 14 instances total,
-//! not including tests.
-//!
-//! ## Future Plans
-//! Iteration, allocator customization, constant-sized array of arbitrary size,
-//! i.e. `CArray`, with sizes managed by the type system (waiting on const
-//! generics for this one).  See `TODO.md` in the repository for a full
-//! list of planned features.
 
-// TODO uncomment this when the alloc crate hits stable
-// extern crate alloc;
 extern crate containers_rs as containers;
 
 pub mod alloc_utils;
@@ -145,7 +132,7 @@ pub mod base;
 mod black_box;
 pub mod mem_block;
 pub mod naive_rc;
-pub mod traits;
+mod traits;
 
 #[cfg(feature = "real-black-box")]
 extern crate test;
