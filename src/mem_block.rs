@@ -3,6 +3,7 @@
 use super::alloc_utils::*;
 use core::mem;
 use core::mem::ManuallyDrop;
+use core::ptr;
 
 // TODO Make this function a const function when if statements are stabilized in
 // const functions
@@ -69,11 +70,9 @@ impl<E, L> MemBlock<E, L> {
     ///   `0 <= i < len`, accesses valid memory that has been
     ///   properly initialized. This is NOT checked at runtime.
     pub unsafe fn dealloc<'a>(&'a mut self, len: usize) {
-        let lbl = mem::transmute_copy::<L, L>(&self.label);
-        mem::drop(lbl);
+        ptr::drop_in_place(&mut self.label);
         for i in 0..len {
-            let val = mem::transmute_copy(self.get(i));
-            mem::drop::<E>(val);
+            ptr::drop_in_place(self.get(i));
         }
         self.dealloc_lazy(len);
     }
@@ -184,8 +183,8 @@ impl<E, L> MemBlock<E, L> {
     pub unsafe fn iter<'a>(&'a self, len: usize) -> MemBlockIter<'a, E, L> {
         MemBlockIter {
             block: &mut *(self as *const Self as *mut Self),
-            end: &mut *(self.get(len) as *mut E),
-            current: &mut *(self.get(0) as *mut E),
+            current: 0,
+            end: len,
         }
     }
 
@@ -246,32 +245,47 @@ where
 /// constructed it you purportedly know what you're doing.
 pub struct MemBlockIter<'a, E, L> {
     block: &'a mut MemBlock<E, L>,
-    end: &'a mut E,
-    current: &'a mut E,
+    end: usize,
+    current: usize,
 }
 
-impl<'a, E, L> Iterator for MemBlockIter<'a, E, L> {
+impl<'a, E, L> MemBlockIter<'a, E, L> {
+    /// Creates an owned version of this iterator that takes ownership
+    /// of the memory block it has a reference to and deallocates it
+    /// when done iterating.
+    pub fn to_owned(self) -> MemBlockIterOwned<'a, E, L> {
+        MemBlockIterOwned { iter: self }
+    }
+}
+
+/// Owned version of `MemBlockIter` that returns the items in the memory
+/// block by value and then deallocates the block once this iterator
+/// goes out of scope.
+#[repr(transparent)]
+pub struct MemBlockIterOwned<'a, E, L> {
+    iter: MemBlockIter<'a, E, L>,
+}
+
+impl<'a, E, L> Iterator for MemBlockIterOwned<'a, E, L> {
     type Item = E;
     fn next(&mut self) -> Option<E> {
-        let curr = self.current as *mut E;
-        let end = self.end as *mut E;
-        if curr == end {
+        if self.iter.current == self.iter.end {
             None
         } else {
             unsafe {
-                let out = mem::transmute_copy(self.current);
-                self.current = &mut *curr.add(1);
+                let out = mem::transmute_copy(self.iter.block.get(self.iter.current));
+                self.iter.current += 1;
                 Some(out)
             }
         }
     }
 }
 
-impl<'a, E, L> Drop for MemBlockIter<'a, E, L> {
+impl<'a, E, L> Drop for MemBlockIterOwned<'a, E, L> {
     fn drop(&mut self) {
-        let end = self.end as *mut E;
-        let begin = &mut *self.block.elements as *mut E as usize;
-        let len = (end as usize) - begin;
-        unsafe { self.block.dealloc_lazy(len) };
+        unsafe {
+            ptr::drop_in_place(&mut self.iter.block.label);
+            self.iter.block.dealloc_lazy(self.iter.end);
+        }
     }
 }

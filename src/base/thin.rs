@@ -4,7 +4,7 @@
 //! in Rust, but may improve performance depending on your use case. Thus, it is
 //! not the standard implementation of `HeapArray`, but is still available for use
 //! via `use heaparray::base::*;
-use super::iter::ThinPtrArrayIter;
+use super::iter::ThinPtrArrayIterOwned;
 use crate::prelude::*;
 // use core::sync::atomic::{AtomicPtr, Ordering};
 
@@ -151,14 +151,14 @@ impl<'a, E, L> Container for ThinPtrArray<'a, E, L> {
 
 impl<'a, E, L> CopyMap<usize, E> for ThinPtrArray<'a, E, L> {
     fn get(&self, key: usize) -> Option<&E> {
-        if key > self.len() {
+        if key >= self.len() {
             None
         } else {
             Some(unsafe { self.data.get(key) })
         }
     }
     fn get_mut(&mut self, key: usize) -> Option<&mut E> {
-        if key > self.len() {
+        if key >= self.len() {
             None
         } else {
             Some(unsafe { self.data.get(key) })
@@ -243,7 +243,7 @@ impl<'a, E, L> BaseArrayRef for ThinPtrArray<'a, E, L> {}
 
 impl<'a, E, L> IntoIterator for ThinPtrArray<'a, E, L> {
     type Item = E;
-    type IntoIter = ThinPtrArrayIter<'a, E, L>;
+    type IntoIter = ThinPtrArrayIterOwned<'a, E, L>;
     fn into_iter(self) -> Self::IntoIter {
         let iter = unsafe { mem::transmute_copy(&self.data.iter(self.len())) };
         mem::forget(self);
