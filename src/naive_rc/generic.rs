@@ -173,21 +173,37 @@ where
     E: 'a,
     L: 'a,
 {
+    /// Get a reference into this array. Returns `None` if:
+    ///
+    /// - Internal pointer is null
+    /// - The index given is out-of-bounds
     fn get(&self, key: usize) -> Option<&E> {
-        self.check_null();
-        self.data.get(key)
+        if self.is_null() {
+            None
+        } else {
+            self.data.get(key)
+        }
     }
+    /// Get a mutable reference into this array. Returns `None` if:
+    ///
+    /// - Internal pointer is null
+    /// - The array is referenced by another pointer
+    /// - The index given is out-of-bounds
     fn get_mut(&mut self, key: usize) -> Option<&mut E> {
-        self.check_null();
-        if self.data.get_label().counter() == 1 {
+        if !self.is_null() && self.data.get_label().counter() == 1 {
             self.data.get_mut(key)
         } else {
             None
         }
     }
+    /// Insert an element into this array. Returns `None` if:
+    ///
+    /// - Internal pointer is null
+    /// - The array is referenced by another pointer
+    /// - The index given is out-of-bounds
+    /// - There was nothing in the slot previously
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
-        self.check_null();
-        if self.data.get_label().counter() == 1 {
+        if !self.is_null() && self.data.get_label().counter() == 1 {
             self.data.insert(key, value)
         } else {
             None
