@@ -3,10 +3,12 @@
   and remove `Array` requirement from `LabelledArray` (change it to `CopyMap`)
 - [X] Remove implementations of `IndexMut`, `get_label_mut`, etc. from
   `heaparray::naive_rc::generic::RcArray`
-- [ ] Slice support, to make iterator implementation reaaaaaally easy.
-  - [ ] Use slices for borrow and mutable borrow iteration, and a custom
+- [X] Slice support, to make iterator implementation reaaaaaally easy.
+  - [X] Use slices for borrow and mutable borrow iteration, and a custom
     struct for owned iteration.
-- [ ] Get implementations of standard things like iteration and `Debug` output.
+- [X] Get implementations of standard things like iteration and `Debug` output.
+- [ ] Remove null refs from crate. They're anti-patterns in Rust, and don't seem
+  to serve any utility
 - [X] Get a single implementation of memory block. This allows for
   a more explicit description of the memory layout and a consolidation of
   existing code into a more manageable generalization. Also reduces usage

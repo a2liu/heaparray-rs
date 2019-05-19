@@ -22,7 +22,7 @@ use core::sync::atomic::Ordering;
 /// Reference counting is done by a struct stored directly next to the data;
 /// this means that this struct is *a single pointer indirection* from its underlying
 /// data.
-#[repr(C)]
+#[repr(transparent)]
 pub struct RcArray<'a, A, R, E, L = ()>
 where
     A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
