@@ -26,9 +26,9 @@ pub type FpRcArray<'a, E, L> = RcArray<'a, FatPtrArray<'a, E, RcStruct<L>>, RcSt
 /// use heaparray::naive_rc::*;
 /// use core::sync::atomic::Ordering;
 /// let array = TpArcArray::new(100, |_| 12);
-/// let null = TpArcArray::null_ref();
-/// let null_ref = null.as_ref();
-/// let null_ref = array.compare_and_swap(null_ref, null, Ordering::Relaxed);
+/// let other = TpArcArray::new(100, |_| 13);
+/// let array_ref = array.as_ref();
+/// let result = array.compare_and_swap(array_ref, other, Ordering::Relaxed);
 /// ```
 pub type TpArcArray<'a, E, L> = RcArray<'a, ThinPtrArray<'a, E, ArcStruct<L>>, ArcStruct<L>, E, L>;
 

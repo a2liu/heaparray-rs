@@ -25,7 +25,7 @@ use core::sync::atomic::Ordering;
 #[repr(transparent)]
 pub struct RcArray<'a, A, R, E, L = ()>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -36,18 +36,11 @@ where
 
 impl<'a, A, R, E, L> RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
-    fn check_null(&self) {
-        #[cfg(not(feature = "no-asserts"))]
-        assert!(
-            !self.is_null(),
-            "Null dereference of reference-counted array."
-        );
-    }
     fn from_ref(ptr: A) -> Self {
         Self {
             data: ManuallyDrop::new(ptr),
@@ -65,7 +58,7 @@ where
         self.data.get_label().counter()
     }
     pub fn to_owned(self) -> Result<A, Self> {
-        if self.is_null() || self.ref_count() > 1 {
+        if self.ref_count() > 1 {
             Err(self)
         } else {
             Ok(self.to_ref())
@@ -75,7 +68,7 @@ where
 
 impl<'a, A, R, E, L> RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + Clone,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + Clone,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -87,127 +80,96 @@ where
 
 impl<'a, A, R, E, L> BaseArrayRef for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
-    #[inline]
-    fn is_null(&self) -> bool {
-        (*self.data).is_null()
-    }
 }
 
 impl<'a, A, R, E, L> Clone for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
     fn clone(&self) -> Self {
-        if self.is_null() {
-            Self::null_ref()
-        } else {
-            (*self.data).get_label().increment();
-            unsafe { mem::transmute_copy(self) }
-        }
+        (*self.data).get_label().increment();
+        unsafe { mem::transmute_copy(self) }
     }
 }
 
 impl<'a, A, R, E, L> ArrayRef for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
-    fn to_null(&mut self) {
-        if self.is_null() {
-            return;
-        } else {
-            let ref_count = self.data.get_label().decrement();
-
-            // Set this reference to null
-            let other = mem::replace(self, Self::null_ref());
-
-            if ref_count == 0 {
-                let to_drop: A = unsafe { mem::transmute_copy(&*other.data) };
-                mem::drop(to_drop); // Drop is here to be explicit about intent
-            }
-            mem::forget(other);
-        }
-    }
-
-    fn null_ref() -> Self {
-        Self::from_ref(unsafe { A::null_ref() })
-    }
 }
 
 impl<'a, A, R, E, L> Index<usize> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + Index<usize, Output = E>,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + Index<usize, Output = E>,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
     type Output = E;
     fn index(&self, idx: usize) -> &E {
-        self.check_null();
         &self.data[idx]
     }
 }
 
 impl<'a, A, R, E, L> Drop for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
     fn drop(&mut self) {
-        self.to_null();
+        let ref_count = self.data.get_label().decrement();
+
+        if ref_count == 0 {
+            let to_drop: A = unsafe { mem::transmute_copy(&*self.data) };
+            mem::drop(to_drop); // Drop is here to be explicit about intent
+        }
     }
 }
 
 impl<'a, A, R, E, L> Container for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
     fn len(&self) -> usize {
-        self.check_null();
         self.data.len()
     }
 }
 
 impl<'a, A, R, E, L> CopyMap<usize, E> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
     /// Get a reference into this array. Returns `None` if:
     ///
-    /// - Internal pointer is null
     /// - The index given is out-of-bounds
     fn get(&self, key: usize) -> Option<&E> {
-        if self.is_null() {
-            None
-        } else {
-            self.data.get(key)
-        }
+        self.data.get(key)
     }
     /// Get a mutable reference into this array. Returns `None` if:
     ///
-    /// - Internal pointer is null
     /// - The array is referenced by another pointer
     /// - The index given is out-of-bounds
     fn get_mut(&mut self, key: usize) -> Option<&mut E> {
-        if !self.is_null() && self.data.get_label().counter() == 1 {
+        if self.data.get_label().counter() == 1 {
             self.data.get_mut(key)
         } else {
             None
@@ -215,12 +177,11 @@ where
     }
     /// Insert an element into this array. Returns `None` if:
     ///
-    /// - Internal pointer is null
     /// - The array is referenced by another pointer
     /// - The index given is out-of-bounds
     /// - There was nothing in the slot previously
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
-        if !self.is_null() && self.data.get_label().counter() == 1 {
+        if self.data.get_label().counter() == 1 {
             self.data.insert(key, value)
         } else {
             None
@@ -230,7 +191,7 @@ where
 
 impl<'a, A, R, E, L> LabelledArray<E, L> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -248,7 +209,6 @@ where
         Self::from_ref(A::with_label_unsafe(R::new(label), len))
     }
     fn get_label(&self) -> &L {
-        self.check_null();
         self.data.get_label().get_data()
     }
     unsafe fn get_label_unsafe(&self) -> &mut L {
@@ -261,13 +221,12 @@ where
 
 impl<'a, A, R, E, L> LabelledArrayRefMut<E, L> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + LabelledArrayMut<E, R>,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + LabelledArrayMut<E, R>,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
 {
     fn get_label_mut(&mut self) -> Option<&mut L> {
-        self.check_null();
         if self.data.get_label().counter() == 1 {
             Some(self.data.get_label_mut().get_data_mut())
         } else {
@@ -278,7 +237,7 @@ where
 
 impl<'a, A, R, E> MakeArray<E> for RcArray<'a, A, R, E, ()>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<()>,
     E: 'a,
 {
@@ -292,7 +251,7 @@ where
 
 impl<'a, A, R, E, L> DefaultLabelledArray<E, L> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + DefaultLabelledArray<E, R> + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + DefaultLabelledArray<E, R> + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a + Default,
     L: 'a,
@@ -304,7 +263,7 @@ where
 
 impl<'a, A, R, E, L> SliceArrayRef<E> for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + SliceArray<E>,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -313,7 +272,7 @@ where
         self.data.as_slice()
     }
     fn as_slice_mut(&mut self) -> Option<&mut [E]> {
-        if self.is_null() {
+        if self.ref_count() > 1 {
             None
         } else {
             Some(self.data.as_slice_mut())
@@ -323,7 +282,7 @@ where
 
 impl<'a, 'b, A, R, E, L> IntoIterator for &'b RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + SliceArray<E>,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,
@@ -337,7 +296,7 @@ where
 
 impl<'a, A, R, E, L> fmt::Debug for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + SliceArray<E>,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
     R: 'a + RefCounter<L>,
     E: 'a + fmt::Debug,
     L: 'a + fmt::Debug,
@@ -357,7 +316,7 @@ where
 
 unsafe impl<'a, A, R, E, L> Send for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L> + Send + Sync,
     E: 'a + Send + Sync,
     L: 'a + Send + Sync,
@@ -366,7 +325,7 @@ where
 
 unsafe impl<'a, A, R, E, L> Sync for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef,
     R: 'a + RefCounter<L> + Send + Sync,
     E: 'a + Send + Sync,
     L: 'a + Send + Sync,
@@ -375,7 +334,7 @@ where
 
 impl<'a, A, R, E, L> AtomicArrayRef for RcArray<'a, A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + AtomicArrayRef,
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + AtomicArrayRef,
     R: 'a + RefCounter<L>,
     E: 'a,
     L: 'a,

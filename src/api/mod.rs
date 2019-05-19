@@ -13,8 +13,8 @@ pub use crate::naive_rc::FpRcArray as RcArray;
 /// use heaparray::*;
 /// use core::sync::atomic::Ordering;
 /// let array = ArcArray::new(100, |_| 12);
-/// let null = ArcArray::null_ref();
-/// let null_ref = null.as_ref();
-/// let null_ref = array.compare_and_swap(null_ref, null, Ordering::Relaxed);
+/// let other = ArcArray::new(100, |_| 13);
+/// let array_ref = array.as_ref();
+/// let result = array.compare_and_swap(array_ref, other, Ordering::Relaxed);
 /// ```
 pub use crate::naive_rc::TpArcArray as ArcArray;

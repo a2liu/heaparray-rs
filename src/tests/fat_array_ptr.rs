@@ -54,10 +54,3 @@ fn check_drop() {
     let arr = TestArray::new(LENGTH, |_| Vec::<usize>::new());
     after_alloc(arr, bfr);
 }
-
-#[should_panic]
-#[test]
-fn check_null() {
-    let null_ptr = unsafe { TestArray::<u8, ()>::null_ref() };
-    mem::drop(null_ptr);
-}

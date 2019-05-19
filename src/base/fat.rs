@@ -71,20 +71,7 @@ where
     len: usize,
 }
 
-impl<'a, E, L> BaseArrayRef for FatPtrArray<'a, E, L> {
-    fn is_null(&self) -> bool {
-        self.data.is_null()
-    }
-}
-
-impl<'a, E, L> UnsafeArrayRef for FatPtrArray<'a, E, L> {
-    unsafe fn null_ref() -> Self {
-        Self {
-            data: &mut *(MemBlock::null_ref()),
-            len: MemBlock::<E, L>::NULL,
-        }
-    }
-}
+impl<'a, E, L> BaseArrayRef for FatPtrArray<'a, E, L> {}
 
 impl<'a, E, L> Index<usize> for FatPtrArray<'a, E, L> {
     type Output = E;
@@ -128,16 +115,10 @@ where
 
 impl<'a, E, L> Drop for FatPtrArray<'a, E, L> {
     fn drop(&mut self) {
-        #[cfg(test)]
-        assert!(!self.is_null());
         let len = self.len;
         let mut_ref = &mut self.data;
         unsafe { mut_ref.dealloc(len) };
         mem::forget(mut_ref);
-
-        if cfg!(not(feature = "fast-drop")) {
-            self.data = unsafe { &mut *MemBlock::null_ref() };
-        }
     }
 }
 

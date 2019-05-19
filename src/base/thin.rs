@@ -111,14 +111,6 @@ where
     }
 }
 
-impl<'a, E, L> UnsafeArrayRef for ThinPtrArray<'a, E, L> {
-    unsafe fn null_ref() -> Self {
-        Self {
-            data: ManuallyDrop::new(&mut *Block::null_ref()),
-        }
-    }
-}
-
 impl<'a, E, L> Index<usize> for ThinPtrArray<'a, E, L> {
     type Output = E;
     fn index(&self, idx: usize) -> &E {
@@ -161,15 +153,10 @@ where
 
 impl<'a, E, L> Drop for ThinPtrArray<'a, E, L> {
     fn drop(&mut self) {
-        #[cfg(test)]
-        assert!(!self.is_null());
         let len = self.len();
         let mut_ref = &mut self.data;
         unsafe { mut_ref.dealloc(len) };
         mem::forget(mut_ref);
-        if cfg!(not(feature = "fast-drop")) {
-            self.data = ManuallyDrop::new(unsafe { &mut *Block::null_ref() });
-        }
     }
 }
 
@@ -257,11 +244,7 @@ where
     }
 }
 
-impl<'a, E, L> BaseArrayRef for ThinPtrArray<'a, E, L> {
-    fn is_null(&self) -> bool {
-        self.data.is_null()
-    }
-}
+impl<'a, E, L> BaseArrayRef for ThinPtrArray<'a, E, L> {}
 
 impl<'a, E, L> IntoIterator for ThinPtrArray<'a, E, L> {
     type Item = E;

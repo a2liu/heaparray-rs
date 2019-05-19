@@ -3,7 +3,6 @@
 use super::alloc_utils::*;
 use core::mem;
 use core::mem::ManuallyDrop;
-use core::ptr;
 
 // TODO Make this function a const function when if statements are stabilized in
 // const functions
@@ -18,11 +17,6 @@ pub fn block_max_len<E, L>() -> usize {
     } else {
         (MAX_LEN - label_size) / elem_size - 1
     }
-}
-
-#[cfg(test)]
-pub fn check_null_ref<E, L>(arr: &MemBlock<E, L>, message: &'static str) {
-    assert!(!arr.is_null(), message);
 }
 
 /// An array block that can hold arbitrary information, and cannot be
@@ -51,10 +45,6 @@ pub struct MemBlock<E, L = ()> {
 }
 
 impl<E, L> MemBlock<E, L> {
-    /// The value of null. Nullified pointers to memory blocks are overwritten
-    /// with this value.
-    pub const NULL: usize = core::usize::MAX;
-
     /// Get size and alignment of the memory that a block of length `len`
     /// would need.
     pub fn memory_layout(len: usize) -> (usize, usize) {
@@ -79,8 +69,6 @@ impl<E, L> MemBlock<E, L> {
     ///   `0 <= i < len`, accesses valid memory that has been
     ///   properly initialized. This is NOT checked at runtime.
     pub unsafe fn dealloc<'a>(&'a mut self, len: usize) {
-        #[cfg(test)]
-        check_null_ref(self, "MemBlock::dealloc: Deallocating null pointer!");
         let lbl = mem::transmute_copy::<L, L>(&self.label);
         mem::drop(lbl);
         for i in 0..len {
@@ -103,17 +91,8 @@ impl<E, L> MemBlock<E, L> {
     /// all initialized elements in this block before calling this method,
     /// as they may in accessible afterwards if you don't.
     pub unsafe fn dealloc_lazy<'a>(&'a mut self, len: usize) {
-        #[cfg(test)]
-        check_null_ref(self, "MemBlock::dealloc: Deallocating null pointer!");
-
         let (size, align) = Self::memory_layout(len);
         deallocate(self, size, align);
-    }
-
-    /// Returns a null pointer to a memory block. Dereferencing it is undefined
-    /// behavior, and is by definition unsafe.
-    pub fn null_ref() -> *mut Self {
-        Self::NULL as *mut Self
     }
 
     /// Returns a pointer to a new memory block on the heap with an
@@ -181,16 +160,12 @@ impl<E, L> MemBlock<E, L> {
     ///   by calling `MemBlock::new_init(label, len, || { /* closure */ })`.
     ///   or by initializing the values yourself.
     pub unsafe fn get<'a>(&'a self, idx: usize) -> &'a mut E {
-        #[cfg(test)]
-        check_null_ref(self, "MemBlock::get: Indexing on null pointer!");
         let element = &*self.elements as *const E as *mut E;
         let element = element.add(idx);
         &mut *element
     }
 
     pub unsafe fn get_label<'a>(&'a self) -> &'a mut L {
-        #[cfg(test)]
-        check_null_ref(self, "MemBlock::get_label: Indexing on null pointer!");
         &mut *(&self.label as *const L as *mut L)
     }
 
@@ -198,8 +173,6 @@ impl<E, L> MemBlock<E, L> {
     /// on the `start` index and exclusive on the `end` index.
     /// The iterator operates on the preconditions that:
     ///
-    /// - The reference `self` is not `NULL`. This is NOT checked at
-    ///   runtime.
     /// - The operation of dereferencing an element at index `i`, where
     ///   `0 <= i < len`, accesses valid memory that has been
     ///   properly initialized. This is NOT checked at runtime.
@@ -209,8 +182,6 @@ impl<E, L> MemBlock<E, L> {
     /// iterator that's created can potentially take ownership, and
     /// it's your job to prove that doing so is a valid operation.
     pub unsafe fn iter<'a>(&'a self, len: usize) -> MemBlockIter<'a, E, L> {
-        #[cfg(test)]
-        check_null_ref(self, "MemBlock::iter: Getting iterator on null pointer!");
         MemBlockIter {
             block: &mut *(self as *const Self as *mut Self),
             end: &mut *(self.get(len) as *mut E),
@@ -231,11 +202,6 @@ impl<E, L> MemBlock<E, L> {
     ///   `start <= i < end`, accesses valid memory that has been
     ///   properly initialized. This is NOT checked at runtime.
     pub unsafe fn get_slice<'a>(&'a self, start: usize, end: usize) -> &'a mut [E] {
-        #[cfg(test)]
-        check_null_ref(
-            self,
-            "MemBlock::get_slice: Getting slice into null pointer!",
-        );
         #[cfg(not(feature = "no-asserts"))]
         assert!(start <= end);
         core::slice::from_raw_parts_mut(self.get(start) as *mut E, end - start)
@@ -249,31 +215,6 @@ impl<E, L> MemBlock<E, L> {
     ///   properly initialized. This is NOT checked at runtime.
     pub unsafe fn as_slice<'a>(&'a self, len: usize) -> &'a mut [E] {
         self.get_slice(0, len)
-    }
-
-    /// Since this struct isn't a reference to contigous memory, but rather
-    /// the contiguous memory itself, it doesn't not implement the trait
-    /// `heaparray::BaseArrayRef`. However, it provides the same
-    /// functionality through this method.
-    pub fn is_null(&self) -> bool {
-        use crate::black_box::black_box;
-        // Rust does some funky optimizations behind the scenes that
-        // in most cases would be useful, but because we don't
-        // maintain the typical invariants of Rust references in this
-        // codebase, we need to wrap some of the values in black
-        // boxes.
-        //
-        // I don't know whether it's better to use this system or
-        // to use the provided function, `core::ptr::null()`. My
-        // current rationale is that `usize::MAX` is a reasonable
-        // value for "never going to be seen in the wild so if we
-        // do it's an error". But I could definitely change it very
-        // easily, and I'm very willing to.
-        let ret = ptr::eq(
-            black_box(self) as *const Self,
-            black_box(black_box(Self::null_ref()) as *const Self),
-        );
-        ret
     }
 }
 

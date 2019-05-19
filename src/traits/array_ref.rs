@@ -4,18 +4,7 @@ use core::sync::atomic::Ordering;
 
 /// A basic reference to a heap-allocated array. Should be paired with exactly
 /// one of either `heaparray::UnsafeArrayRef` or `heaparray::ArrayRef`.
-pub trait BaseArrayRef {
-    /// Returns whether the array pointer that this contains is null.
-    fn is_null(&self) -> bool;
-}
-
-/// A reference to a heap-allocated array whose safe API guarrantees it to
-/// always be non-null.
-pub trait UnsafeArrayRef: BaseArrayRef {
-    /// Creates a null array. All kinds of UB associated with this, use
-    /// with caution.
-    unsafe fn null_ref() -> Self;
-}
+pub trait BaseArrayRef {}
 
 /// A reference to an array, whose clone points to the same data.
 ///
@@ -39,10 +28,6 @@ pub trait ArrayRef: BaseArrayRef + Clone {
     fn clone(ptr: &Self) -> Self {
         ptr.clone()
     }
-    /// Set this pointer to null.
-    fn to_null(&mut self);
-    /// Get a null reference of this pointer type.
-    fn null_ref() -> Self;
 }
 
 /// Atomically modified array reference. Guarrantees that all operations on the

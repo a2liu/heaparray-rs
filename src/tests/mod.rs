@@ -7,5 +7,5 @@ mod thin_array_ptr;
 
 mod prelude {
     pub use crate::prelude::*;
-    pub(crate) use core::mem;
+    // pub(crate) use core::mem;
 }
