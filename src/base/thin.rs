@@ -6,7 +6,7 @@
 //! via `use heaparray::base::*;
 use super::iter::ThinPtrArrayIterOwned;
 use crate::prelude::*;
-use core::sync::atomic::{AtomicPtr, Ordering};
+// use core::sync::atomic::{AtomicPtr, Ordering};
 
 /// Heap-allocated array, with array size stored alongside the memory block
 /// itself.
@@ -84,32 +84,32 @@ pub(crate) struct LenLabel<L> {
     label: L,
 }
 
-impl<'a, E, L> ThinPtrArray<'a, E, L>
-where
-    E: 'a,
-    L: 'a,
-{
-    fn from_raw(ptr: *mut Block<E, L>) -> Self {
-        Self {
-            data: ManuallyDrop::new(unsafe { &mut *ptr }),
-        }
-    }
-    fn get_ref<'b>(&self) -> &'b mut Block<E, L> {
-        let ret = unsafe { mem::transmute_copy(&self.data) };
-        ret
-    }
-    fn into_ref<'b>(self) -> &'b mut Block<E, L> {
-        let ret = self.get_ref();
-        mem::forget(self);
-        ret
-    }
-    fn as_atomic(&self) -> AtomicPtr<Block<E, L>> {
-        AtomicPtr::new(self.get_ref())
-    }
-    fn usize_to_ref<'b>(ptr: usize) -> &'b mut Block<E, L> {
-        Self::from_raw(ptr as *const Block<E, L> as *mut Block<E, L>).into_ref()
-    }
-}
+// impl<'a, E, L> ThinPtrArray<'a, E, L>
+// where
+//     E: 'a,
+//     L: 'a,
+// {
+//     fn from_raw(ptr: *mut Block<E, L>) -> Self {
+//         Self {
+//             data: ManuallyDrop::new(unsafe { &mut *ptr }),
+//         }
+//     }
+//     fn get_ref<'b>(&self) -> &'b mut Block<E, L> {
+//         let ret = unsafe { mem::transmute_copy(&self.data) };
+//         ret
+//     }
+//     fn into_ref<'b>(self) -> &'b mut Block<E, L> {
+//         let ret = self.get_ref();
+//         mem::forget(self);
+//         ret
+//     }
+//     fn as_atomic(&self) -> AtomicPtr<Block<E, L>> {
+//         AtomicPtr::new(self.get_ref())
+//     }
+//     fn usize_to_ref<'b>(ptr: usize) -> &'b mut Block<E, L> {
+//         Self::from_raw(ptr as *const Block<E, L> as *mut Block<E, L>).into_ref()
+//     }
+// }
 
 impl<'a, E, L> Index<usize> for ThinPtrArray<'a, E, L> {
     type Output = E;
@@ -296,58 +296,58 @@ where
     }
 }
 
-impl<'a, E, L> AtomicArrayRef for ThinPtrArray<'a, E, L> {
-    fn as_ref(&self) -> usize {
-        self.get_ref() as *const Block<E, L> as usize
-    }
-    fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self {
-        Self::from_raw(self.as_atomic().compare_and_swap(
-            Self::usize_to_ref(current),
-            new.into_ref(),
-            order,
-        ))
-    }
-    fn compare_exchange(
-        &self,
-        current: usize,
-        new: Self,
-        success: Ordering,
-        failure: Ordering,
-    ) -> Result<Self, Self> {
-        match self.as_atomic().compare_exchange(
-            Self::usize_to_ref(current),
-            new.into_ref(),
-            success,
-            failure,
-        ) {
-            Ok(data) => Ok(Self::from_raw(data)),
-            Err(data) => Err(Self::from_raw(data)),
-        }
-    }
-    fn compare_exchange_weak(
-        &self,
-        current: usize,
-        new: Self,
-        success: Ordering,
-        failure: Ordering,
-    ) -> Result<Self, Self> {
-        match self.as_atomic().compare_exchange_weak(
-            Self::usize_to_ref(current),
-            new.into_ref(),
-            success,
-            failure,
-        ) {
-            Ok(data) => Ok(Self::from_raw(data)),
-            Err(data) => Err(Self::from_raw(data)),
-        }
-    }
-    fn load(&self, order: Ordering) -> Self {
-        Self::from_raw(self.as_atomic().load(order))
-    }
-    fn store(&self, ptr: Self, order: Ordering) {
-        self.as_atomic().store(ptr.into_ref(), order)
-    }
-    fn swap(&self, ptr: Self, order: Ordering) -> Self {
-        Self::from_raw(self.as_atomic().swap(ptr.into_ref(), order))
-    }
-}
+//impl<'a, E, L> AtomicArrayRef for ThinPtrArray<'a, E, L> {
+//    fn as_ref(&self) -> usize {
+//        self.get_ref() as *const Block<E, L> as usize
+//    }
+//    fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self {
+//        Self::from_raw(self.as_atomic().compare_and_swap(
+//            Self::usize_to_ref(current),
+//            new.into_ref(),
+//            order,
+//        ))
+//    }
+//    fn compare_exchange(
+//        &self,
+//        current: usize,
+//        new: Self,
+//        success: Ordering,
+//        failure: Ordering,
+//    ) -> Result<Self, Self> {
+//        match self.as_atomic().compare_exchange(
+//            Self::usize_to_ref(current),
+//            new.into_ref(),
+//            success,
+//            failure,
+//        ) {
+//            Ok(data) => Ok(Self::from_raw(data)),
+//            Err(data) => Err(Self::from_raw(data)),
+//        }
+//    }
+//    fn compare_exchange_weak(
+//        &self,
+//        current: usize,
+//        new: Self,
+//        success: Ordering,
+//        failure: Ordering,
+//    ) -> Result<Self, Self> {
+//        match self.as_atomic().compare_exchange_weak(
+//            Self::usize_to_ref(current),
+//            new.into_ref(),
+//            success,
+//            failure,
+//        ) {
+//            Ok(data) => Ok(Self::from_raw(data)),
+//            Err(data) => Err(Self::from_raw(data)),
+//        }
+//    }
+//    fn load(&self, order: Ordering) -> Self {
+//        Self::from_raw(self.as_atomic().load(order))
+//    }
+//    fn store(&self, ptr: Self, order: Ordering) {
+//        self.as_atomic().store(ptr.into_ref(), order)
+//    }
+//    fn swap(&self, ptr: Self, order: Ordering) -> Self {
+//        Self::from_raw(self.as_atomic().swap(ptr.into_ref(), order))
+//    }
+//}
