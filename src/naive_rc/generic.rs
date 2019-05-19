@@ -305,9 +305,9 @@ where
 impl<'a, A, R, E, L> SliceArrayRef<E> for RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + SliceArray<E>,
-    R: 'a + RefCounter<L> + Send + Sync,
-    E: 'a + Send + Sync,
-    L: 'a + Send + Sync,
+    R: 'a + RefCounter<L>,
+    E: 'a,
+    L: 'a,
 {
     fn as_slice(&self) -> &[E] {
         self.data.as_slice()
@@ -324,14 +324,34 @@ where
 impl<'a, 'b, A, R, E, L> IntoIterator for &'b RcArray<'a, A, R, E, L>
 where
     A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + SliceArray<E>,
-    R: 'a + RefCounter<L> + Send + Sync,
-    E: 'a + Send + Sync,
-    L: 'a + Send + Sync,
+    R: 'a + RefCounter<L>,
+    E: 'a,
+    L: 'a,
 {
     type Item = &'b E;
     type IntoIter = core::slice::Iter<'b, E>;
     fn into_iter(self) -> Self::IntoIter {
         self.as_slice().into_iter()
+    }
+}
+
+impl<'a, A, R, E, L> fmt::Debug for RcArray<'a, A, R, E, L>
+where
+    A: 'a + LabelledArray<E, R> + BaseArrayRef + UnsafeArrayRef + SliceArray<E>,
+    R: 'a + RefCounter<L>,
+    E: 'a + fmt::Debug,
+    L: 'a + fmt::Debug,
+{
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        // maybe change this when const generics become stable? I.e. change the
+        // name of the struct.
+        formatter
+            .debug_struct("RcArray")
+            .field("label", &self.get_label())
+            .field("ref_count", &self.ref_count())
+            .field("len", &self.len())
+            .field("elements", &self.as_slice())
+            .finish()
     }
 }
 
