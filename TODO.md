@@ -18,15 +18,14 @@
   - [X] Write tests
   - [ ] Write test generator on traits, because there are gonna be a bunch of
     implementations of the same traits
-    **Status:** *delayed by lack of support*
+    **Status:** *delayed by implementation difficulty*
 - [X] Write naive reference counting structs (only strong references) and naive
       atomic reference counting structs
   - [X] `ArrayRef::clone()` to be more idiomatic with `ArrayRef::clone<A>(arr: A) -> A where A: ArrayRef + Clone`
   - [X] Check for nulls, add panics, etc.
-  - [ ] Add an interface between ref counted version and normal versions
-    **Status:** *delayed, seeming lack of practical utility*
   - [X] Write tests, testing memory usage during clones
-- [ ] Write structs that are reference counted. Use naive Rc structs as weak-pointers
+- [ ] Write structs that are reference counted. Use naive Rc structs as weak-pointers  
+  **Status:** *delayed, doesn't seem that useful*
   - [ ] Write tests
 - [ ] Move to `#![no_std]`
 - [ ] Allow the user to customize allocator
