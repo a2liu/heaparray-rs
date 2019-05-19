@@ -112,7 +112,7 @@ impl<E, L> MemBlock<E, L> {
 
     /// Returns a null pointer to a memory block. Dereferencing it is undefined
     /// behavior, and is by definition unsafe.
-    pub unsafe fn null_ref() -> *mut Self {
+    pub fn null_ref() -> *mut Self {
         Self::NULL as *mut Self
     }
 
@@ -257,24 +257,22 @@ impl<E, L> MemBlock<E, L> {
     /// functionality through this method.
     pub fn is_null(&self) -> bool {
         use crate::black_box::black_box;
-        let ret = unsafe {
-            // Rust does some funky optimizations behind the scenes that
-            // in most cases would be useful, but because we don't
-            // maintain the typical invariants of Rust references in this
-            // codebase, we need to wrap some of the values in black
-            // boxes.
-            //
-            // I don't know whether it's better to use this system or
-            // to use the provided function, `core::ptr::null()`. My
-            // current rationale is that `usize::MAX` is a reasonable
-            // value for "never going to be seen in the wild so if we
-            // do it's an error". But I could definitely change it very
-            // easily, and I'm very willing to.
-            ptr::eq(
-                black_box(self) as *const Self,
-                black_box(black_box(Self::NULL) as *const Self),
-            )
-        };
+        // Rust does some funky optimizations behind the scenes that
+        // in most cases would be useful, but because we don't
+        // maintain the typical invariants of Rust references in this
+        // codebase, we need to wrap some of the values in black
+        // boxes.
+        //
+        // I don't know whether it's better to use this system or
+        // to use the provided function, `core::ptr::null()`. My
+        // current rationale is that `usize::MAX` is a reasonable
+        // value for "never going to be seen in the wild so if we
+        // do it's an error". But I could definitely change it very
+        // easily, and I'm very willing to.
+        let ret = ptr::eq(
+            black_box(self) as *const Self,
+            black_box(black_box(Self::null_ref()) as *const Self),
+        );
         ret
     }
 }
