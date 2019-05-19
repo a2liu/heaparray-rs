@@ -250,103 +250,28 @@ pub struct MemBlockIter<'a, E, L> {
     current: &'a mut E,
 }
 
-impl<'a, E, L> MemBlockIter<'a, E, L> {
-    /// Creates an owned version of this iterator that takes ownership
-    /// of the memory block it has a reference to and deallocates it
-    /// when done iterating.
-    pub fn to_owned(self) -> MemBlockIterOwned<'a, E, L> {
-        MemBlockIterOwned { iter: self }
-    }
-    /// Creates a borrow version of this iterator that returns references
-    /// to the stuff inside of it.
-    pub fn to_ref(self) -> MemBlockIterRef<'a, E, L> {
-        MemBlockIterRef { iter: self }
-    }
-    /// Creates a mutable borrow version of this iterator that returns
-    /// mutable references to the stuff inside of it.
-    pub fn to_mut(self) -> MemBlockIterMut<'a, E, L> {
-        MemBlockIterMut { iter: self }
-    }
-}
-
-/// Owned version of `MemBlockIter` that returns the items in the memory
-/// block by value and then deallocates the block once this iterator
-/// goes out of scope.
-#[repr(transparent)]
-pub struct MemBlockIterOwned<'a, E, L> {
-    iter: MemBlockIter<'a, E, L>,
-}
-
-impl<'a, E, L> Iterator for MemBlockIterOwned<'a, E, L> {
+impl<'a, E, L> Iterator for MemBlockIter<'a, E, L> {
     type Item = E;
     fn next(&mut self) -> Option<E> {
-        let curr = self.iter.current as *mut E;
-        let end = self.iter.end as *mut E;
+        let curr = self.current as *mut E;
+        let end = self.end as *mut E;
         if curr == end {
             None
         } else {
             unsafe {
-                let out = mem::transmute_copy(self.iter.current);
-                self.iter.current = &mut *curr.add(1);
+                let out = mem::transmute_copy(self.current);
+                self.current = &mut *curr.add(1);
                 Some(out)
             }
         }
     }
 }
 
-impl<'a, E, L> Drop for MemBlockIterOwned<'a, E, L> {
+impl<'a, E, L> Drop for MemBlockIter<'a, E, L> {
     fn drop(&mut self) {
-        let end = self.iter.end as *mut E;
-        let begin = &mut *self.iter.block.elements as *mut E as usize;
+        let end = self.end as *mut E;
+        let begin = &mut *self.block.elements as *mut E as usize;
         let len = (end as usize) - begin;
-        unsafe { self.iter.block.dealloc_lazy(len) };
-    }
-}
-
-/// Borrow version of `MemBlockIter` that returns references to
-/// the elements in the block.
-#[repr(transparent)]
-pub struct MemBlockIterRef<'a, E, L> {
-    iter: MemBlockIter<'a, E, L>,
-}
-
-impl<'a, E, L> Iterator for MemBlockIterRef<'a, E, L> {
-    type Item = &'a E;
-    fn next(&mut self) -> Option<&'a E> {
-        let curr = self.iter.current as *mut E;
-        let end = self.iter.end as *mut E;
-        if curr == end {
-            None
-        } else {
-            unsafe {
-                let out = self.iter.current as *mut E;
-                self.iter.current = &mut *curr.add(1);
-                Some(&*out)
-            }
-        }
-    }
-}
-
-/// Mutable borrow version of `MemBlockIter` that returns mutable
-/// references to the elements in the block.
-#[repr(transparent)]
-pub struct MemBlockIterMut<'a, E, L> {
-    iter: MemBlockIter<'a, E, L>,
-}
-
-impl<'a, E, L> Iterator for MemBlockIterMut<'a, E, L> {
-    type Item = &'a mut E;
-    fn next(&mut self) -> Option<&'a mut E> {
-        let curr = self.iter.current as *mut E;
-        let end = self.iter.end as *mut E;
-        if curr == end {
-            None
-        } else {
-            unsafe {
-                let out = self.iter.current as *mut E;
-                self.iter.current = &mut *curr.add(1);
-                Some(&mut *out)
-            }
-        }
+        unsafe { self.block.dealloc_lazy(len) };
     }
 }

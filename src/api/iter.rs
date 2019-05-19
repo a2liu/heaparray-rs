@@ -1,4 +1,4 @@
-use crate::base::iter::FatPtrArrayIterOwned;
+use crate::base::iter::FatPtrArrayIter;
 
 /// An iterator that that returns each item by ownership
 ///
@@ -13,9 +13,9 @@ use crate::base::iter::FatPtrArrayIterOwned;
 /// }
 /// ```
 #[repr(transparent)]
-pub struct HeapArrayIterOwned<'a, E, L>(pub(crate) FatPtrArrayIterOwned<'a, E, L>);
+pub struct HeapArrayIter<'a, E, L>(pub(crate) FatPtrArrayIter<'a, E, L>);
 
-impl<'a, E, L> Iterator for HeapArrayIterOwned<'a, E, L> {
+impl<'a, E, L> Iterator for HeapArrayIter<'a, E, L> {
     type Item = E;
     fn next(&mut self) -> Option<E> {
         self.0.next()

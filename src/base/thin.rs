@@ -4,7 +4,7 @@
 //! in Rust, but may improve performance depending on your use case. Thus, it is
 //! not the standard implementation of `HeapArray`, but is still available for use
 //! via `use heaparray::base::*;
-use super::iter::ThinPtrArrayIterOwned;
+use super::iter::ThinPtrArrayIter;
 use crate::prelude::*;
 // use core::sync::atomic::{AtomicPtr, Ordering};
 
@@ -111,23 +111,6 @@ pub(crate) struct LenLabel<L> {
 //     }
 // }
 
-impl<'a, E, L> Index<usize> for ThinPtrArray<'a, E, L> {
-    type Output = E;
-    fn index(&self, idx: usize) -> &E {
-        #[cfg(not(feature = "no-asserts"))]
-        assert!(idx < self.len());
-        unsafe { self.data.get(idx) }
-    }
-}
-
-impl<'a, E, L> IndexMut<usize> for ThinPtrArray<'a, E, L> {
-    fn index_mut(&mut self, idx: usize) -> &mut E {
-        #[cfg(not(feature = "no-asserts"))]
-        assert!(idx < self.len());
-        unsafe { self.data.get(idx) }
-    }
-}
-
 impl<'a, E, L> Clone for ThinPtrArray<'a, E, L>
 where
     E: Clone,
@@ -171,22 +154,34 @@ impl<'a, E, L> CopyMap<usize, E> for ThinPtrArray<'a, E, L> {
         if key > self.len() {
             None
         } else {
-            Some(&self[key])
+            Some(unsafe { self.data.get(key) })
         }
     }
     fn get_mut(&mut self, key: usize) -> Option<&mut E> {
         if key > self.len() {
             None
         } else {
-            Some(&mut self[key])
+            Some(unsafe { self.data.get(key) })
         }
     }
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
-        if key > self.len() {
-            None
-        } else {
-            Some(mem::replace(&mut self[key], value))
+        match self.get_mut(key) {
+            Some(slot) => Some(mem::replace(slot, value)),
+            None => None,
         }
+    }
+}
+
+impl<'a, E, L> Index<usize> for ThinPtrArray<'a, E, L> {
+    type Output = E;
+    fn index(&self, idx: usize) -> &E {
+        self.get(idx).unwrap()
+    }
+}
+
+impl<'a, E, L> IndexMut<usize> for ThinPtrArray<'a, E, L> {
+    fn index_mut(&mut self, idx: usize) -> &mut E {
+        self.get_mut(idx).unwrap()
     }
 }
 
@@ -248,7 +243,7 @@ impl<'a, E, L> BaseArrayRef for ThinPtrArray<'a, E, L> {}
 
 impl<'a, E, L> IntoIterator for ThinPtrArray<'a, E, L> {
     type Item = E;
-    type IntoIter = ThinPtrArrayIterOwned<'a, E, L>;
+    type IntoIter = ThinPtrArrayIter<'a, E, L>;
     fn into_iter(self) -> Self::IntoIter {
         let iter = unsafe { mem::transmute_copy(&self.data.iter(self.len())) };
         mem::forget(self);
