@@ -1,4 +1,5 @@
-# HeapArray
+# heaparray
+
 This crate aims to give people better control of how they want to allocate memory,
 by providing a customizable way to allocate blocks of memory, that optionally contains
 metadata about the block itself.
@@ -41,14 +42,12 @@ It has two main features that provide the foundation for the rest:
 
   ```rust
   use heaparray::*;
+
   fn main() {
       let dynamic = HeapArray::<u8,u32>::with_label(17, 8, |_,_| 0);
-      print!("{:?}", dynamic);
+      println!("{:?}", dynamic);
   }
   ```
-
-  Note that a `Debug` implementation will be available soon, and make
-  the above code much prettier.
 
 - **Thin pointer arrays:** in Rust, unsized structs are referenced with
   pointers that are stored with an associated length; these are called fat
@@ -56,15 +55,16 @@ It has two main features that provide the foundation for the rest:
   both thin and fat pointer-referenced arrays, where the length is stored
   with the data instead of with the pointer in the thin pointer variant.
 
-## Features
+### Features
 - Arrays are allocated on the heap, with optional extra space allocated for metadata
 - 1-word and 2-word references to arrays
-- Atomically reference-counted memory blocks of arbitrary size without using a `Vec`
+- Atomically reference-counted memory blocks of arbitrary size without using a `Vec`;
+  this means you can access reference-counted memory with only a single pointer
+  indirection.
 - Swap owned objects in and out with `array.insert()`
 - Arbitrarily sized objects using label and an array of bytes (`u8`)
-- Atomic pointer comparison for the `heaparray::ArcArray` type.
 
-## Examples
+### Examples
 Creating an array:
 
 ```rust
@@ -77,6 +77,8 @@ assert!(array[1] == 4);
 Indexing works as you would expect:
 
 ```rust
+use heaparray::*;
+let mut array = HeapArray::new(10, |_| 0);
 array[3] = 2;
 assert!(array[3] == 2);
 ```
@@ -113,21 +115,15 @@ let mut array = HeapArray::with_label(
         }
     });
 ```
-
-## Use of `unsafe` Keyword
+### Use of `unsafe` Keyword
 This library relies heavily on the use of the `unsafe` keyword to do both
 reference counting and atomic operations; there are 14 instances total,
 not including tests.
 
-## Customizability
+### Customizability
 All of the implementation details of this crate are public and documented; if you'd
 like to implement your own version of the tools available through this crate,
 note that you don't need to reinvent the wheel; many of the types in this crate
 are generic over certain traits, so you might not need to do that much.
 
-## Future Plans
-Iteration, allocator customization, constant-sized array of arbitrary size,
-i.e. `CArray`, with sizes managed by the type system (waiting on const
-generics for this one).  See `TODO.md` in the repository for a full
-list of planned features.
-
+License: MIT

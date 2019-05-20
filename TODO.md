@@ -1,4 +1,13 @@
 # TODO
+- [ ] `AtomicPtrArray`, and change the atomic operations to work on some
+  pseudo-pointer type, so the end user doesn't have to know the type directly.
+  pseudo-pointer type has to be copy, and has to contain a reference. No load
+  or store operation, because those don't interact well with destructors.
+- [X] Remove internal references in code; makes it too hard to reason about Rust
+  behavior. Use `NonNull` where necessary, create safe abstractions with ThinPtrArray,
+  FatPtrArray, and AtomicPtrArray
+- [ ] Create `SafeMemBlock` that generalizes a memory block that's labelled with
+  a number
 - [X] Separate `LabelledArray` into `LabelledArray` and `LabelledArrayMut`,
   and remove `Array` requirement from `LabelledArray` (change it to `CopyMap`)
 - [X] Remove implementations of `IndexMut`, `get_label_mut`, etc. from
@@ -7,7 +16,7 @@
   - [X] Use slices for borrow and mutable borrow iteration, and a custom
     struct for owned iteration.
 - [X] Get implementations of standard things like iteration and `Debug` output.
-- [ ] Remove null refs from crate. They're anti-patterns in Rust, and don't seem
+- [X] Remove null refs from crate. They're anti-patterns in Rust, and don't seem
   to serve any utility
 - [X] Get a single implementation of memory block. This allows for
   a more explicit description of the memory layout and a consolidation of
