@@ -4,9 +4,9 @@
 //! in Rust, but may improve performance depending on your use case. Thus, it is
 //! not the standard implementation of `HeapArray`, but is still available for use
 //! via `use heaparray::base::*;
-use super::iter::ThinPtrArrayIterOwned;
+use super::iter::ThinPtrArrayIter;
 use crate::prelude::*;
-// use core::sync::atomic::{AtomicPtr, Ordering};
+use core::ptr::NonNull;
 
 /// Heap-allocated array, with array size stored alongside the memory block
 /// itself.
@@ -68,15 +68,12 @@ use crate::prelude::*;
 /// and does not check for pointer validity; you should use this struct in the same
 /// way you would use a raw array or slice.
 #[repr(transparent)]
-pub struct ThinPtrArray<'a, E, L = ()>
-where
-    Self: 'a,
-{
-    data: Data<'a, E, L>,
+pub struct ThinPtrArray<E, L = ()> {
+    data: Data<E, L>,
 }
 
 type Block<E, L> = MemBlock<E, LenLabel<L>>;
-type Data<'a, E, L> = ManuallyDrop<&'a mut Block<E, L>>;
+type Data<E, L> = NonNull<Block<E, L>>;
 
 #[derive(Clone)]
 pub(crate) struct LenLabel<L> {
@@ -84,43 +81,14 @@ pub(crate) struct LenLabel<L> {
     label: L,
 }
 
-// impl<'a, E, L> ThinPtrArray<'a, E, L>
-// where
-//     E: 'a,
-//     L: 'a,
-// {
-//     fn from_raw(ptr: *mut Block<E, L>) -> Self {
-//         Self {
-//             data: ManuallyDrop::new(unsafe { &mut *ptr }),
-//         }
-//     }
-//     fn get_ref<'b>(&self) -> &'b mut Block<E, L> {
-//         let ret = unsafe { mem::transmute_copy(&self.data) };
-//         ret
-//     }
-//     fn into_ref<'b>(self) -> &'b mut Block<E, L> {
-//         let ret = self.get_ref();
-//         mem::forget(self);
-//         ret
-//     }
-//     fn as_atomic(&self) -> AtomicPtr<Block<E, L>> {
-//         AtomicPtr::new(self.get_ref())
-//     }
-//     fn usize_to_ref<'b>(ptr: usize) -> &'b mut Block<E, L> {
-//         Self::from_raw(ptr as *const Block<E, L> as *mut Block<E, L>).into_ref()
-//     }
-// }
-
-impl<'a, E, L> Clone for ThinPtrArray<'a, E, L>
+impl<E, L> Clone for ThinPtrArray<E, L>
 where
     E: Clone,
     L: Clone,
 {
     fn clone(&self) -> Self {
-        let new_ptr = unsafe { (*self.data).clone(self.len()) };
-        Self {
-            data: ManuallyDrop::new(new_ptr),
-        }
+        let new_ptr = unsafe { NonNull::new_unchecked(self.data.as_ref().clone(self.len())) };
+        Self { data: new_ptr }
     }
     fn clone_from(&mut self, source: &Self) {
         if source.len() != self.len() {
@@ -134,34 +102,32 @@ where
     }
 }
 
-impl<'a, E, L> Drop for ThinPtrArray<'a, E, L> {
+impl<E, L> Drop for ThinPtrArray<E, L> {
     fn drop(&mut self) {
         let len = self.len();
-        let mut_ref = &mut self.data;
-        unsafe { mut_ref.dealloc(len) };
-        mem::forget(mut_ref);
+        unsafe { self.data.as_mut().dealloc(len) };
     }
 }
 
-impl<'a, E, L> Container for ThinPtrArray<'a, E, L> {
+impl<E, L> Container for ThinPtrArray<E, L> {
     fn len(&self) -> usize {
-        self.data.label.len
+        unsafe { self.data.as_ref().get_label().len }
     }
 }
 
-impl<'a, E, L> CopyMap<usize, E> for ThinPtrArray<'a, E, L> {
+impl<E, L> CopyMap<usize, E> for ThinPtrArray<E, L> {
     fn get(&self, key: usize) -> Option<&E> {
         if key >= self.len() {
             None
         } else {
-            Some(unsafe { self.data.get(key) })
+            Some(unsafe { self.data.as_ref().get(key) })
         }
     }
     fn get_mut(&mut self, key: usize) -> Option<&mut E> {
         if key >= self.len() {
             None
         } else {
-            Some(unsafe { self.data.get(key) })
+            Some(unsafe { self.data.as_mut().get(key) })
         }
     }
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
@@ -172,20 +138,20 @@ impl<'a, E, L> CopyMap<usize, E> for ThinPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> Index<usize> for ThinPtrArray<'a, E, L> {
+impl<E, L> Index<usize> for ThinPtrArray<E, L> {
     type Output = E;
     fn index(&self, idx: usize) -> &E {
         self.get(idx).unwrap()
     }
 }
 
-impl<'a, E, L> IndexMut<usize> for ThinPtrArray<'a, E, L> {
+impl<E, L> IndexMut<usize> for ThinPtrArray<E, L> {
     fn index_mut(&mut self, idx: usize) -> &mut E {
         self.get_mut(idx).unwrap()
     }
 }
 
-impl<'a, E> MakeArray<E> for ThinPtrArray<'a, E, ()> where {
+impl<E> MakeArray<E> for ThinPtrArray<E, ()> where {
     fn new<F>(len: usize, mut func: F) -> Self
     where
         F: FnMut(usize) -> E,
@@ -194,7 +160,7 @@ impl<'a, E> MakeArray<E> for ThinPtrArray<'a, E, ()> where {
     }
 }
 
-impl<'a, E, L> LabelledArray<E, L> for ThinPtrArray<'a, E, L> {
+impl<E, L> LabelledArray<E, L> for ThinPtrArray<E, L> {
     fn with_label<F>(label: L, len: usize, mut func: F) -> Self
     where
         F: FnMut(&mut L, usize) -> E,
@@ -203,34 +169,34 @@ impl<'a, E, L> LabelledArray<E, L> for ThinPtrArray<'a, E, L> {
             func(&mut lbl.label, idx)
         });
         let new_obj = Self {
-            data: ManuallyDrop::new(block_ptr),
+            data: NonNull::new(block_ptr).unwrap(),
         };
         new_obj
     }
     unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
         let new_ptr = Block::new(LenLabel { len, label }, len);
         Self {
-            data: ManuallyDrop::new(new_ptr),
+            data: NonNull::new_unchecked(new_ptr),
         }
     }
     fn get_label(&self) -> &L {
-        &self.data.label.label
+        unsafe { self.get_label_unsafe() }
     }
     unsafe fn get_label_unsafe(&self) -> &mut L {
-        &mut self.data.get_label().label
+        &mut self.data.as_ref().get_label().label
     }
     unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
-        self.data.get(idx)
+        self.data.as_ref().get(idx)
     }
 }
 
-impl<'a, E, L> LabelledArrayMut<E, L> for ThinPtrArray<'a, E, L> {
+impl<E, L> LabelledArrayMut<E, L> for ThinPtrArray<E, L> {
     fn get_label_mut(&mut self) -> &mut L {
-        &mut self.data.label.label
+        unsafe { self.get_label_unsafe() }
     }
 }
 
-impl<'a, E, L> DefaultLabelledArray<E, L> for ThinPtrArray<'a, E, L>
+impl<E, L> DefaultLabelledArray<E, L> for ThinPtrArray<E, L>
 where
     E: Default,
 {
@@ -239,28 +205,31 @@ where
     }
 }
 
-impl<'a, E, L> BaseArrayRef for ThinPtrArray<'a, E, L> {}
+impl<E, L> BaseArrayRef for ThinPtrArray<E, L> {}
 
-impl<'a, E, L> IntoIterator for ThinPtrArray<'a, E, L> {
+impl<E, L> IntoIterator for ThinPtrArray<E, L> {
     type Item = E;
-    type IntoIter = ThinPtrArrayIterOwned<'a, E, L>;
-    fn into_iter(self) -> Self::IntoIter {
-        let iter = unsafe { mem::transmute_copy(&self.data.iter(self.len())) };
+    type IntoIter = ThinPtrArrayIter<E, L>;
+    fn into_iter(mut self) -> Self::IntoIter {
+        let len = self.len();
+        let iter = unsafe { self.data.as_mut().iter(len) };
         mem::forget(self);
-        iter
+        ThinPtrArrayIter(iter)
     }
 }
 
-impl<'a, E, L> SliceArray<E> for ThinPtrArray<'a, E, L> {
+impl<E, L> SliceArray<E> for ThinPtrArray<E, L> {
     fn as_slice(&self) -> &[E] {
-        unsafe { self.data.as_slice(self.len()) }
+        let len = self.len();
+        unsafe { self.data.as_ref().as_slice(len) }
     }
     fn as_slice_mut(&mut self) -> &mut [E] {
-        unsafe { self.data.as_slice(self.len()) }
+        let len = self.len();
+        unsafe { self.data.as_mut().as_slice(len) }
     }
 }
 
-impl<'a, 'b, E, L> IntoIterator for &'b ThinPtrArray<'a, E, L> {
+impl<'b, E, L> IntoIterator for &'b ThinPtrArray<E, L> {
     type Item = &'b E;
     type IntoIter = core::slice::Iter<'b, E>;
     fn into_iter(self) -> Self::IntoIter {
@@ -268,7 +237,7 @@ impl<'a, 'b, E, L> IntoIterator for &'b ThinPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, 'b, E, L> IntoIterator for &'b mut ThinPtrArray<'a, E, L> {
+impl<'b, E, L> IntoIterator for &'b mut ThinPtrArray<E, L> {
     type Item = &'b mut E;
     type IntoIter = core::slice::IterMut<'b, E>;
     fn into_iter(self) -> Self::IntoIter {
@@ -276,7 +245,7 @@ impl<'a, 'b, E, L> IntoIterator for &'b mut ThinPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> fmt::Debug for ThinPtrArray<'a, E, L>
+impl<E, L> fmt::Debug for ThinPtrArray<E, L>
 where
     E: fmt::Debug,
     L: fmt::Debug,
@@ -291,58 +260,16 @@ where
     }
 }
 
-//impl<'a, E, L> AtomicArrayRef for ThinPtrArray<'a, E, L> {
-//    fn as_ref(&self) -> usize {
-//        self.get_ref() as *const Block<E, L> as usize
-//    }
-//    fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self {
-//        Self::from_raw(self.as_atomic().compare_and_swap(
-//            Self::usize_to_ref(current),
-//            new.into_ref(),
-//            order,
-//        ))
-//    }
-//    fn compare_exchange(
-//        &self,
-//        current: usize,
-//        new: Self,
-//        success: Ordering,
-//        failure: Ordering,
-//    ) -> Result<Self, Self> {
-//        match self.as_atomic().compare_exchange(
-//            Self::usize_to_ref(current),
-//            new.into_ref(),
-//            success,
-//            failure,
-//        ) {
-//            Ok(data) => Ok(Self::from_raw(data)),
-//            Err(data) => Err(Self::from_raw(data)),
-//        }
-//    }
-//    fn compare_exchange_weak(
-//        &self,
-//        current: usize,
-//        new: Self,
-//        success: Ordering,
-//        failure: Ordering,
-//    ) -> Result<Self, Self> {
-//        match self.as_atomic().compare_exchange_weak(
-//            Self::usize_to_ref(current),
-//            new.into_ref(),
-//            success,
-//            failure,
-//        ) {
-//            Ok(data) => Ok(Self::from_raw(data)),
-//            Err(data) => Err(Self::from_raw(data)),
-//        }
-//    }
-//    fn load(&self, order: Ordering) -> Self {
-//        Self::from_raw(self.as_atomic().load(order))
-//    }
-//    fn store(&self, ptr: Self, order: Ordering) {
-//        self.as_atomic().store(ptr.into_ref(), order)
-//    }
-//    fn swap(&self, ptr: Self, order: Ordering) -> Self {
-//        Self::from_raw(self.as_atomic().swap(ptr.into_ref(), order))
-//    }
-//}
+unsafe impl<E, L> Send for ThinPtrArray<E, L>
+where
+    E: Send,
+    L: Send,
+{
+}
+
+unsafe impl<E, L> Sync for ThinPtrArray<E, L>
+where
+    E: Sync,
+    L: Sync,
+{
+}

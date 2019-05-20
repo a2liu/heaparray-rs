@@ -4,7 +4,6 @@
 use super::ref_counters::*;
 pub use crate::prelude::*;
 use core::marker::PhantomData;
-use core::sync::atomic::Ordering;
 
 /// `RcArray` is a generic, implementation-agnositc array. It contains
 /// logic for enforcing type safety.
@@ -23,23 +22,19 @@ use core::sync::atomic::Ordering;
 /// this means that this struct is *a single pointer indirection* from its underlying
 /// data.
 #[repr(transparent)]
-pub struct RcArray<'a, A, R, E, L = ()>
+pub struct RcArray<A, R, E, L = ()>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L>,
 {
     data: ManuallyDrop<A>,
-    phantom: PhantomData<(&'a E, R, L)>,
+    phantom: PhantomData<(R, E, L)>,
 }
 
-impl<'a, A, R, E, L> RcArray<'a, A, R, E, L>
+impl<A, R, E, L> RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L>,
 {
     fn from_ref(ptr: A) -> Self {
         Self {
@@ -47,8 +42,6 @@ where
             phantom: PhantomData,
         }
     }
-    // This would be unsafe if the `A` were returned to caller, but since it
-    // isn't, everything should be fiiiiiiiine
     fn to_ref(self) -> A {
         let ret = unsafe { mem::transmute_copy(&self.data) };
         mem::forget(self);
@@ -66,33 +59,27 @@ where
     }
 }
 
-impl<'a, A, R, E, L> RcArray<'a, A, R, E, L>
+impl<A, R, E, L> RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + Clone,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef + Clone,
+    R: RefCounter<L>,
 {
     pub fn make_owned(&self) -> A {
         (*self.data).clone()
     }
 }
 
-impl<'a, A, R, E, L> BaseArrayRef for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> BaseArrayRef for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L>,
 {
 }
 
-impl<'a, A, R, E, L> Clone for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> Clone for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L>,
 {
     fn clone(&self) -> Self {
         (*self.data).get_label().increment();
@@ -100,21 +87,17 @@ where
     }
 }
 
-impl<'a, A, R, E, L> ArrayRef for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> ArrayRef for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L>,
 {
 }
 
-impl<'a, A, R, E, L> Index<usize> for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> Index<usize> for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + Index<usize, Output = E>,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef + Index<usize, Output = E>,
+    R: RefCounter<L>,
 {
     type Output = E;
     fn index(&self, idx: usize) -> &E {
@@ -122,41 +105,36 @@ where
     }
 }
 
-impl<'a, A, R, E, L> Drop for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> Drop for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L>,
 {
     fn drop(&mut self) {
         let ref_count = self.data.get_label().decrement();
 
         if ref_count == 0 {
-            let to_drop: A = unsafe { mem::transmute_copy(&*self.data) };
-            mem::drop(to_drop); // Drop is here to be explicit about intent
+            unsafe {
+                ptr::drop_in_place(&mut *self.data);
+            }
         }
     }
 }
 
-impl<'a, A, R, E, L> Container for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> Container for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L>,
 {
     fn len(&self) -> usize {
         self.data.len()
     }
 }
 
-impl<'a, A, R, E, L> CopyMap<usize, E> for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> CopyMap<usize, E> for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L>,
 {
     /// Get a reference into this array. Returns `None` if:
     ///
@@ -189,12 +167,10 @@ where
     }
 }
 
-impl<'a, A, R, E, L> LabelledArray<E, L> for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> LabelledArray<E, L> for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L>,
 {
     fn with_label<F>(label: L, len: usize, mut func: F) -> Self
     where
@@ -219,12 +195,10 @@ where
     }
 }
 
-impl<'a, A, R, E, L> LabelledArrayRefMut<E, L> for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> LabelledArrayRefMut<E, L> for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + LabelledArrayMut<E, R>,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef + LabelledArrayMut<E, R>,
+    R: RefCounter<L>,
 {
     fn get_label_mut(&mut self) -> Option<&mut L> {
         if self.data.get_label().counter() == 1 {
@@ -235,11 +209,10 @@ where
     }
 }
 
-impl<'a, A, R, E> MakeArray<E> for RcArray<'a, A, R, E, ()>
+impl<A, R, E> MakeArray<E> for RcArray<A, R, E, ()>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<()>,
-    E: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<()>,
 {
     fn new<F>(len: usize, mut func: F) -> Self
     where
@@ -249,24 +222,21 @@ where
     }
 }
 
-impl<'a, A, R, E, L> DefaultLabelledArray<E, L> for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> DefaultLabelledArray<E, L> for RcArray<A, R, E, L>
 where
-    A: 'a + DefaultLabelledArray<E, R> + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a + Default,
-    L: 'a,
+    A: DefaultLabelledArray<E, R> + LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L>,
+    E: Default,
 {
     fn with_len(label: L, len: usize) -> Self {
         Self::from_ref(A::with_len(R::new(label), len))
     }
 }
 
-impl<'a, A, R, E, L> SliceArrayRef<E> for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> SliceArrayRef<E> for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
+    R: RefCounter<L>,
 {
     fn as_slice(&self) -> &[E] {
         self.data.as_slice()
@@ -280,12 +250,10 @@ where
     }
 }
 
-impl<'a, 'b, A, R, E, L> IntoIterator for &'b RcArray<'a, A, R, E, L>
+impl<'b, A, R, E, L> IntoIterator for &'b RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
+    A: LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
+    R: RefCounter<L>,
 {
     type Item = &'b E;
     type IntoIter = core::slice::Iter<'b, E>;
@@ -294,12 +262,12 @@ where
     }
 }
 
-impl<'a, A, R, E, L> fmt::Debug for RcArray<'a, A, R, E, L>
+impl<A, R, E, L> fmt::Debug for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
-    R: 'a + RefCounter<L>,
-    E: 'a + fmt::Debug,
-    L: 'a + fmt::Debug,
+    A: LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
+    R: RefCounter<L>,
+    E: fmt::Debug,
+    L: fmt::Debug,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         // maybe change this when const generics become stable? I.e. change the
@@ -314,68 +282,68 @@ where
     }
 }
 
-unsafe impl<'a, A, R, E, L> Send for RcArray<'a, A, R, E, L>
+unsafe impl<A, R, E, L> Send for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L> + Send + Sync,
-    E: 'a + Send + Sync,
-    L: 'a + Send + Sync,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L> + Send + Sync,
+    E: Send + Sync,
+    L: Send + Sync,
 {
 }
 
-unsafe impl<'a, A, R, E, L> Sync for RcArray<'a, A, R, E, L>
+unsafe impl<A, R, E, L> Sync for RcArray<A, R, E, L>
 where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef,
-    R: 'a + RefCounter<L> + Send + Sync,
-    E: 'a + Send + Sync,
-    L: 'a + Send + Sync,
+    A: LabelledArray<E, R> + BaseArrayRef,
+    R: RefCounter<L> + Send + Sync,
+    E: Send + Sync,
+    L: Send + Sync,
 {
 }
 
-impl<'a, A, R, E, L> AtomicArrayRef for RcArray<'a, A, R, E, L>
-where
-    A: 'a + LabelledArray<E, R> + BaseArrayRef + AtomicArrayRef,
-    R: 'a + RefCounter<L>,
-    E: 'a,
-    L: 'a,
-{
-    fn as_ref(&self) -> usize {
-        self.data.as_ref()
-    }
-    fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self {
-        Self::from_ref((*self.data).compare_and_swap(current, new.to_ref(), order))
-    }
-    fn compare_exchange(
-        &self,
-        current: usize,
-        new: Self,
-        success: Ordering,
-        failure: Ordering,
-    ) -> Result<Self, Self> {
-        match (*self.data).compare_exchange(current, new.to_ref(), success, failure) {
-            Ok(data) => Ok(Self::from_ref(data)),
-            Err(data) => Err(Self::from_ref(data)),
-        }
-    }
-    fn compare_exchange_weak(
-        &self,
-        current: usize,
-        new: Self,
-        success: Ordering,
-        failure: Ordering,
-    ) -> Result<Self, Self> {
-        match (*self.data).compare_exchange_weak(current, new.to_ref(), success, failure) {
-            Ok(data) => Ok(Self::from_ref(data)),
-            Err(data) => Err(Self::from_ref(data)),
-        }
-    }
-    fn load(&self, order: Ordering) -> Self {
-        Self::from_ref((*self.data).load(order))
-    }
-    fn store(&self, ptr: Self, order: Ordering) {
-        (*self.data).store(ptr.to_ref(), order);
-    }
-    fn swap(&self, ptr: Self, order: Ordering) -> Self {
-        Self::from_ref((*self.data).swap(ptr.to_ref(), order))
-    }
-}
+// impl<A, R, E, L> AtomicArrayRef for RcArray<A, R, E, L>
+// where
+//     A:  LabelledArray<E, R> + BaseArrayRef + AtomicArrayRef,
+//     R:  RefCounter<L>,
+//     E: 'a,
+//     L: 'a,
+// {
+//     fn as_ref(&self) -> usize {
+//         self.data.as_ref()
+//     }
+//     fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self {
+//         Self::from_ref((*self.data).compare_and_swap(current, new.to_ref(), order))
+//     }
+//     fn compare_exchange(
+//         &self,
+//         current: usize,
+//         new: Self,
+//         success: Ordering,
+//         failure: Ordering,
+//     ) -> Result<Self, Self> {
+//         match (*self.data).compare_exchange(current, new.to_ref(), success, failure) {
+//             Ok(data) => Ok(Self::from_ref(data)),
+//             Err(data) => Err(Self::from_ref(data)),
+//         }
+//     }
+//     fn compare_exchange_weak(
+//         &self,
+//         current: usize,
+//         new: Self,
+//         success: Ordering,
+//         failure: Ordering,
+//     ) -> Result<Self, Self> {
+//         match (*self.data).compare_exchange_weak(current, new.to_ref(), success, failure) {
+//             Ok(data) => Ok(Self::from_ref(data)),
+//             Err(data) => Err(Self::from_ref(data)),
+//         }
+//     }
+//     fn load(&self, order: Ordering) -> Self {
+//         Self::from_ref((*self.data).load(order))
+//     }
+//     fn store(&self, ptr: Self, order: Ordering) {
+//         (*self.data).store(ptr.to_ref(), order);
+//     }
+//     fn swap(&self, ptr: Self, order: Ordering) -> Self {
+//         Self::from_ref((*self.data).swap(ptr.to_ref(), order))
+//     }
+// }

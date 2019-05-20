@@ -40,7 +40,7 @@ pub fn block_max_len<E, L>() -> usize {
 #[repr(C)]
 pub struct MemBlock<E, L = ()> {
     /// Metadata about the block
-    pub label: L,
+    label: ManuallyDrop<L>,
     /// First element in the block
     elements: ManuallyDrop<E>,
 }
@@ -69,8 +69,8 @@ impl<E, L> MemBlock<E, L> {
     /// - The operation of dereferencing an element at index `i`, where
     ///   `0 <= i < len`, accesses valid memory that has been
     ///   properly initialized. This is NOT checked at runtime.
-    pub unsafe fn dealloc<'a>(&'a mut self, len: usize) {
-        ptr::drop_in_place(&mut self.label);
+    pub unsafe fn dealloc(&mut self, len: usize) {
+        ptr::drop_in_place(&mut *self.label);
         for i in 0..len {
             ptr::drop_in_place(self.get(i));
         }
@@ -89,7 +89,7 @@ impl<E, L> MemBlock<E, L> {
     /// This function *may* leak memory; be sure to run destructors on
     /// all initialized elements in this block before calling this method,
     /// as they may in accessible afterwards if you don't.
-    pub unsafe fn dealloc_lazy<'a>(&'a mut self, len: usize) {
+    pub unsafe fn dealloc_lazy(&mut self, len: usize) {
         let (size, align) = Self::memory_layout(len);
         deallocate(self, size, align);
     }
@@ -105,20 +105,19 @@ impl<E, L> MemBlock<E, L> {
     /// use heaparray::mem_block::MemBlock;
     /// use core::mem;
     /// let len = 100;
-    /// let block = unsafe { MemBlock::<usize, ()>::new((), len) };
+    /// let block = unsafe { &mut *MemBlock::<usize, ()>::new((), len) };
     /// for i in 0..len {
     ///     let item = i * i;
     ///     let garbage = mem::replace(unsafe { block.get(i) }, item);
     ///     mem::forget(garbage);
     /// }
     /// ```
-    pub unsafe fn new<'a>(label: L, len: usize) -> &'a mut Self {
+    pub unsafe fn new<'a>(label: L, len: usize) -> *mut Self {
         #[cfg(not(feature = "no-asserts"))]
         assert!(len <= block_max_len::<E, L>());
         let (size, align) = Self::memory_layout(len);
         let new_ptr = allocate::<Self>(size, align);
-        let garbage = mem::replace(&mut new_ptr.label, label);
-        mem::forget(garbage);
+        ptr::write(&mut (&mut *new_ptr).label, ManuallyDrop::new(label));
         new_ptr
     }
 
@@ -134,11 +133,11 @@ impl<E, L> MemBlock<E, L> {
     /// be safe; there is not guarrantee provided by the type system
     /// that the block you deallocate will have the length that you assume
     /// it has.
-    pub fn new_init<'a, F>(label: L, len: usize, mut func: F) -> &'a mut Self
+    pub fn new_init<F>(label: L, len: usize, mut func: F) -> *mut Self
     where
         F: FnMut(&mut L, usize) -> E,
     {
-        let new_ptr = unsafe { Self::new(label, len) };
+        let new_ptr = unsafe { &mut *Self::new(label, len) };
         for i in 0..len {
             let item = func(&mut new_ptr.label, i);
             let garbage = mem::replace(unsafe { new_ptr.get(i) }, item);
@@ -164,8 +163,9 @@ impl<E, L> MemBlock<E, L> {
         &mut *element
     }
 
+    /// Get the label associated with this memory block.
     pub unsafe fn get_label<'a>(&'a self) -> &'a mut L {
-        &mut *(&self.label as *const L as *mut L)
+        &mut *(&*self.label as *const L as *mut L)
     }
 
     /// Generates an iterator from this memory block, which is inclusive
@@ -180,11 +180,12 @@ impl<E, L> MemBlock<E, L> {
     /// conditions results in undefined behavior. Additionally, the
     /// iterator that's created can potentially take ownership, and
     /// it's your job to prove that doing so is a valid operation.
-    pub unsafe fn iter<'a>(&'a self, len: usize) -> MemBlockIter<'a, E, L> {
+    pub unsafe fn iter(&self, len: usize) -> MemBlockIter<E, L> {
+        let beginning = &*self.elements as *const E as *mut E;
         MemBlockIter {
-            block: &mut *(self as *const Self as *mut Self),
-            current: 0,
-            end: len,
+            block: self as *const Self as *mut Self,
+            current: beginning,
+            end: beginning.add(len),
         }
     }
 
@@ -236,56 +237,42 @@ where
     ///   `0 <= i < len`, accesses valid memory that has been
     ///   properly initialized. This is NOT checked at runtime.
     pub unsafe fn clone<'a, 'b>(&'a self, len: usize) -> &'b mut Self {
-        Self::new_init(self.label.clone(), len, |_, i| self.get(i).clone())
+        &mut *Self::new_init((*self.label).clone(), len, |_, i| self.get(i).clone())
     }
 }
 
 /// A struct that allows for iteration over a `MemBlock`. Uses safe
 /// functions because its construction is unsafe, so once you've
 /// constructed it you purportedly know what you're doing.
-pub struct MemBlockIter<'a, E, L> {
-    block: &'a mut MemBlock<E, L>,
-    end: usize,
-    current: usize,
+pub struct MemBlockIter<E, L> {
+    block: *mut MemBlock<E, L>,
+    current: *mut E,
+    end: *mut E,
 }
 
-impl<'a, E, L> MemBlockIter<'a, E, L> {
-    /// Creates an owned version of this iterator that takes ownership
-    /// of the memory block it has a reference to and deallocates it
-    /// when done iterating.
-    pub fn to_owned(self) -> MemBlockIterOwned<'a, E, L> {
-        MemBlockIterOwned { iter: self }
-    }
-}
-
-/// Owned version of `MemBlockIter` that returns the items in the memory
-/// block by value and then deallocates the block once this iterator
-/// goes out of scope.
-#[repr(transparent)]
-pub struct MemBlockIterOwned<'a, E, L> {
-    iter: MemBlockIter<'a, E, L>,
-}
-
-impl<'a, E, L> Iterator for MemBlockIterOwned<'a, E, L> {
+impl<E, L> Iterator for MemBlockIter<E, L> {
     type Item = E;
     fn next(&mut self) -> Option<E> {
-        if self.iter.current == self.iter.end {
+        if self.current == self.end {
             None
         } else {
             unsafe {
-                let out = mem::transmute_copy(self.iter.block.get(self.iter.current));
-                self.iter.current += 1;
+                let out = ptr::read(self.current);
+                self.current = self.current.add(1);
                 Some(out)
             }
         }
     }
 }
 
-impl<'a, E, L> Drop for MemBlockIterOwned<'a, E, L> {
+impl<E, L> Drop for MemBlockIter<E, L> {
     fn drop(&mut self) {
         unsafe {
-            ptr::drop_in_place(&mut self.iter.block.label);
-            self.iter.block.dealloc_lazy(self.iter.end);
+            let block_ref = &mut *self.block;
+            ptr::drop_in_place(&mut *block_ref.label);
+            let len = ((self.end as usize) - (&*block_ref.elements as *const E as usize))
+                / mem::size_of::<E>();
+            (&mut *self.block).dealloc_lazy(len);
         }
     }
 }

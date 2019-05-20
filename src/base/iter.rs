@@ -14,9 +14,9 @@ use crate::mem_block::*;
 /// }
 /// ```
 #[repr(transparent)]
-pub struct ThinPtrArrayIterOwned<'a, E, L>(pub(crate) MemBlockIterOwned<'a, E, LenLabel<L>>);
+pub struct ThinPtrArrayIter<E, L>(pub(crate) MemBlockIter<E, LenLabel<L>>);
 
-impl<'a, E, L> Iterator for ThinPtrArrayIterOwned<'a, E, L> {
+impl<E, L> Iterator for ThinPtrArrayIter<E, L> {
     type Item = E;
     fn next(&mut self) -> Option<E> {
         self.0.next()
@@ -36,9 +36,9 @@ impl<'a, E, L> Iterator for ThinPtrArrayIterOwned<'a, E, L> {
 /// }
 /// ```
 #[repr(transparent)]
-pub struct FatPtrArrayIterOwned<'a, E, L>(pub(crate) MemBlockIterOwned<'a, E, L>);
+pub struct FatPtrArrayIter<E, L>(pub(crate) MemBlockIter<E, L>);
 
-impl<'a, E, L> Iterator for FatPtrArrayIterOwned<'a, E, L> {
+impl<E, L> Iterator for FatPtrArrayIter<E, L> {
     type Item = E;
     fn next(&mut self) -> Option<E> {
         self.0.next()

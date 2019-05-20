@@ -1,7 +1,7 @@
 use crate::base::ThinPtrArray;
 use crate::tests::prelude::*;
 
-type TestArray<'a, E, L = ()> = ThinPtrArray<'a, E, L>;
+type TestArray<E, L = ()> = ThinPtrArray<E, L>;
 
 #[test]
 fn make_array() {

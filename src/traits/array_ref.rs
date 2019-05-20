@@ -32,8 +32,10 @@ pub trait ArrayRef: BaseArrayRef + Clone {
 
 /// Atomically modified array reference. Guarrantees that all operations on the
 /// array reference are atomic (i.e. all changes to the internal array pointer).
+/// Additionally, guarrantees that all reads to a reference of this pointer use
+/// atomic loads.
 ///
-/// For mor details on the expected behavior of these methods, see the
+/// For more details on the expected behavior of these methods, see the
 /// documentation for `std::sync::atomic::AtomicPtr`.
 pub trait AtomicArrayRef: BaseArrayRef + Sized {
     fn as_ref(&self) -> usize;
@@ -52,7 +54,5 @@ pub trait AtomicArrayRef: BaseArrayRef + Sized {
         success: Ordering,
         failure: Ordering,
     ) -> Result<Self, Self>;
-    fn load(&self, order: Ordering) -> Self;
-    fn store(&self, ptr: Self, order: Ordering);
     fn swap(&self, ptr: Self, order: Ordering) -> Self;
 }

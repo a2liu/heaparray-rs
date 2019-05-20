@@ -1,7 +1,7 @@
 use crate::base::FatPtrArray;
 use crate::tests::prelude::*;
 
-type TestArray<'a, E, L = ()> = FatPtrArray<'a, E, L>;
+type TestArray<E, L = ()> = FatPtrArray<E, L>;
 
 #[test]
 fn make_array() {

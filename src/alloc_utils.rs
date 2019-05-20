@@ -6,7 +6,7 @@ use core::mem::{align_of, size_of};
 use std::alloc::{alloc, dealloc};
 
 /// Allocate a block of memory, and then coerce it to type `T`
-pub unsafe fn allocate<'a, T>(size: usize, align: usize) -> &'a mut T {
+pub unsafe fn allocate<T>(size: usize, align: usize) -> *mut T {
     let layout = Layout::from_size_align(size, align).unwrap();
     &mut *(alloc(layout) as *mut T)
 }
@@ -14,9 +14,9 @@ pub unsafe fn allocate<'a, T>(size: usize, align: usize) -> &'a mut T {
 /// Deallocate a block of memory using the given size and alignment information.
 /// Completely ignores the type of the input pointer, so the size and
 /// align need to be correct.
-pub unsafe fn deallocate<T>(ptr: &mut T, size: usize, align: usize) {
+pub unsafe fn deallocate<T>(ptr: *mut T, size: usize, align: usize) {
     let layout = Layout::from_size_align(size, align).unwrap();
-    dealloc(ptr as *mut T as *mut u8, layout);
+    dealloc(ptr as *mut u8, layout);
 }
 
 /// Aligns everything and potentially slightly overestimates the amount of space necessary

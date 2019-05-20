@@ -7,25 +7,25 @@ use crate::base::ThinPtrArray;
 ///
 /// See the documentation for `heaparray::naive_rc::generic::RcArray`
 /// for more information on API.
-pub type FpArcArray<'a, E, L> = RcArray<'a, FatPtrArray<'a, E, ArcStruct<L>>, ArcStruct<L>, E, L>;
+pub type FpArcArray<E, L> = RcArray<FatPtrArray<E, ArcStruct<L>>, ArcStruct<L>, E, L>;
 
 /// Reference counted array, referenced using a fat pointer.
 ///
 /// See the documentation for `heaparray::naive_rc::generic::RcArray`
 /// for more information on API.
-pub type FpRcArray<'a, E, L> = RcArray<'a, FatPtrArray<'a, E, RcStruct<L>>, RcStruct<L>, E, L>;
+pub type FpRcArray<E, L> = RcArray<FatPtrArray<E, RcStruct<L>>, RcStruct<L>, E, L>;
 
 /// Atomically reference counted array, referenced using a raw pointer.
 ///
 /// See the documentation for `heaparray::naive_rc::generic::RcArray`
 /// for more information on API.
-pub type TpArcArray<'a, E, L> = RcArray<'a, ThinPtrArray<'a, E, ArcStruct<L>>, ArcStruct<L>, E, L>;
+pub type TpArcArray<E, L> = RcArray<ThinPtrArray<E, ArcStruct<L>>, ArcStruct<L>, E, L>;
 
 /// Reference counted array, referenced using a raw pointer.
 ///
 /// See the documentation for `heaparray::naive_rc::generic::RcArray`
 /// for more information on API.
-pub type TpRcArray<'a, E, L> = RcArray<'a, ThinPtrArray<'a, E, RcStruct<L>>, RcStruct<L>, E, L>;
+pub type TpRcArray<E, L> = RcArray<ThinPtrArray<E, RcStruct<L>>, RcStruct<L>, E, L>;
 
 // Note that this implementation satisfies
 // the trait bound requirements for `AtomicArrayRef`, and so you can

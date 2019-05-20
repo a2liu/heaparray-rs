@@ -27,7 +27,10 @@ pub struct Large {
 
 impl Default for Large {
     fn default() -> Self {
-        let data = Vec::with_capacity(100);
+        let mut data = Vec::with_capacity(100);
+        for elem in &mut data {
+            *elem = 10;
+        }
         Self { a: data }
     }
 }

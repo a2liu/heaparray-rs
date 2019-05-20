@@ -1,6 +1,6 @@
 use crate::naive_rc::*;
 
-type TestArray<'a, E, L = ()> = FpRcArray<'a, E, L>;
+type TestArray<E, L = ()> = FpRcArray<E, L>;
 
 #[test]
 fn clone_test() {

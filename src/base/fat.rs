@@ -2,8 +2,9 @@
 //!
 //! This is the typical representation of unsized references in Rust,
 //! and is thus also the default implementation of `HeapArray` as imported by `use heaparray::*;`
-use super::iter::FatPtrArrayIterOwned;
+use super::iter::FatPtrArrayIter;
 pub use crate::prelude::*;
+use ptr::NonNull;
 
 /// Heap-allocated array, with array size stored with the pointer to the memory.
 ///
@@ -63,24 +64,22 @@ pub use crate::prelude::*;
 /// and does not check for pointer validity; you should use this struct in the same
 /// way you would use a raw array or slice.
 #[repr(C)]
-pub struct FatPtrArray<'a, E, L = ()>
-where
-    Self: 'a,
-{
-    data: &'a mut MemBlock<E, L>,
+pub struct FatPtrArray<E, L = ()> {
+    data: NonNull<MemBlock<E, L>>,
     len: usize,
 }
 
-impl<'a, E, L> BaseArrayRef for FatPtrArray<'a, E, L> {}
+impl<E, L> BaseArrayRef for FatPtrArray<E, L> {}
 
-impl<'a, E, L> Clone for FatPtrArray<'a, E, L>
+impl<E, L> Clone for FatPtrArray<E, L>
 where
     E: Clone,
     L: Clone,
 {
     fn clone(&self) -> Self {
+        let new_ptr = unsafe { NonNull::new_unchecked(self.data.as_ref().clone(self.len())) };
         Self {
-            data: unsafe { self.data.clone(self.len) },
+            data: new_ptr,
             len: self.len,
         }
     }
@@ -96,34 +95,32 @@ where
     }
 }
 
-impl<'a, E, L> Drop for FatPtrArray<'a, E, L> {
+impl<E, L> Drop for FatPtrArray<E, L> {
     fn drop(&mut self) {
         let len = self.len;
-        let mut_ref = &mut self.data;
-        unsafe { mut_ref.dealloc(len) };
-        mem::forget(mut_ref);
+        unsafe { self.data.as_mut().dealloc(len) };
     }
 }
 
-impl<'a, E, L> Container for FatPtrArray<'a, E, L> {
+impl<E, L> Container for FatPtrArray<E, L> {
     fn len(&self) -> usize {
         self.len
     }
 }
 
-impl<'a, E, L> CopyMap<usize, E> for FatPtrArray<'a, E, L> {
+impl<E, L> CopyMap<usize, E> for FatPtrArray<E, L> {
     fn get(&self, key: usize) -> Option<&E> {
         if key >= self.len() {
             None
         } else {
-            Some(unsafe { self.data.get(key) })
+            Some(unsafe { self.data.as_ref().get(key) })
         }
     }
     fn get_mut(&mut self, key: usize) -> Option<&mut E> {
         if key >= self.len() {
             None
         } else {
-            Some(unsafe { self.data.get(key) })
+            Some(unsafe { self.data.as_mut().get(key) })
         }
     }
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
@@ -134,20 +131,20 @@ impl<'a, E, L> CopyMap<usize, E> for FatPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> Index<usize> for FatPtrArray<'a, E, L> {
+impl<E, L> Index<usize> for FatPtrArray<E, L> {
     type Output = E;
     fn index(&self, idx: usize) -> &E {
         self.get(idx).unwrap()
     }
 }
 
-impl<'a, E, L> IndexMut<usize> for FatPtrArray<'a, E, L> {
+impl<E, L> IndexMut<usize> for FatPtrArray<E, L> {
     fn index_mut(&mut self, idx: usize) -> &mut E {
         self.get_mut(idx).unwrap()
     }
 }
 
-impl<'a, E> MakeArray<E> for FatPtrArray<'a, E, ()> {
+impl<E> MakeArray<E> for FatPtrArray<E, ()> {
     fn new<F>(len: usize, mut func: F) -> Self
     where
         F: FnMut(usize) -> E,
@@ -156,38 +153,38 @@ impl<'a, E> MakeArray<E> for FatPtrArray<'a, E, ()> {
     }
 }
 
-impl<'a, E, L> LabelledArray<E, L> for FatPtrArray<'a, E, L> {
+impl<E, L> LabelledArray<E, L> for FatPtrArray<E, L> {
     fn with_label<F>(label: L, len: usize, func: F) -> Self
     where
         F: FnMut(&mut L, usize) -> E,
     {
         Self {
-            data: MemBlock::<E, L>::new_init(label, len, func),
+            data: NonNull::new(MemBlock::<E, L>::new_init(label, len, func)).unwrap(),
             len,
         }
     }
     unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
-        let new_ptr = MemBlock::new(label, len);
+        let new_ptr = NonNull::new_unchecked(MemBlock::new(label, len));
         Self { data: new_ptr, len }
     }
     fn get_label(&self) -> &L {
-        &self.data.label
+        unsafe { self.data.as_ref().get_label() }
     }
     unsafe fn get_label_unsafe(&self) -> &mut L {
-        self.data.get_label()
+        self.data.as_ref().get_label()
     }
     unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
-        self.data.get(idx)
+        self.data.as_ref().get(idx)
     }
 }
 
-impl<'a, E, L> LabelledArrayMut<E, L> for FatPtrArray<'a, E, L> {
+impl<E, L> LabelledArrayMut<E, L> for FatPtrArray<E, L> {
     fn get_label_mut(&mut self) -> &mut L {
-        &mut self.data.label
+        unsafe { self.data.as_mut().get_label() }
     }
 }
 
-impl<'a, E, L> DefaultLabelledArray<E, L> for FatPtrArray<'a, E, L>
+impl<E, L> DefaultLabelledArray<E, L> for FatPtrArray<E, L>
 where
     E: Default,
 {
@@ -196,26 +193,29 @@ where
     }
 }
 
-impl<'a, E, L> IntoIterator for FatPtrArray<'a, E, L> {
+impl<E, L> IntoIterator for FatPtrArray<E, L> {
     type Item = E;
-    type IntoIter = FatPtrArrayIterOwned<'a, E, L>;
-    fn into_iter(self) -> Self::IntoIter {
-        let iter = unsafe { mem::transmute_copy(&self.data.iter(self.len())) };
+    type IntoIter = FatPtrArrayIter<E, L>;
+    fn into_iter(mut self) -> Self::IntoIter {
+        let len = self.len();
+        let iter = unsafe { self.data.as_mut().iter(len) };
         mem::forget(self);
-        iter
+        FatPtrArrayIter(iter)
     }
 }
 
-impl<'a, E, L> SliceArray<E> for FatPtrArray<'a, E, L> {
+impl<E, L> SliceArray<E> for FatPtrArray<E, L> {
     fn as_slice(&self) -> &[E] {
-        unsafe { self.data.as_slice(self.len()) }
+        let len = self.len();
+        unsafe { self.data.as_ref().as_slice(len) }
     }
     fn as_slice_mut(&mut self) -> &mut [E] {
-        unsafe { self.data.as_slice(self.len()) }
+        let len = self.len();
+        unsafe { self.data.as_mut().as_slice(len) }
     }
 }
 
-impl<'a, 'b, E, L> IntoIterator for &'b FatPtrArray<'a, E, L> {
+impl<'b, E, L> IntoIterator for &'b FatPtrArray<E, L> {
     type Item = &'b E;
     type IntoIter = core::slice::Iter<'b, E>;
     fn into_iter(self) -> Self::IntoIter {
@@ -223,7 +223,7 @@ impl<'a, 'b, E, L> IntoIterator for &'b FatPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, 'b, E, L> IntoIterator for &'b mut FatPtrArray<'a, E, L> {
+impl<'b, E, L> IntoIterator for &'b mut FatPtrArray<E, L> {
     type Item = &'b mut E;
     type IntoIter = core::slice::IterMut<'b, E>;
     fn into_iter(self) -> Self::IntoIter {
@@ -231,17 +231,31 @@ impl<'a, 'b, E, L> IntoIterator for &'b mut FatPtrArray<'a, E, L> {
     }
 }
 
-impl<'a, E, L> fmt::Debug for FatPtrArray<'a, E, L>
+impl<E, L> fmt::Debug for FatPtrArray<E, L>
 where
     E: fmt::Debug,
     L: fmt::Debug,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter
-            .debug_struct("ThinPtrArray")
+            .debug_struct("FatPtrArray")
             .field("label", &self.get_label())
             .field("len", &self.len())
             .field("elements", &self.as_slice())
             .finish()
     }
+}
+
+unsafe impl<E, L> Send for FatPtrArray<E, L>
+where
+    E: Send,
+    L: Send,
+{
+}
+
+unsafe impl<E, L> Sync for FatPtrArray<E, L>
+where
+    E: Sync,
+    L: Sync,
+{
 }
