@@ -1,4 +1,7 @@
 # TODO
+- [ ] Make `heaparray::naive_rc::ArcArray`, a generic array that prevents race
+  conditions by using smart pointers that handle reference counting of the underlying
+  data.
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
 - [ ] Create `SafeMemBlock` that generalizes a memory block that's labelled with

@@ -1,15 +1,15 @@
 //! Contains definition of `AtomicPtrArray`, an array reference whose pointer is
 //! 1 word and atomically loaded/stored.
-//!
-//! Generic operations need to be done through atomic loads and stores of the
-//! internal pointer value;
 use super::iter::AtomicPtrArrayIter;
 use super::thin::LenLabel;
 use crate::prelude::*;
+use core::marker::PhantomData;
 use core::sync::atomic::{AtomicPtr, Ordering};
 
 /// Heap-allocated array, with array size stored alongside the memory block
-/// itself.
+/// itself. Doesn't implement `Sync` because CAS operations on the pointer create
+/// a race condition between the time the pointer is read and dereferenced. This
+/// can be fixed using reference counting.
 ///
 /// ## Examples
 ///
@@ -54,6 +54,7 @@ use core::sync::atomic::{AtomicPtr, Ordering};
 #[repr(transparent)]
 pub struct AtomicPtrArray<E, L = ()> {
     data: Data<E, L>,
+    phantom: PhantomData<*mut u8>,
 }
 
 type Block<E, L> = MemBlock<E, LenLabel<L>>;
@@ -74,6 +75,7 @@ impl<E, L> AtomicPtrArray<E, L> {
     fn from_ref(ptr: *mut Block<E, L>) -> Self {
         Self {
             data: AtomicPtr::new(ptr),
+            phantom: PhantomData,
         }
     }
 }
@@ -130,6 +132,7 @@ impl<E, L> LabelledArray<E, L> for AtomicPtrArray<E, L> {
         });
         let new_obj = Self {
             data: AtomicPtr::new(block_ptr),
+            phantom: PhantomData,
         };
         new_obj
     }
@@ -137,6 +140,7 @@ impl<E, L> LabelledArray<E, L> for AtomicPtrArray<E, L> {
         let new_ptr = Block::new(LenLabel { len, label }, len);
         Self {
             data: AtomicPtr::new(new_ptr),
+            phantom: PhantomData,
         }
     }
     fn get_label(&self) -> &L {
@@ -157,7 +161,10 @@ where
 {
     fn clone(&self) -> Self {
         let new_ptr = unsafe { AtomicPtr::new(self.as_ref().clone(self.len())) };
-        Self { data: new_ptr }
+        Self {
+            data: new_ptr,
+            phantom: PhantomData,
+        }
     }
     fn clone_from(&mut self, source: &Self) {
         if source.len() != self.len() {
@@ -297,12 +304,5 @@ unsafe impl<E, L> Send for AtomicPtrArray<E, L>
 where
     E: Send,
     L: Send,
-{
-}
-
-unsafe impl<E, L> Sync for AtomicPtrArray<E, L>
-where
-    E: Sync,
-    L: Sync,
 {
 }
