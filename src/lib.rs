@@ -117,7 +117,7 @@
 //! ```
 //! ## Use of `unsafe` Keyword
 //! This library relies heavily on the use of the `unsafe` keyword to do both
-//! reference counting and atomic operations; there are 14 instances total,
+//! reference counting and atomic operations; there are 40 instances total,
 //! not including tests.
 //!
 //! ## Customizability
