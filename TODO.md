@@ -1,4 +1,6 @@
 # TODO
+- [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
+  of traits, then overriding trait docs when necessary.
 - [ ] Create `SafeMemBlock` that generalizes a memory block that's labelled with
   a number  
   **Status:** *delayed; doesn't seem necessary anymore*

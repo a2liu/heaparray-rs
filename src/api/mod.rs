@@ -8,9 +8,8 @@ pub use crate::base::FatPtrArray as HeapArray;
 /// trait bound requirements for AtomicArrayRef, so you can alter its pointer
 /// atomically:
 ///
-/// Note that this implementation satisfies
-/// the trait bound requirements for `AtomicArrayRef`, and so you can
-/// alter its pointer atomically:
+/// Note that this implementation satisfies the trait bound requirements for
+/// `AtomicArrayRef`, and so you can alter its pointer atomically:
 ///
 /// ```rust
 /// use heaparray::*;
