@@ -1,4 +1,24 @@
 # TODO
+- [ ] Create `SafeMemBlock` that generalizes a memory block that's labelled with
+  a number  
+  **Status:** *delayed; doesn't seem necessary anymore*
+- [ ] Constant-sized arrays whose size is known at compile time.  
+      **Blocked by:** *const generics*
+  - [ ] Write tests
+- [ ] Write structs that are reference counted. Use naive Rc structs as weak-pointers  
+  **Status:** *delayed, doesn't seem that useful*
+  - [ ] Write tests
+- [ ] Move to `#![no_std]`
+- [ ] Allow the user to customize allocator
+  - [ ] Write tests
+- [X] Write pointer types to arrays that are easier to use than raw references
+  - [X] `clone_from` for both  
+  - [X] Write a modified global allocator to handle allocations during testing  
+        **Using existing crate:** https://github.com/a1liu/interloc
+  - [X] Write tests
+  - [ ] Write test generator on traits, because there are gonna be a bunch of
+    implementations of the same traits
+    **Status:** *delayed by implementation difficulty*
 - [X] `AtomicPtrArray`, and change the atomic operations to work on some
   pseudo-pointer type, so the end user doesn't have to know the type directly.
   pseudo-pointer type has to be copy, and has to contain a reference. No load
@@ -6,9 +26,6 @@
 - [X] Remove internal references in code; makes it too hard to reason about Rust
   behavior. Use `NonNull` where necessary, create safe abstractions with ThinPtrArray,
   FatPtrArray, and AtomicPtrArray
-- [ ] Create `SafeMemBlock` that generalizes a memory block that's labelled with
-  a number  
-  **Status:** *delayed; doesn't seem necessary anymore*
 - [X] Separate `LabelledArray` into `LabelledArray` and `LabelledArrayMut`,
   and remove `Array` requirement from `LabelledArray` (change it to `CopyMap`)
 - [X] Remove implementations of `IndexMut`, `get_label_mut`, etc. from
@@ -23,33 +40,16 @@
   a more explicit description of the memory layout and a consolidation of
   existing code into a more manageable generalization. Also reduces usage
   of `unsafe` keyword.
-- [X] Write pointer types to arrays that are easier to use than raw references
-  - [X] `clone_from` for both  
-  - [X] Write a modified global allocator to handle allocations during testing  
-        **Using existing crate:** https://github.com/a1liu/interloc
-  - [X] Write tests
-  - [ ] Write test generator on traits, because there are gonna be a bunch of
-    implementations of the same traits
-    **Status:** *delayed by implementation difficulty*
 - [X] Write naive reference counting structs (only strong references) and naive
       atomic reference counting structs
   - [X] `ArrayRef::clone()` to be more idiomatic with `ArrayRef::clone<A>(arr: A) -> A where A: ArrayRef + Clone`
   - [X] Check for nulls, add panics, etc.
   - [X] Write tests, testing memory usage during clones
-- [ ] Write structs that are reference counted. Use naive Rc structs as weak-pointers  
-  **Status:** *delayed, doesn't seem that useful*
-  - [ ] Write tests
-- [ ] Move to `#![no_std]`
-- [ ] Allow the user to customize allocator
-  - [ ] Write tests
 - [X] Completely unchecked arrays whose size is never known and whose state needs
   to be manually handled. Purpose is two-fold: makes it possible to turn `ThinPtrArray`
   into a special case of a more general struct; also makes it *really* easy to write
   the constant-sized arrays (as they're another special case)  
   *implemented through `MemBlock`*
-- [ ] Constant-sized arrays whose size is known at compile time.  
-      **Blocked by:** *const generics*
-  - [ ] Write tests
 
 ## Brainstorming
 -  `HeapArray`, `FatPtrArray`, and `ThinPtrArray` are references that are tied to
