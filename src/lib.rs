@@ -121,10 +121,10 @@
 //! not including tests.
 //!
 //! ## Customizability
-//! All of the implementation details of this crate are public and documented; if you'd
-//! like to implement your own version of the tools available through this crate,
-//! note that you don't need to reinvent the wheel; many of the types in this crate
-//! are generic over certain traits, so you might not need to do that much.
+//! All of the implementation details of this crate are public and documented;
+//! if you'd like to implement your own version of the tools available through
+//! this crate, note that you don't need to reinvent the wheel; many of the types in
+//! this crate are generic over certain traits, so you might not need to do that much.
 
 extern crate containers_rs as containers;
 
