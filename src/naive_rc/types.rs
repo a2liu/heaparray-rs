@@ -26,7 +26,7 @@ pub type TpArcArray<E, L> = RcArray<ThinPtrArray<E, ArcStruct<L>>, ArcStruct<L>,
 /// for more information on API.
 pub type TpRcArray<E, L> = RcArray<ThinPtrArray<E, RcStruct<L>>, RcStruct<L>, E, L>;
 
-/// Reference counted array, referenced using a raw pointer.
+/// Atomically reference counted array, referenced using a raw pointer.
 ///
 /// See the documentation for `heaparray::naive_rc::generic::RcArray`
 /// for more information on API. Note that this implementation satisfies the
