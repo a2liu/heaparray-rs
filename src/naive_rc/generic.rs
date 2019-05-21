@@ -4,6 +4,7 @@
 use super::ref_counters::*;
 pub use crate::prelude::*;
 use core::marker::PhantomData;
+use core::sync::atomic::Ordering;
 
 /// `RcArray` is a generic, implementation-agnositc array. It contains
 /// logic for enforcing type safety.
@@ -300,50 +301,42 @@ where
 {
 }
 
-// impl<A, R, E, L> AtomicArrayRef for RcArray<A, R, E, L>
-// where
-//     A:  LabelledArray<E, R> + BaseArrayRef + AtomicArrayRef,
-//     R:  RefCounter<L>,
-//     E: 'a,
-//     L: 'a,
-// {
-//     fn as_ref(&self) -> usize {
-//         self.data.as_ref()
-//     }
-//     fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self {
-//         Self::from_ref((*self.data).compare_and_swap(current, new.to_ref(), order))
-//     }
-//     fn compare_exchange(
-//         &self,
-//         current: usize,
-//         new: Self,
-//         success: Ordering,
-//         failure: Ordering,
-//     ) -> Result<Self, Self> {
-//         match (*self.data).compare_exchange(current, new.to_ref(), success, failure) {
-//             Ok(data) => Ok(Self::from_ref(data)),
-//             Err(data) => Err(Self::from_ref(data)),
-//         }
-//     }
-//     fn compare_exchange_weak(
-//         &self,
-//         current: usize,
-//         new: Self,
-//         success: Ordering,
-//         failure: Ordering,
-//     ) -> Result<Self, Self> {
-//         match (*self.data).compare_exchange_weak(current, new.to_ref(), success, failure) {
-//             Ok(data) => Ok(Self::from_ref(data)),
-//             Err(data) => Err(Self::from_ref(data)),
-//         }
-//     }
-//     fn load(&self, order: Ordering) -> Self {
-//         Self::from_ref((*self.data).load(order))
-//     }
-//     fn store(&self, ptr: Self, order: Ordering) {
-//         (*self.data).store(ptr.to_ref(), order);
-//     }
-//     fn swap(&self, ptr: Self, order: Ordering) -> Self {
-//         Self::from_ref((*self.data).swap(ptr.to_ref(), order))
-//     }
-// }
+impl<A, R, E, L> AtomicArrayRef for RcArray<A, R, E, L>
+where
+    A: LabelledArray<E, R> + BaseArrayRef + AtomicArrayRef,
+    R: RefCounter<L>,
+{
+    fn as_ref(&self) -> usize {
+        self.data.as_ref()
+    }
+    fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self {
+        Self::from_ref((*self.data).compare_and_swap(current, new.to_ref(), order))
+    }
+    fn compare_exchange(
+        &self,
+        current: usize,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        match (*self.data).compare_exchange(current, new.to_ref(), success, failure) {
+            Ok(data) => Ok(Self::from_ref(data)),
+            Err(data) => Err(Self::from_ref(data)),
+        }
+    }
+    fn compare_exchange_weak(
+        &self,
+        current: usize,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        match (*self.data).compare_exchange_weak(current, new.to_ref(), success, failure) {
+            Ok(data) => Ok(Self::from_ref(data)),
+            Err(data) => Err(Self::from_ref(data)),
+        }
+    }
+    fn swap(&self, ptr: Self, order: Ordering) -> Self {
+        Self::from_ref((*self.data).swap(ptr.to_ref(), order))
+    }
+}

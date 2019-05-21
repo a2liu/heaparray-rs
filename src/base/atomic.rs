@@ -3,3 +3,306 @@
 //!
 //! Generic operations need to be done through atomic loads and stores of the
 //! internal pointer value;
+use super::iter::AtomicPtrArrayIter;
+use super::thin::LenLabel;
+use crate::prelude::*;
+use core::sync::atomic::{AtomicPtr, Ordering};
+
+/// Heap-allocated array, with array size stored alongside the memory block
+/// itself.
+///
+/// ## Examples
+///
+/// Creating an array:
+/// ```rust
+/// use heaparray::base::*;
+/// let len = 10;
+/// let array = AtomicPtrArray::new(len, |idx| idx + 3);
+/// ```
+///
+/// Indexing works as you would expect:
+/// ```rust
+/// # use heaparray::base::*;
+/// # let mut array = AtomicPtrArray::new(10, |idx| idx + 3);
+/// array[3] = 2;
+/// assert!(array[3] == 2);
+/// ```
+///
+/// Additionally, you can customize what information should be stored alongside the elements in
+/// the array using the `AtomicPtrArray::with_label` function:
+///
+/// ```rust
+/// # use heaparray::base::*;
+/// struct MyLabel {
+///     pub even: usize,
+///     pub odd: usize,
+/// }
+///
+/// let mut array = AtomicPtrArray::with_label(
+///     MyLabel { even: 0, odd: 0 },
+///     100,
+///     |label, index| {
+///         if index % 2 == 0 {
+///             label.even += 1;
+///             index
+///         } else {
+///             label.odd += 1;
+///             index
+///         }
+///     });
+/// ```
+#[repr(transparent)]
+pub struct AtomicPtrArray<E, L = ()> {
+    data: Data<E, L>,
+}
+
+type Block<E, L> = MemBlock<E, LenLabel<L>>;
+type Data<E, L> = AtomicPtr<Block<E, L>>;
+
+impl<E, L> AtomicPtrArray<E, L> {
+    fn as_ref(&self) -> &Block<E, L> {
+        unsafe { &*self.data.load(Ordering::Relaxed) }
+    }
+    fn as_mut(&mut self) -> &mut Block<E, L> {
+        unsafe { &mut *self.data.load(Ordering::Relaxed) }
+    }
+    fn to_ref(mut self) -> *mut Block<E, L> {
+        let ret = self.as_mut() as *mut Block<E, L>;
+        mem::forget(self);
+        ret
+    }
+    fn from_ref(ptr: *mut Block<E, L>) -> Self {
+        Self {
+            data: AtomicPtr::new(ptr),
+        }
+    }
+}
+
+impl<E, L> Container for AtomicPtrArray<E, L> {
+    fn len(&self) -> usize {
+        unsafe { self.as_ref().get_label().len }
+    }
+}
+
+impl<E, L> CopyMap<usize, E> for AtomicPtrArray<E, L> {
+    fn get(&self, key: usize) -> Option<&E> {
+        if key >= self.len() {
+            None
+        } else {
+            Some(unsafe { self.as_ref().get(key) })
+        }
+    }
+    fn get_mut(&mut self, key: usize) -> Option<&mut E> {
+        if key >= self.len() {
+            None
+        } else {
+            Some(unsafe { self.as_mut().get(key) })
+        }
+    }
+    fn insert(&mut self, key: usize, value: E) -> Option<E> {
+        match self.get_mut(key) {
+            Some(slot) => Some(mem::replace(slot, value)),
+            None => None,
+        }
+    }
+}
+
+impl<E, L> Index<usize> for AtomicPtrArray<E, L> {
+    type Output = E;
+    fn index(&self, idx: usize) -> &E {
+        self.get(idx).unwrap()
+    }
+}
+
+impl<E, L> IndexMut<usize> for AtomicPtrArray<E, L> {
+    fn index_mut(&mut self, idx: usize) -> &mut E {
+        self.get_mut(idx).unwrap()
+    }
+}
+
+impl<E, L> LabelledArray<E, L> for AtomicPtrArray<E, L> {
+    fn with_label<F>(label: L, len: usize, mut func: F) -> Self
+    where
+        F: FnMut(&mut L, usize) -> E,
+    {
+        let block_ptr = Block::new_init(LenLabel { len, label }, len, |lbl, idx| {
+            func(&mut lbl.label, idx)
+        });
+        let new_obj = Self {
+            data: AtomicPtr::new(block_ptr),
+        };
+        new_obj
+    }
+    unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
+        let new_ptr = Block::new(LenLabel { len, label }, len);
+        Self {
+            data: AtomicPtr::new(new_ptr),
+        }
+    }
+    fn get_label(&self) -> &L {
+        unsafe { self.get_label_unsafe() }
+    }
+    unsafe fn get_label_unsafe(&self) -> &mut L {
+        &mut self.as_ref().get_label().label
+    }
+    unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
+        self.as_ref().get(idx)
+    }
+}
+
+impl<E, L> Clone for AtomicPtrArray<E, L>
+where
+    E: Clone,
+    L: Clone,
+{
+    fn clone(&self) -> Self {
+        let new_ptr = unsafe { AtomicPtr::new(self.as_ref().clone(self.len())) };
+        Self { data: new_ptr }
+    }
+    fn clone_from(&mut self, source: &Self) {
+        if source.len() != self.len() {
+            *self = source.clone();
+        } else {
+            self.get_label_mut().clone_from(source.get_label());
+            for i in 0..source.len() {
+                self[i].clone_from(&source[i]);
+            }
+        }
+    }
+}
+
+impl<E, L> Drop for AtomicPtrArray<E, L> {
+    fn drop(&mut self) {
+        let len = self.len();
+        unsafe { self.as_mut().dealloc(len) };
+    }
+}
+
+impl<E, L> LabelledArrayMut<E, L> for AtomicPtrArray<E, L> {
+    fn get_label_mut(&mut self) -> &mut L {
+        unsafe { self.get_label_unsafe() }
+    }
+}
+
+impl<E> MakeArray<E> for AtomicPtrArray<E, ()> where {
+    fn new<F>(len: usize, mut func: F) -> Self
+    where
+        F: FnMut(usize) -> E,
+    {
+        Self::with_label((), len, |_, idx| func(idx))
+    }
+}
+
+impl<E, L> BaseArrayRef for AtomicPtrArray<E, L> {}
+
+impl<E, L> IntoIterator for AtomicPtrArray<E, L> {
+    type Item = E;
+    type IntoIter = AtomicPtrArrayIter<E, L>;
+    fn into_iter(mut self) -> Self::IntoIter {
+        let len = self.len();
+        let iter = unsafe { self.as_mut().iter(len) };
+        mem::forget(self);
+        AtomicPtrArrayIter(iter)
+    }
+}
+
+impl<E, L> SliceArray<E> for AtomicPtrArray<E, L> {
+    fn as_slice(&self) -> &[E] {
+        let len = self.len();
+        unsafe { self.as_ref().as_slice(len) }
+    }
+    fn as_slice_mut(&mut self) -> &mut [E] {
+        let len = self.len();
+        unsafe { self.as_mut().as_slice(len) }
+    }
+}
+
+impl<'b, E, L> IntoIterator for &'b AtomicPtrArray<E, L> {
+    type Item = &'b E;
+    type IntoIter = core::slice::Iter<'b, E>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.as_slice().into_iter()
+    }
+}
+
+impl<'b, E, L> IntoIterator for &'b mut AtomicPtrArray<E, L> {
+    type Item = &'b mut E;
+    type IntoIter = core::slice::IterMut<'b, E>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.as_slice_mut().into_iter()
+    }
+}
+
+impl<E, L> fmt::Debug for AtomicPtrArray<E, L>
+where
+    E: fmt::Debug,
+    L: fmt::Debug,
+{
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter
+            .debug_struct("AtomicPtrArray")
+            .field("label", &self.get_label())
+            .field("len", &self.len())
+            .field("elements", &self.as_slice())
+            .finish()
+    }
+}
+
+impl<E, L> AtomicArrayRef for AtomicPtrArray<E, L> {
+    fn as_ref(&self) -> usize {
+        self.as_ref() as *const Block<E, L> as usize
+    }
+    fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self {
+        let current = current as *mut Block<E, L>;
+        Self::from_ref(self.data.compare_and_swap(current, new.to_ref(), order))
+    }
+    fn compare_exchange(
+        &self,
+        current: usize,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        let current = current as *mut Block<E, L>;
+        match self
+            .data
+            .compare_exchange(current, new.to_ref(), success, failure)
+        {
+            Ok(ptr) => Ok(Self::from_ref(ptr)),
+            Err(ptr) => Err(Self::from_ref(ptr)),
+        }
+    }
+    fn compare_exchange_weak(
+        &self,
+        current: usize,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<Self, Self> {
+        let current = current as *mut Block<E, L>;
+        match self
+            .data
+            .compare_exchange_weak(current, new.to_ref(), success, failure)
+        {
+            Ok(ptr) => Ok(Self::from_ref(ptr)),
+            Err(ptr) => Err(Self::from_ref(ptr)),
+        }
+    }
+    fn swap(&self, ptr: Self, order: Ordering) -> Self {
+        Self::from_ref(self.data.swap(ptr.to_ref(), order))
+    }
+}
+
+unsafe impl<E, L> Send for AtomicPtrArray<E, L>
+where
+    E: Send,
+    L: Send,
+{
+}
+
+unsafe impl<E, L> Sync for AtomicPtrArray<E, L>
+where
+    E: Sync,
+    L: Sync,
+{
+}

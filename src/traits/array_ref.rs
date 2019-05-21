@@ -1,5 +1,3 @@
-// #[cfg(test)]
-// use super::tests::*;
 use core::sync::atomic::Ordering;
 
 /// A basic reference to a heap-allocated array. Should be paired with exactly

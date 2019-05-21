@@ -28,17 +28,6 @@ use core::ptr::NonNull;
 /// assert!(array[3] == 2);
 /// ```
 ///
-/// Notably, you can take ownership of objects back from the container:
-///
-/// ```rust
-/// # use heaparray::base::*;
-/// let mut array = ThinPtrArray::new(10, |_| Vec::<u8>::new());
-/// let replacement_object = Vec::new();
-/// let owned_object = array.insert(0, replacement_object);
-/// ```
-///
-/// but you need to give the array a replacement object to fill its slot with.
-///
 /// Additionally, you can customize what information should be stored alongside the elements in
 /// the array using the `ThinPtrArray::with_label` function:
 ///
@@ -62,11 +51,6 @@ use core::ptr::NonNull;
 ///         }
 ///     });
 /// ```
-///
-/// # Invariants
-/// This struct follows the same invariants as mentioned in `heaparray::mem_block`,
-/// and does not check for pointer validity; you should use this struct in the same
-/// way you would use a raw array or slice.
 #[repr(transparent)]
 pub struct ThinPtrArray<E, L = ()> {
     data: Data<E, L>,
@@ -77,8 +61,8 @@ type Data<E, L> = NonNull<Block<E, L>>;
 
 #[derive(Clone)]
 pub(crate) struct LenLabel<L> {
-    len: usize,
-    label: L,
+    pub(crate) len: usize,
+    pub(crate) label: L,
 }
 
 impl<E, L> Clone for ThinPtrArray<E, L>
