@@ -1,5 +1,5 @@
 # TODO
-- [ ] `AtomicPtrArray`, and change the atomic operations to work on some
+- [X] `AtomicPtrArray`, and change the atomic operations to work on some
   pseudo-pointer type, so the end user doesn't have to know the type directly.
   pseudo-pointer type has to be copy, and has to contain a reference. No load
   or store operation, because those don't interact well with destructors.
@@ -7,7 +7,8 @@
   behavior. Use `NonNull` where necessary, create safe abstractions with ThinPtrArray,
   FatPtrArray, and AtomicPtrArray
 - [ ] Create `SafeMemBlock` that generalizes a memory block that's labelled with
-  a number
+  a number  
+  **Status:** *delayed; doesn't seem necessary anymore*
 - [X] Separate `LabelledArray` into `LabelledArray` and `LabelledArrayMut`,
   and remove `Array` requirement from `LabelledArray` (change it to `CopyMap`)
 - [X] Remove implementations of `IndexMut`, `get_label_mut`, etc. from
@@ -41,10 +42,11 @@
 - [ ] Move to `#![no_std]`
 - [ ] Allow the user to customize allocator
   - [ ] Write tests
-- [ ] Completely unchecked arrays whose size is never known and whose state needs
+- [X] Completely unchecked arrays whose size is never known and whose state needs
   to be manually handled. Purpose is two-fold: makes it possible to turn `ThinPtrArray`
   into a special case of a more general struct; also makes it *really* easy to write
-  the constant-sized arrays (as they're another special case)
+  the constant-sized arrays (as they're another special case)  
+  *implemented through `MemBlock`*
 - [ ] Constant-sized arrays whose size is known at compile time.  
       **Blocked by:** *const generics*
   - [ ] Write tests
