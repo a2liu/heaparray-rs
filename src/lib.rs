@@ -1,6 +1,8 @@
 //! This crate aims to give people better control of how they want to allocate memory,
-//! by providing a customizable way to allocate blocks of memory, that optionally contains
-//! metadata about the block itself.
+//! by providing a customizable way to allocate blocks of memory, that optionally
+//! contains metadata about the block itself. This makes it much easier to implement
+//! Dynamically-Sized Types (DSTs), and also reduces the number of pointer
+//! indirections necessary to share data between threads.
 //!
 //! It has two main features that provide the foundation for the rest:
 //!
