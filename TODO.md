@@ -1,21 +1,27 @@
 # TODO
-- [ ] Make `heaparray::naive_rc::ArcArray`, a generic array that prevents race
-  conditions by using smart pointers that handle reference counting of the underlying
-  data.
+- [ ] Make `heaparray::naive_rc::ArcArray`, a generic array that allows for CAS
+  operations on its internal pointer without creating race conditions by using
+  RAII smart pointers.
+  **Status:** *blocked* This will cause race conditions without some kind of
+  fully-fledged
+  memory reclamation strategy.
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
+- [ ] Move to `#![no_std]`
+- [ ] Allow the user to customize allocator
+  - [ ] Write tests
+- [ ] Write structs that are reference counted. Use naive Rc structs as weak-pointers  
+  **Status:** *delayed, doesn't seem that useful*
+  - [ ] Write tests
 - [ ] Create `SafeMemBlock` that generalizes a memory block that's labelled with
   a number  
   **Status:** *delayed; doesn't seem necessary anymore*
 - [ ] Constant-sized arrays whose size is known at compile time.  
       **Blocked by:** *const generics*
   - [ ] Write tests
-- [ ] Write structs that are reference counted. Use naive Rc structs as weak-pointers  
-  **Status:** *delayed, doesn't seem that useful*
-  - [ ] Write tests
-- [ ] Move to `#![no_std]`
-- [ ] Allow the user to customize allocator
-  - [ ] Write tests
+- [X] Add null capability to `heaparray::base::AtomicPtrArray` to make it usable
+  as a pointer without having to initialize it immediately. Nulls should be unsafe
+  in non-rc'd version.
 - [X] Write pointer types to arrays that are easier to use than raw references
   - [X] `clone_from` for both  
   - [X] Write a modified global allocator to handle allocations during testing  

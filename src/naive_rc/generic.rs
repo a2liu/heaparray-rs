@@ -284,7 +284,7 @@ where
 
 unsafe impl<A, R, E, L> Send for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef + Send,
+    A: LabelledArray<E, R> + BaseArrayRef + Send + Sync,
     R: RefCounter<L> + Send + Sync,
     E: Send + Sync,
     L: Send + Sync,

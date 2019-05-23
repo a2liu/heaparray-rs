@@ -1,8 +1,10 @@
 # heaparray
 
-This crate aims to give people better control of how they want to allocate memory,
-by providing a customizable way to allocate blocks of memory, that optionally contains
-metadata about the block itself.
+This crate aims to give people better control of how they allocate memory,
+by providing a customizable way to allocate blocks of memory, that optionally
+contains metadata about the block itself. This makes it much easier to implement
+Dynamically-Sized Types (DSTs), and also reduces the number of pointer
+indirections necessary to share data between threads.
 
 It has two main features that provide the foundation for the rest:
 
@@ -50,14 +52,14 @@ It has two main features that provide the foundation for the rest:
   ```
 
 - **Thin pointer arrays:** in Rust, unsized structs are referenced with
-  pointers that are stored with an associated length; these are called fat
-  pointers. This behavior isn't always desired, so this crate provides
+  pointers that are stored with an associated length.
+  This behavior isn't always desired, so this crate provides
   both thin and fat pointer-referenced arrays, where the length is stored
   with the data instead of with the pointer in the thin pointer variant.
 
 ### Features
 - Arrays are allocated on the heap, with optional extra space allocated for metadata
-- 1-word and 2-word references to arrays
+- Support for 1-word and 2-word pointers
 - Atomically reference-counted memory blocks of arbitrary size without using a `Vec`;
   this means you can access reference-counted memory with only a single pointer
   indirection.
@@ -117,13 +119,13 @@ let mut array = HeapArray::with_label(
 ```
 ### Use of `unsafe` Keyword
 This library relies heavily on the use of the `unsafe` keyword to do both
-reference counting and atomic operations; there are 14 instances total,
+reference counting and atomic operations; there are 40 instances total,
 not including tests.
 
 ### Customizability
-All of the implementation details of this crate are public and documented; if you'd
-like to implement your own version of the tools available through this crate,
-note that you don't need to reinvent the wheel; many of the types in this crate
-are generic over certain traits, so you might not need to do that much.
+All of the implementation details of this crate are public and documented;
+if you'd like to implement your own version of the tools available through
+this crate, note that you don't need to reinvent the wheel; many of the types in
+this crate are generic over certain traits, so you might not need to do that much.
 
 License: MIT

@@ -78,6 +78,18 @@ impl<E, L> AtomicPtrArray<E, L> {
             phantom: PhantomData,
         }
     }
+    /// Returns a null reference. This function is `unsafe` because none of this
+    /// struct's API checks for null references before dereferencing.
+    pub unsafe fn null_ref() -> Self {
+        Self {
+            data: AtomicPtr::new(ptr::null_mut()),
+            phantom: PhantomData,
+        }
+    }
+    /// Returns true if the internal pointer in this struct is null.
+    pub fn is_null(&self) -> bool {
+        self.data.load(Ordering::Relaxed).is_null()
+    }
 }
 
 impl<E, L> Container for AtomicPtrArray<E, L> {

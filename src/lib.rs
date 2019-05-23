@@ -1,4 +1,4 @@
-//! This crate aims to give people better control of how they want to allocate memory,
+//! This crate aims to give people better control of how they allocate memory,
 //! by providing a customizable way to allocate blocks of memory, that optionally
 //! contains metadata about the block itself. This makes it much easier to implement
 //! Dynamically-Sized Types (DSTs), and also reduces the number of pointer
@@ -50,14 +50,14 @@
 //!   ```
 //!
 //! - **Thin pointer arrays:** in Rust, unsized structs are referenced with
-//!   pointers that are stored with an associated length; these are called fat
-//!   pointers. This behavior isn't always desired, so this crate provides
+//!   pointers that are stored with an associated length.
+//!   This behavior isn't always desired, so this crate provides
 //!   both thin and fat pointer-referenced arrays, where the length is stored
 //!   with the data instead of with the pointer in the thin pointer variant.
 //!
 //! ## Features
 //! - Arrays are allocated on the heap, with optional extra space allocated for metadata
-//! - 1-word and 2-word references to arrays
+//! - Support for 1-word and 2-word pointers
 //! - Atomically reference-counted memory blocks of arbitrary size without using a `Vec`;
 //!   this means you can access reference-counted memory with only a single pointer
 //!   indirection.
