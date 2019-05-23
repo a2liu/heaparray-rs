@@ -1,17 +1,17 @@
-use crate::base::FatPtrArray;
-use crate::tests::prelude::*;
+use crate::prelude::*;
+use heaparray::base::ThinPtrArray;
 
-type TestArray<E, L = ()> = FatPtrArray<E, L>;
+type TestArray<E, L = ()> = ThinPtrArray<E, L>;
 
 #[test]
 fn make_array() {
-    let _array = TestArray::with_label(LabelLoad::default(), LENGTH, |_, i| i);
+    let _array = TestArray::with_label(LabelLoad::default(), LENGTH, |_, _| Load::default());
 }
 
 #[test]
 #[should_panic]
 fn bounds_check() {
-    let fat = TestArray::with_label(LabelLoad::default(), LENGTH, |_, i| i);
+    let fat = TestArray::with_label(LabelLoad::default(), LENGTH, |_, _| Load::default());
     println!("{:?}", fat[LENGTH]);
 }
 

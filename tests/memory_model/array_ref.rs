@@ -1,4 +1,5 @@
-use crate::naive_rc::*;
+use crate::prelude::*;
+use heaparray::naive_rc::*;
 
 type TestArray<E, L = ()> = FpRcArray<E, L>;
 

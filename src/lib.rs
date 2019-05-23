@@ -139,8 +139,6 @@ mod traits;
 
 mod prelude {
     pub(crate) use super::mem_block::*;
-    #[cfg(test)]
-    pub(crate) use super::test_utils::*;
     pub use super::traits::*;
     pub use containers::{Container, CopyMap};
     pub(crate) use core::fmt;
@@ -151,30 +149,3 @@ mod prelude {
 }
 
 pub use api::*;
-
-#[cfg(all(test, not(bench)))]
-extern crate interloc;
-
-#[cfg(all(test, not(bench)))]
-use interloc::*;
-
-#[cfg(all(test, not(bench)))]
-use tests::monitor::*;
-
-#[cfg(all(test, not(bench)))]
-use std::alloc::System;
-
-#[cfg(all(test, not(bench)))]
-static TEST_MONITOR: TestMonitor = TestMonitor::new();
-
-#[cfg(all(test, not(bench)))]
-#[global_allocator]
-static GLOBAL: InterAlloc<System, TestMonitor> = InterAlloc {
-    inner: System,
-    monitor: &TEST_MONITOR,
-};
-
-#[cfg(test)]
-mod test_utils;
-#[cfg(test)]
-mod tests;
