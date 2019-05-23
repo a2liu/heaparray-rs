@@ -72,13 +72,13 @@ impl<T> RefCounter<T> for ArcStruct<T> {
         }
     }
     fn decrement(&self) -> usize {
-        self.counter.fetch_sub(1, Ordering::SeqCst) - 1
+        self.counter.fetch_sub(1, Ordering::AcqRel) - 1
     }
     fn increment(&self) -> usize {
-        self.counter.fetch_add(1, Ordering::SeqCst) + 1
+        self.counter.fetch_add(1, Ordering::Relaxed) + 1
     }
     fn counter(&self) -> usize {
-        self.counter.load(Ordering::SeqCst)
+        self.counter.load(Ordering::Acquire)
     }
     fn get_data(&self) -> &T {
         &self.data
