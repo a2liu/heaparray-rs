@@ -37,20 +37,27 @@ pub trait ArrayRef: BaseArrayRef + Clone {
 /// documentation for `std::sync::atomic::AtomicPtr`.
 pub trait AtomicArrayRef: BaseArrayRef + Sized {
     fn as_ref(&self) -> usize;
-    fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self;
+    /// Returns the previous value, and also the struct you passed in if the value
+    /// wasn't updated
+    fn compare_and_swap(
+        &self,
+        current: usize,
+        new: Self,
+        order: Ordering,
+    ) -> Result<usize, (Self, usize)>;
     fn compare_exchange(
         &self,
         current: usize,
         new: Self,
         success: Ordering,
         failure: Ordering,
-    ) -> Result<Self, Self>;
+    ) -> Result<usize, (Self, usize)>;
     fn compare_exchange_weak(
         &self,
         current: usize,
         new: Self,
         success: Ordering,
         failure: Ordering,
-    ) -> Result<Self, Self>;
+    ) -> Result<usize, (Self, usize)>;
     fn swap(&self, ptr: Self, order: Ordering) -> Self;
 }

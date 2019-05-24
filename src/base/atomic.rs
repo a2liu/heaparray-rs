@@ -62,10 +62,10 @@ type Data<E, L> = AtomicPtr<Block<E, L>>;
 
 impl<E, L> AtomicPtrArray<E, L> {
     fn as_ref(&self) -> &Block<E, L> {
-        unsafe { &*self.data.load(Ordering::Relaxed) }
+        unsafe { &*self.data.load(Ordering::Acquire) }
     }
     fn as_mut(&mut self) -> &mut Block<E, L> {
-        unsafe { &mut *self.data.load(Ordering::Relaxed) }
+        unsafe { &mut *self.data.load(Ordering::SeqCst) }
     }
     fn to_ref(mut self) -> *mut Block<E, L> {
         let ret = self.as_mut() as *mut Block<E, L>;
@@ -88,7 +88,7 @@ impl<E, L> AtomicPtrArray<E, L> {
     }
     /// Returns true if the internal pointer in this struct is null.
     pub fn is_null(&self) -> bool {
-        self.data.load(Ordering::Relaxed).is_null()
+        self.data.load(Ordering::Acquire).is_null()
     }
 }
 
@@ -271,9 +271,21 @@ impl<E, L> AtomicArrayRef for AtomicPtrArray<E, L> {
     fn as_ref(&self) -> usize {
         self.as_ref() as *const Block<E, L> as usize
     }
-    fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self {
+    fn compare_and_swap(
+        &self,
+        current: usize,
+        new: Self,
+        order: Ordering,
+    ) -> Result<usize, (Self, usize)> {
         let current = current as *mut Block<E, L>;
-        Self::from_ref(self.data.compare_and_swap(current, new.to_ref(), order))
+        let new_ref = new.as_ref() as *const Block<E, L> as *mut Block<E, L>;
+        let actual = self.data.compare_and_swap(current, new_ref, order);
+        if actual == current {
+            mem::forget(new);
+            Ok(current as usize)
+        } else {
+            Err((new, current as usize))
+        }
     }
     fn compare_exchange(
         &self,
@@ -281,14 +293,18 @@ impl<E, L> AtomicArrayRef for AtomicPtrArray<E, L> {
         new: Self,
         success: Ordering,
         failure: Ordering,
-    ) -> Result<Self, Self> {
+    ) -> Result<usize, (Self, usize)> {
         let current = current as *mut Block<E, L>;
+        let new_ref = new.as_ref() as *const Block<E, L> as *mut Block<E, L>;
         match self
             .data
-            .compare_exchange(current, new.to_ref(), success, failure)
+            .compare_exchange(current, new_ref, success, failure)
         {
-            Ok(ptr) => Ok(Self::from_ref(ptr)),
-            Err(ptr) => Err(Self::from_ref(ptr)),
+            Ok(ptr) => {
+                mem::forget(new);
+                Ok(ptr as usize)
+            }
+            Err(ptr) => Err((new, ptr as usize)),
         }
     }
     fn compare_exchange_weak(
@@ -297,14 +313,18 @@ impl<E, L> AtomicArrayRef for AtomicPtrArray<E, L> {
         new: Self,
         success: Ordering,
         failure: Ordering,
-    ) -> Result<Self, Self> {
+    ) -> Result<usize, (Self, usize)> {
         let current = current as *mut Block<E, L>;
+        let new_ref = new.as_ref() as *const Block<E, L> as *mut Block<E, L>;
         match self
             .data
-            .compare_exchange_weak(current, new.to_ref(), success, failure)
+            .compare_exchange_weak(current, new_ref, success, failure)
         {
-            Ok(ptr) => Ok(Self::from_ref(ptr)),
-            Err(ptr) => Err(Self::from_ref(ptr)),
+            Ok(ptr) => {
+                mem::forget(new);
+                Ok(ptr as usize)
+            }
+            Err(ptr) => Err((new, ptr as usize)),
         }
     }
     fn swap(&self, ptr: Self, order: Ordering) -> Self {
