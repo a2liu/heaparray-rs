@@ -1,13 +1,11 @@
-#[allow(dead_code)]
-pub(crate) mod monitor;
+mod memory_model;
 
-mod array_ref;
-mod fat_array_ptr;
-mod test_utils;
-mod thin_array_ptr;
+extern crate containers_rs as containers;
+extern crate heaparray;
 
 mod prelude {
-    use crate::test_utils::*;
+    pub use crate::memory_model::test_utils::*;
+    pub use heaparray::*;
 }
 
 #[cfg(not(bench))]
@@ -17,7 +15,7 @@ extern crate interloc;
 use interloc::*;
 
 #[cfg(not(bench))]
-use tests::monitor::*;
+use memory_model::monitor::*;
 
 #[cfg(not(bench))]
 use std::alloc::System;

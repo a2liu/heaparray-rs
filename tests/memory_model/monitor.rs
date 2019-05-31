@@ -16,9 +16,9 @@ impl TestMonitor {
         self.local.info()
     }
 
-    pub fn local_reset(&self) {
-        self.local.write_info(AllocInfo::new());
-    }
+    // pub fn local_reset(&self) {
+    //     self.local.write_info(AllocInfo::new());
+    // }
 }
 
 impl AllocMonitor for TestMonitor {
