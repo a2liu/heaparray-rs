@@ -27,6 +27,15 @@ pub struct RcStruct<T> {
     pub data: T,
 }
 
+impl<T> Clone for RcStruct<T>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        Self::new(self.data.clone())
+    }
+}
+
 impl<T> RefCounter<T> for RcStruct<T> {
     fn new(data: T) -> Self {
         Self {
@@ -62,6 +71,15 @@ impl<T> RefCounter<T> for RcStruct<T> {
 pub struct ArcStruct<T> {
     counter: AtomicUsize,
     pub data: T,
+}
+
+impl<T> Clone for ArcStruct<T>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        Self::new(self.data.clone())
+    }
 }
 
 impl<T> RefCounter<T> for ArcStruct<T> {

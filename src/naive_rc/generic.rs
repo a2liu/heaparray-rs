@@ -58,6 +58,13 @@ where
             Ok(self.to_ref())
         }
     }
+    pub fn to_mut(&mut self) -> Result<&mut A, ()> {
+        if self.ref_count() > 1 {
+            Err(())
+        } else {
+            Ok(&mut *self.data)
+        }
+    }
 }
 
 impl<A, R, E, L> RcArray<A, R, E, L>
@@ -65,8 +72,18 @@ where
     A: LabelledArray<E, R> + BaseArrayRef + Clone,
     R: RefCounter<L>,
 {
-    pub fn make_owned(&self) -> A {
-        (*self.data).clone()
+    pub fn make_owned(self) -> A {
+        if self.ref_count() > 1 {
+            (*self.data).clone()
+        } else {
+            self.to_ref()
+        }
+    }
+    pub fn make_mut(&mut self) -> &mut A {
+        if self.ref_count() > 1 {
+            *self = Self::from_ref((*self.data).clone());
+        }
+        &mut *self.data
     }
 }
 
