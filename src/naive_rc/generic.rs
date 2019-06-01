@@ -130,7 +130,6 @@ where
 {
     fn drop(&mut self) {
         let ref_count = self.data.get_label().decrement();
-
         if ref_count == 0 {
             unsafe {
                 ptr::drop_in_place(&mut *self.data);
@@ -311,49 +310,9 @@ where
 
 unsafe impl<A, R, E, L> Sync for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef + Sync,
+    A: LabelledArray<E, R> + BaseArrayRef + Send + Sync,
     R: RefCounter<L> + Send + Sync,
     E: Send + Sync,
     L: Send + Sync,
 {
 }
-
-// impl<A, R, E, L> AtomicArrayRef for RcArray<A, R, E, L>
-// where
-//     A: LabelledArray<E, R> + BaseArrayRef + AtomicArrayRef,
-//     R: RefCounter<L>,
-// {
-//     fn as_ref(&self) -> usize {
-//         self.data.as_ref()
-//     }
-//     fn compare_and_swap(&self, current: usize, new: Self, order: Ordering) -> Self {
-//         Self::from_ref((*self.data).compare_and_swap(current, new.to_ref(), order))
-//     }
-//     fn compare_exchange(
-//         &self,
-//         current: usize,
-//         new: Self,
-//         success: Ordering,
-//         failure: Ordering,
-//     ) -> Result<Self, Self> {
-//         match (*self.data).compare_exchange(current, new.to_ref(), success, failure) {
-//             Ok(data) => Ok(Self::from_ref(data)),
-//             Err(data) => Err(Self::from_ref(data)),
-//         }
-//     }
-//     fn compare_exchange_weak(
-//         &self,
-//         current: usize,
-//         new: Self,
-//         success: Ordering,
-//         failure: Ordering,
-//     ) -> Result<Self, Self> {
-//         match (*self.data).compare_exchange_weak(current, new.to_ref(), success, failure) {
-//             Ok(data) => Ok(Self::from_ref(data)),
-//             Err(data) => Err(Self::from_ref(data)),
-//         }
-//     }
-//     fn swap(&self, ptr: Self, order: Ordering) -> Self {
-//         Self::from_ref((*self.data).swap(ptr.to_ref(), order))
-//     }
-// }

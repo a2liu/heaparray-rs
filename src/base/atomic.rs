@@ -166,6 +166,15 @@ impl<E, L> LabelledArray<E, L> for AtomicPtrArray<E, L> {
     }
 }
 
+impl<E, L> DefaultLabelledArray<E, L> for AtomicPtrArray<E, L>
+where
+    E: Default,
+{
+    fn with_len(label: L, len: usize) -> Self {
+        Self::with_label(label, len, |_, _| E::default())
+    }
+}
+
 impl<E, L> Clone for AtomicPtrArray<E, L>
 where
     E: Clone,
