@@ -4,7 +4,6 @@
 use super::ref_counters::*;
 pub use crate::prelude::*;
 use core::marker::PhantomData;
-use core::sync::atomic::Ordering;
 
 /// `RcArray` is a generic, implementation-agnositc array. It contains
 /// logic for enforcing type safety.
