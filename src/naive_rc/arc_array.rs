@@ -24,7 +24,7 @@ impl<E, L> ArcArray<E, L> {
     }
     fn check_null(&self, message: &'static str) {
         if cfg!(not(feature = "no-asserts")) {
-            core::sync::atomic::fence(Ordering::Acquire);
+            // Don't need a memory fence because is_null is already Acquire
             assert!(
                 !self.is_null(),
                 format!(
