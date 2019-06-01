@@ -6,6 +6,7 @@ edition = "2018"
 repository = "https://github.com/A1Liu/heaparray-rs"
 description = "Flexible support for dynamically sized types, using heap-allocated array of structs"
 readme = "README.md"
+fast-drop = [] # Refrains from overwriting pointer when dropping or nullifying
 keywords = ["array", "heap", "atomic"]
 license = "MIT"
 
@@ -18,5 +19,3 @@ interloc = "0.1.0"
 [features]
 default = []
 no-asserts = [] # does what it says on the tin - removes assertions.
-fast-drop = [] # Refrains from overwriting pointer when dropping or nullifying
-real-black-box = []
