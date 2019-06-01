@@ -1,10 +1,5 @@
 # TODO
-- [ ] Make `heaparray::naive_rc::ArcArray`, a generic array that allows for CAS
-  operations on its internal pointer without creating race conditions by using
-  RAII smart pointers.
-  **Status:** *blocked* This will cause race conditions without some kind of
-  fully-fledged
-  memory reclamation strategy.
+- [ ] Add proc macros for generating tests of things in crate
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
 - [ ] Move to `#![no_std]`
@@ -19,6 +14,10 @@
 - [ ] Constant-sized arrays whose size is known at compile time.  
       **Blocked by:** *const generics*
   - [ ] Write tests
+- [X] Make `heaparray::naive_rc::ArcArray`, a generic array that allows for CAS
+  operations on its internal pointer without creating race conditions by using
+  RAII smart pointers. *Note:* Implemented version doesn't do exactly that, but
+  does something close: it atomically swaps a null pointer for a real one.
 - [X] Add null capability to `heaparray::base::AtomicPtrArray` to make it usable
   as a pointer without having to initialize it immediately. Nulls should be unsafe
   in non-rc'd version.
