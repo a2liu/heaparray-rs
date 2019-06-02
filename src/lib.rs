@@ -62,9 +62,9 @@
 //! ## Features
 //! - Arrays are allocated on the heap, with optional extra space allocated for metadata
 //! - Support for 1-word and 2-word pointers
-//! - Atomically reference-counted memory blocks of arbitrary size without using a `Vec`;
-//!   this means you can access reference-counted memory with only a single pointer
-//!   indirection.
+//! - Atomically reference-counted memory blocks of arbitrary size without
+//!   using a `Vec`; this means you can access reference-counted memory with
+//!   only a single pointer indirection.
 //! - Swap owned objects in and out with `array.insert()`
 //! - Arbitrarily sized objects using label and an array of bytes (`u8`)
 //!
