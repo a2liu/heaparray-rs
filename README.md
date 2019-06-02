@@ -48,7 +48,9 @@ It has two main features that provide the foundation for the rest:
   type MySuperSliceable = HeapArray<u8, u32>;
 
   fn main() {
-      let dynamic = MySuperSliceable::with_label(17, 8, |_,_| 0);
+      let info = 17;
+      let len = 8;
+      let dynamic = MySuperSliceable::with_label(info, len, |_,_| 0);
       println!("{:?}", dynamic);
   }
   ```
