@@ -45,8 +45,10 @@ It has two main features that provide the foundation for the rest:
   ```rust
   use heaparray::*;
 
+  type MySuperSliceable = HeapArray<u8, u32>;
+
   fn main() {
-      let dynamic = HeapArray::<u8,u32>::with_label(17, 8, |_,_| 0);
+      let dynamic = MySuperSliceable::with_label(17, 8, |_,_| 0);
       println!("{:?}", dynamic);
   }
   ```
