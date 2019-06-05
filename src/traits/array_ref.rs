@@ -1,7 +1,9 @@
 use core::sync::atomic::Ordering;
 
-/// A basic reference to a heap-allocated array. Should be paired with exactly
-/// one of either `heaparray::UnsafeArrayRef` or `heaparray::ArrayRef`.
+/// A reference to a heap-allocated array.
+///
+/// Should be paired with exactly one of either `heaparray::UnsafeArrayRef`
+/// or `heaparray::ArrayRef`.
 pub trait BaseArrayRef {}
 
 /// A reference to an array, whose clone points to the same data.
@@ -28,7 +30,9 @@ pub trait ArrayRef: BaseArrayRef + Clone {
     }
 }
 
-/// Atomically modified array reference. Guarrantees that all operations on the
+/// Atomically modified array reference.
+///
+/// Guarrantees that all operations on the
 /// array reference are atomic (i.e. all changes to the internal array pointer).
 /// Additionally, guarrantees that all reads to a reference of this pointer use
 /// atomic loads.
@@ -45,6 +49,8 @@ pub trait AtomicArrayRef: BaseArrayRef + Sized {
         new: Self,
         order: Ordering,
     ) -> Result<usize, (Self, usize)>;
+    /// Returns the previous value, and also the struct you passed in if the value
+    /// wasn't updated
     fn compare_exchange(
         &self,
         current: usize,
@@ -52,6 +58,9 @@ pub trait AtomicArrayRef: BaseArrayRef + Sized {
         success: Ordering,
         failure: Ordering,
     ) -> Result<usize, (Self, usize)>;
+    /// Swaps in the passed-in reference if the internal reference matches `current`.
+    /// Returns the previous value, and also the struct you passed in if the value
+    /// wasn't updated
     fn compare_exchange_weak(
         &self,
         current: usize,
@@ -59,5 +68,6 @@ pub trait AtomicArrayRef: BaseArrayRef + Sized {
         success: Ordering,
         failure: Ordering,
     ) -> Result<usize, (Self, usize)>;
+    /// Swaps in the specified array reference and returns the previous value
     fn swap(&self, ptr: Self, order: Ordering) -> Self;
 }
