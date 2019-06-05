@@ -1,7 +1,11 @@
 # TODO
-- [ ] Add proc macros for generating tests of things in crate
+- [ ] Ability to change size of length and reference counting fields
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
+- [ ] SharedRcArray, that allows for pointer swapping through RAII stuff. Wrapper
+  around RcArray that doesn't allow for access unless you first increment the
+  reference count.
+- [ ] Add proc macros for trait tests (in separate crate?)
 - [ ] Move to `#![no_std]`
 - [ ] Allow the user to customize allocator
   - [ ] Write tests
