@@ -1,12 +1,13 @@
 # TODO
-- [ ] Ability to change size of length and reference counting fields
-- [ ] Completely unchecked arrays whose size is never known and whose state needs
-  to be manually handled. Purpose is two-fold: makes it possible to turn `ThinPtrArray`
-  into a special case of a more general struct; also makes it *really* easy to write
-  the constant-sized arrays (as they're another special case)  
-  *implemented through `MemBlock`*
+
+### Producton-Ready Version
+- [ ] Verify correctness w/ lots and lots of tests on `BaseArray` and
+  `AtomicPtrArray`, then extend those tests to `ThinPtrArray` and so on
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
+
+### Features
+- [ ] Ability to change size of length and reference counting fields
 - [ ] SharedRcArray, that allows for pointer swapping through RAII stuff. Wrapper
   around RcArray that doesn't allow for access unless you first increment the
   reference count.
@@ -23,6 +24,11 @@
 - [ ] Constant-sized arrays whose size is known at compile time.  
       **Blocked by:** *const generics*
   - [ ] Write tests
+- [X] Completely unchecked arrays whose size is never known and whose state needs
+  to be manually handled. Purpose is two-fold: makes it possible to turn `ThinPtrArray`
+  into a special case of a more general struct; also makes it *really* easy to write
+  the constant-sized arrays (as they're another special case)  
+  *implemented through `BaseArray`*
 - [X] Make `heaparray::naive_rc::ArcArray`, a generic array that allows for CAS
   operations on its internal pointer without creating race conditions by using
   RAII smart pointers. *Note:* Implemented version doesn't do exactly that, but
