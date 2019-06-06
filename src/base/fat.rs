@@ -2,9 +2,8 @@
 //!
 //! This is the typical representation of unsized references in Rust,
 //! and is thus also the default implementation of `HeapArray` as imported by `use heaparray::*;`
-use super::iter::FatPtrArrayIter;
+use super::base::{Array, ArrayIter};
 pub use crate::prelude::*;
-use ptr::NonNull;
 
 /// Heap-allocated array, with array size stored with the pointer to the memory.
 ///
@@ -65,7 +64,7 @@ use ptr::NonNull;
 /// way you would use a raw array or slice.
 #[repr(C)]
 pub struct FatPtrArray<E, L = ()> {
-    data: NonNull<MemBlock<E, L>>,
+    data: Array<E, L>,
     len: usize,
 }
 
@@ -77,9 +76,8 @@ where
     L: Clone,
 {
     fn clone(&self) -> Self {
-        let new_ptr = unsafe { NonNull::new_unchecked(self.data.as_ref().clone(self.len())) };
         Self {
-            data: new_ptr,
+            data: unsafe { self.data.clone(self.len()) },
             len: self.len,
         }
     }
@@ -98,7 +96,7 @@ where
 impl<E, L> Drop for FatPtrArray<E, L> {
     fn drop(&mut self) {
         let len = self.len;
-        unsafe { self.data.as_mut().dealloc(len) };
+        unsafe { self.data.drop(len) };
     }
 }
 
@@ -113,14 +111,14 @@ impl<E, L> CopyMap<usize, E> for FatPtrArray<E, L> {
         if key >= self.len() {
             None
         } else {
-            Some(unsafe { self.data.as_ref().get(key) })
+            Some(unsafe { self.data.get(key) })
         }
     }
     fn get_mut(&mut self, key: usize) -> Option<&mut E> {
         if key >= self.len() {
             None
         } else {
-            Some(unsafe { self.data.as_mut().get(key) })
+            Some(unsafe { self.data.get_mut(key) })
         }
     }
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
@@ -159,28 +157,30 @@ impl<E, L> LabelledArray<E, L> for FatPtrArray<E, L> {
         F: FnMut(&mut L, usize) -> E,
     {
         Self {
-            data: NonNull::new(MemBlock::<E, L>::new_init(label, len, func)).unwrap(),
+            data: Array::new(label, len, func),
             len,
         }
     }
     unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
-        let new_ptr = NonNull::new_unchecked(MemBlock::new(label, len));
-        Self { data: new_ptr, len }
+        Self {
+            data: Array::new_lazy(label, len),
+            len,
+        }
     }
     fn get_label(&self) -> &L {
-        unsafe { self.data.as_ref().get_label() }
+        self.data.get_label()
     }
     unsafe fn get_label_unsafe(&self) -> &mut L {
-        self.data.as_ref().get_label()
+        &mut *(self.data.get_label() as *const L as *mut L)
     }
     unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
-        self.data.as_ref().get(idx)
+        &mut *(self.data.get(idx) as *const E as *mut E)
     }
 }
 
 impl<E, L> LabelledArrayMut<E, L> for FatPtrArray<E, L> {
     fn get_label_mut(&mut self) -> &mut L {
-        unsafe { self.data.as_mut().get_label() }
+        self.data.get_label_mut()
     }
 }
 
@@ -195,23 +195,24 @@ where
 
 impl<E, L> IntoIterator for FatPtrArray<E, L> {
     type Item = E;
-    type IntoIter = FatPtrArrayIter<E, L>;
-    fn into_iter(mut self) -> Self::IntoIter {
+    type IntoIter = ArrayIter<E, L>;
+    fn into_iter(self) -> Self::IntoIter {
         let len = self.len();
-        let iter = unsafe { self.data.as_mut().iter(len) };
+        let iter =
+            unsafe { mem::transmute_copy::<Array<E, L>, Array<E, L>>(&self.data).into_iter(len) };
         mem::forget(self);
-        FatPtrArrayIter(iter)
+        iter
     }
 }
 
 impl<E, L> SliceArray<E> for FatPtrArray<E, L> {
     fn as_slice(&self) -> &[E] {
         let len = self.len();
-        unsafe { self.data.as_ref().as_slice(len) }
+        unsafe { self.data.as_slice(len) }
     }
     fn as_slice_mut(&mut self) -> &mut [E] {
         let len = self.len();
-        unsafe { self.data.as_mut().as_slice(len) }
+        unsafe { self.data.as_slice_mut(len) }
     }
 }
 

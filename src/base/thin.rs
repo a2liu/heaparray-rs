@@ -4,7 +4,8 @@
 //! in Rust, but may improve performance depending on your use case. Thus, it is
 //! not the standard implementation of `HeapArray`, but is still available for use
 //! via `use heaparray::base::*;
-use super::{Array, ArrayIter};
+use super::base::Array;
+use super::iter::ThinPtrArrayIter;
 use crate::prelude::*;
 
 /// Heap-allocated array, with array size stored alongside the memory block
@@ -187,15 +188,15 @@ impl<E, L> BaseArrayRef for ThinPtrArray<E, L> {}
 
 impl<E, L> IntoIterator for ThinPtrArray<E, L> {
     type Item = E;
-    type IntoIter = ArrayIter<E, LenLabel<L>>;
-    fn into_iter(mut self) -> Self::IntoIter {
+    type IntoIter = ThinPtrArrayIter<E, L>;
+    fn into_iter(self) -> Self::IntoIter {
         let len = self.len();
         let iter = unsafe {
             mem::transmute_copy::<Array<E, LenLabel<L>>, Array<E, LenLabel<L>>>(&self.data)
                 .into_iter(len)
         };
         mem::forget(self);
-        iter
+        ThinPtrArrayIter(iter)
     }
 }
 
