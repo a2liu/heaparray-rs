@@ -25,13 +25,26 @@ impl<E, L> BaseArray<E, L> {
     where
         F: FnMut(&mut L, usize) -> E,
     {
-        let data = unsafe { NonNull::new_unchecked(MemBlock::<E, L>::new_init(label, len, func)) };
+        let data = NonNull::new(MemBlock::new_init(label, len, func)).unwrap();
         Self { data }
     }
 
     pub unsafe fn new_lazy(label: L, len: usize) -> Self {
-        let data = NonNull::new(MemBlock::<E, L>::new(label, len)).unwrap();
-        Self { data }
+        Self::from_ptr(MemBlock::new(label, len))
+    }
+
+    pub unsafe fn from_ptr(ptr: *mut MemBlock<E, L>) -> Self {
+        Self {
+            data: NonNull::new_unchecked(ptr),
+        }
+    }
+
+    pub unsafe fn as_ptr(&self) -> *const MemBlock<E, L> {
+        self.data.as_ptr()
+    }
+
+    pub unsafe fn as_ptr_mut(&mut self) -> *mut MemBlock<E, L> {
+        self.data.as_ptr()
     }
 
     pub unsafe fn drop(&mut self, len: usize) {
@@ -60,7 +73,7 @@ impl<E, L> BaseArray<E, L> {
     }
 
     pub fn get_ptr_mut(&mut self, idx: usize) -> *mut E {
-        self._mut().get_ptr(idx) as *mut E
+        self._mut().get_ptr(idx)
     }
 
     pub unsafe fn get(&self, idx: usize) -> &E {

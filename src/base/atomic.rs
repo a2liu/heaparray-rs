@@ -1,6 +1,7 @@
 //! Contains definition of `AtomicPtrArray`, an array reference whose pointer is
 //! 1 word and atomically loaded/stored.
-use super::iter::AtomicPtrArrayIter;
+use super::base::BaseArray;
+use super::iter::ThinPtrArrayIter;
 use super::thin::LenLabel;
 use crate::prelude::*;
 use core::marker::PhantomData;
@@ -94,7 +95,7 @@ impl<E, L> AtomicPtrArray<E, L> {
 
 impl<E, L> Container for AtomicPtrArray<E, L> {
     fn len(&self) -> usize {
-        unsafe { self.as_ref().get_label().len }
+        self.as_ref().label.len
     }
 }
 
@@ -103,14 +104,14 @@ impl<E, L> CopyMap<usize, E> for AtomicPtrArray<E, L> {
         if key >= self.len() {
             None
         } else {
-            Some(unsafe { self.as_ref().get(key) })
+            Some(unsafe { &*self.as_ref().get_ptr(key) })
         }
     }
     fn get_mut(&mut self, key: usize) -> Option<&mut E> {
         if key >= self.len() {
             None
         } else {
-            Some(unsafe { self.as_mut().get(key) })
+            Some(unsafe { &mut *(self.as_mut().get_ptr(key) as *mut E) })
         }
     }
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
@@ -156,13 +157,13 @@ impl<E, L> LabelledArray<E, L> for AtomicPtrArray<E, L> {
         }
     }
     fn get_label(&self) -> &L {
-        unsafe { self.get_label_unsafe() }
+        &self.as_ref().label.label
     }
     unsafe fn get_label_unsafe(&self) -> &mut L {
-        &mut self.as_ref().get_label().label
+        &mut *(&self.as_ref().label.label as *const L as *mut L)
     }
     unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
-        self.as_ref().get(idx)
+        &mut *(self.as_ref().get_ptr(idx) as *mut E)
     }
 }
 
@@ -181,11 +182,7 @@ where
     L: Clone,
 {
     fn clone(&self) -> Self {
-        let new_ptr = unsafe { AtomicPtr::new(self.as_ref().clone(self.len())) };
-        Self {
-            data: new_ptr,
-            phantom: PhantomData,
-        }
+        Self::with_label(self.get_label().clone(), self.len(), |_, i| self[i].clone())
     }
     fn clone_from(&mut self, source: &Self) {
         if source.len() != self.len() {
@@ -225,23 +222,23 @@ impl<E, L> BaseArrayRef for AtomicPtrArray<E, L> {}
 
 impl<E, L> IntoIterator for AtomicPtrArray<E, L> {
     type Item = E;
-    type IntoIter = AtomicPtrArrayIter<E, L>;
+    type IntoIter = ThinPtrArrayIter<E, L>;
     fn into_iter(mut self) -> Self::IntoIter {
         let len = self.len();
-        let iter = unsafe { self.as_mut().iter(len) };
+        let iter = unsafe { BaseArray::from_ptr(self.as_mut()).into_iter(len) };
         mem::forget(self);
-        AtomicPtrArrayIter(iter)
+        ThinPtrArrayIter(iter)
     }
 }
 
 impl<E, L> SliceArray<E> for AtomicPtrArray<E, L> {
     fn as_slice(&self) -> &[E] {
         let len = self.len();
-        unsafe { self.as_ref().as_slice(len) }
+        unsafe { core::slice::from_raw_parts(&self[0], len) }
     }
     fn as_slice_mut(&mut self) -> &mut [E] {
         let len = self.len();
-        unsafe { self.as_mut().as_slice(len) }
+        unsafe { core::slice::from_raw_parts_mut(&mut self[0], len) }
     }
 }
 

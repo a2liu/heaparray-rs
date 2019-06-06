@@ -189,12 +189,9 @@ impl<E, L> BaseArrayRef for ThinPtrArray<E, L> {}
 impl<E, L> IntoIterator for ThinPtrArray<E, L> {
     type Item = E;
     type IntoIter = ThinPtrArrayIter<E, L>;
-    fn into_iter(self) -> Self::IntoIter {
+    fn into_iter(mut self) -> Self::IntoIter {
         let len = self.len();
-        let iter = unsafe {
-            mem::transmute_copy::<BaseArray<E, LenLabel<L>>, BaseArray<E, LenLabel<L>>>(&self.data)
-                .into_iter(len)
-        };
+        let iter = unsafe { BaseArray::from_ptr(self.data.as_ptr_mut()).into_iter(len) };
         mem::forget(self);
         ThinPtrArrayIter(iter)
     }
