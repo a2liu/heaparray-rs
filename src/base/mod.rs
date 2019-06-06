@@ -9,6 +9,6 @@ mod thin;
 
 pub use crate::prelude::*;
 pub use atomic::AtomicPtrArray;
-pub use base::Array;
+pub use base::*;
 pub use fat::FatPtrArray;
 pub use thin::ThinPtrArray;

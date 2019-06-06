@@ -4,9 +4,8 @@
 //! in Rust, but may improve performance depending on your use case. Thus, it is
 //! not the standard implementation of `HeapArray`, but is still available for use
 //! via `use heaparray::base::*;
-use super::iter::ThinPtrArrayIter;
+use super::{Array, ArrayIter};
 use crate::prelude::*;
-use core::ptr::NonNull;
 
 /// Heap-allocated array, with array size stored alongside the memory block
 /// itself.
@@ -56,8 +55,7 @@ pub struct ThinPtrArray<E, L = ()> {
     data: Data<E, L>,
 }
 
-type Block<E, L> = MemBlock<E, LenLabel<L>>;
-type Data<E, L> = NonNull<Block<E, L>>;
+type Data<E, L> = Array<E, LenLabel<L>>;
 
 #[derive(Clone)]
 pub(crate) struct LenLabel<L> {
@@ -71,8 +69,7 @@ where
     L: Clone,
 {
     fn clone(&self) -> Self {
-        let new_ptr = unsafe { NonNull::new_unchecked(self.data.as_ref().clone(self.len())) };
-        Self { data: new_ptr }
+        Self::with_label(self.get_label().clone(), self.len(), |_, i| self[i].clone())
     }
     fn clone_from(&mut self, source: &Self) {
         if source.len() != self.len() {
@@ -89,13 +86,13 @@ where
 impl<E, L> Drop for ThinPtrArray<E, L> {
     fn drop(&mut self) {
         let len = self.len();
-        unsafe { self.data.as_mut().dealloc(len) };
+        unsafe { self.data.drop(len) };
     }
 }
 
 impl<E, L> Container for ThinPtrArray<E, L> {
     fn len(&self) -> usize {
-        unsafe { self.data.as_ref().get_label().len }
+        self.data.get_label().len
     }
 }
 
@@ -104,14 +101,14 @@ impl<E, L> CopyMap<usize, E> for ThinPtrArray<E, L> {
         if key >= self.len() {
             None
         } else {
-            Some(unsafe { self.data.as_ref().get(key) })
+            Some(unsafe { self.data.get(key) })
         }
     }
     fn get_mut(&mut self, key: usize) -> Option<&mut E> {
         if key >= self.len() {
             None
         } else {
-            Some(unsafe { self.data.as_mut().get(key) })
+            Some(unsafe { self.data.get_mut(key) })
         }
     }
     fn insert(&mut self, key: usize, value: E) -> Option<E> {
@@ -149,28 +146,25 @@ impl<E, L> LabelledArray<E, L> for ThinPtrArray<E, L> {
     where
         F: FnMut(&mut L, usize) -> E,
     {
-        let block_ptr = Block::new_init(LenLabel { len, label }, len, |lbl, idx| {
-            func(&mut lbl.label, idx)
-        });
-        let new_obj = Self {
-            data: NonNull::new(block_ptr).unwrap(),
-        };
-        new_obj
+        Self {
+            data: Array::new(LenLabel { len, label }, len, |lbl, idx| {
+                func(&mut lbl.label, idx)
+            }),
+        }
     }
     unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
-        let new_ptr = Block::new(LenLabel { len, label }, len);
         Self {
-            data: NonNull::new_unchecked(new_ptr),
+            data: Array::new_lazy(LenLabel { len, label }, len),
         }
     }
     fn get_label(&self) -> &L {
         unsafe { self.get_label_unsafe() }
     }
     unsafe fn get_label_unsafe(&self) -> &mut L {
-        &mut self.data.as_ref().get_label().label
+        &mut *(&self.data.get_label().label as *const L as *mut L)
     }
     unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
-        self.data.as_ref().get(idx)
+        &mut *(self.data.get_ptr(idx) as *mut E)
     }
 }
 
@@ -193,23 +187,26 @@ impl<E, L> BaseArrayRef for ThinPtrArray<E, L> {}
 
 impl<E, L> IntoIterator for ThinPtrArray<E, L> {
     type Item = E;
-    type IntoIter = ThinPtrArrayIter<E, L>;
+    type IntoIter = ArrayIter<E, LenLabel<L>>;
     fn into_iter(mut self) -> Self::IntoIter {
         let len = self.len();
-        let iter = unsafe { self.data.as_mut().iter(len) };
+        let iter = unsafe {
+            mem::transmute_copy::<Array<E, LenLabel<L>>, Array<E, LenLabel<L>>>(&self.data)
+                .into_iter(len)
+        };
         mem::forget(self);
-        ThinPtrArrayIter(iter)
+        iter
     }
 }
 
 impl<E, L> SliceArray<E> for ThinPtrArray<E, L> {
     fn as_slice(&self) -> &[E] {
         let len = self.len();
-        unsafe { self.data.as_ref().as_slice(len) }
+        unsafe { self.data.as_slice(len) }
     }
     fn as_slice_mut(&mut self) -> &mut [E] {
         let len = self.len();
-        unsafe { self.data.as_mut().as_slice(len) }
+        unsafe { self.data.as_slice_mut(len) }
     }
 }
 

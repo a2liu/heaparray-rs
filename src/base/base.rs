@@ -25,7 +25,7 @@ impl<E, L> Array<E, L> {
     where
         F: FnMut(&mut L, usize) -> E,
     {
-        let data = NonNull::new(MemBlock::<E, L>::new_init(label, len, func)).unwrap();
+        let data = unsafe { NonNull::new_unchecked(MemBlock::<E, L>::new_init(label, len, func)) };
         Self { data }
     }
 
