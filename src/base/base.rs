@@ -2,17 +2,17 @@ use crate::prelude::*;
 use core::ptr::NonNull;
 
 #[repr(transparent)]
-pub struct Array<E, L> {
+pub struct BaseArray<E, L> {
     data: NonNull<MemBlock<E, L>>,
 }
 
-pub struct ArrayIter<E, L> {
-    array: Array<E, L>,
+pub struct BaseArrayIter<E, L> {
+    array: BaseArray<E, L>,
     current: *mut E,
     end: *mut E,
 }
 
-impl<E, L> Array<E, L> {
+impl<E, L> BaseArray<E, L> {
     fn _mut(&mut self) -> &mut MemBlock<E, L> {
         unsafe { self.data.as_mut() }
     }
@@ -40,6 +40,19 @@ impl<E, L> Array<E, L> {
 
     pub unsafe fn drop_lazy(&mut self, len: usize) {
         self._mut().dealloc_lazy(len)
+    }
+
+    pub unsafe fn cast_into<T>(self) -> BaseArray<T, L> {
+        let ptr = self.data.cast::<MemBlock<T, L>>();
+        BaseArray { data: ptr }
+    }
+
+    pub unsafe fn cast_ref<T>(&self) -> &BaseArray<T, L> {
+        &*(self as *const BaseArray<E, L> as *const BaseArray<T, L>)
+    }
+
+    pub unsafe fn cast_mut<T>(&mut self) -> &mut BaseArray<T, L> {
+        &mut *(self as *mut BaseArray<E, L> as *mut BaseArray<T, L>)
     }
 
     pub fn get_ptr(&self, idx: usize) -> *const E {
@@ -74,10 +87,10 @@ impl<E, L> Array<E, L> {
         core::slice::from_raw_parts_mut(self.get_mut(0), len)
     }
 
-    pub unsafe fn into_iter(mut self, len: usize) -> ArrayIter<E, L> {
+    pub unsafe fn into_iter(mut self, len: usize) -> BaseArrayIter<E, L> {
         let current = self.get_mut(0) as *mut E;
         let end = current.add(len);
-        ArrayIter {
+        BaseArrayIter {
             array: self,
             current,
             end,
@@ -85,7 +98,7 @@ impl<E, L> Array<E, L> {
     }
 }
 
-impl<E, L> Array<E, L>
+impl<E, L> BaseArray<E, L>
 where
     E: Clone,
     L: Clone,
@@ -95,7 +108,7 @@ where
     }
 }
 
-impl<E, L> Iterator for ArrayIter<E, L> {
+impl<E, L> Iterator for BaseArrayIter<E, L> {
     type Item = E;
     fn next(&mut self) -> Option<E> {
         if self.current == self.end {
@@ -110,7 +123,7 @@ impl<E, L> Iterator for ArrayIter<E, L> {
     }
 }
 
-impl<E, L> Drop for ArrayIter<E, L> {
+impl<E, L> Drop for BaseArrayIter<E, L> {
     fn drop(&mut self) {
         let begin = self.array.get_ptr(0) as usize;
         let len = ((self.end as usize) - begin) / mem::size_of::<E>();

@@ -2,7 +2,7 @@
 //!
 //! This is the typical representation of unsized references in Rust,
 //! and is thus also the default implementation of `HeapArray` as imported by `use heaparray::*;`
-use super::base::{Array, ArrayIter};
+use super::base::{BaseArray, BaseArrayIter};
 pub use crate::prelude::*;
 
 /// Heap-allocated array, with array size stored with the pointer to the memory.
@@ -64,7 +64,7 @@ pub use crate::prelude::*;
 /// way you would use a raw array or slice.
 #[repr(C)]
 pub struct FatPtrArray<E, L = ()> {
-    data: Array<E, L>,
+    data: BaseArray<E, L>,
     len: usize,
 }
 
@@ -157,13 +157,13 @@ impl<E, L> LabelledArray<E, L> for FatPtrArray<E, L> {
         F: FnMut(&mut L, usize) -> E,
     {
         Self {
-            data: Array::new(label, len, func),
+            data: BaseArray::new(label, len, func),
             len,
         }
     }
     unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
         Self {
-            data: Array::new_lazy(label, len),
+            data: BaseArray::new_lazy(label, len),
             len,
         }
     }
@@ -195,11 +195,12 @@ where
 
 impl<E, L> IntoIterator for FatPtrArray<E, L> {
     type Item = E;
-    type IntoIter = ArrayIter<E, L>;
+    type IntoIter = BaseArrayIter<E, L>;
     fn into_iter(self) -> Self::IntoIter {
         let len = self.len();
-        let iter =
-            unsafe { mem::transmute_copy::<Array<E, L>, Array<E, L>>(&self.data).into_iter(len) };
+        let iter = unsafe {
+            mem::transmute_copy::<BaseArray<E, L>, BaseArray<E, L>>(&self.data).into_iter(len)
+        };
         mem::forget(self);
         iter
     }

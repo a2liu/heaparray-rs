@@ -4,7 +4,7 @@
 //! in Rust, but may improve performance depending on your use case. Thus, it is
 //! not the standard implementation of `HeapArray`, but is still available for use
 //! via `use heaparray::base::*;
-use super::base::Array;
+use super::base::BaseArray;
 use super::iter::ThinPtrArrayIter;
 use crate::prelude::*;
 
@@ -56,7 +56,7 @@ pub struct ThinPtrArray<E, L = ()> {
     data: Data<E, L>,
 }
 
-type Data<E, L> = Array<E, LenLabel<L>>;
+type Data<E, L> = BaseArray<E, LenLabel<L>>;
 
 #[derive(Clone)]
 pub(crate) struct LenLabel<L> {
@@ -148,14 +148,14 @@ impl<E, L> LabelledArray<E, L> for ThinPtrArray<E, L> {
         F: FnMut(&mut L, usize) -> E,
     {
         Self {
-            data: Array::new(LenLabel { len, label }, len, |lbl, idx| {
+            data: BaseArray::new(LenLabel { len, label }, len, |lbl, idx| {
                 func(&mut lbl.label, idx)
             }),
         }
     }
     unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
         Self {
-            data: Array::new_lazy(LenLabel { len, label }, len),
+            data: BaseArray::new_lazy(LenLabel { len, label }, len),
         }
     }
     fn get_label(&self) -> &L {
@@ -192,7 +192,7 @@ impl<E, L> IntoIterator for ThinPtrArray<E, L> {
     fn into_iter(self) -> Self::IntoIter {
         let len = self.len();
         let iter = unsafe {
-            mem::transmute_copy::<Array<E, LenLabel<L>>, Array<E, LenLabel<L>>>(&self.data)
+            mem::transmute_copy::<BaseArray<E, LenLabel<L>>, BaseArray<E, LenLabel<L>>>(&self.data)
                 .into_iter(len)
         };
         mem::forget(self);

@@ -1,6 +1,6 @@
 //! Iterators for the arrays in `heaparray::base`
 
-use super::base::ArrayIter;
+use super::base::BaseArrayIter;
 use super::thin::LenLabel;
 use crate::mem_block::*;
 
@@ -18,7 +18,7 @@ use crate::mem_block::*;
 /// assert!(idx == 100);
 /// ```
 #[repr(transparent)]
-pub struct ThinPtrArrayIter<E, L>(pub(crate) ArrayIter<E, LenLabel<L>>);
+pub struct ThinPtrArrayIter<E, L>(pub(crate) BaseArrayIter<E, LenLabel<L>>);
 
 impl<E, L> Iterator for ThinPtrArrayIter<E, L> {
     type Item = E;
