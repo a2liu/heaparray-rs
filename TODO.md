@@ -1,5 +1,10 @@
 # TODO
 - [ ] Ability to change size of length and reference counting fields
+- [ ] Completely unchecked arrays whose size is never known and whose state needs
+  to be manually handled. Purpose is two-fold: makes it possible to turn `ThinPtrArray`
+  into a special case of a more general struct; also makes it *really* easy to write
+  the constant-sized arrays (as they're another special case)  
+  *implemented through `MemBlock`*
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
 - [ ] SharedRcArray, that allows for pointer swapping through RAII stuff. Wrapper
@@ -59,11 +64,6 @@
   - [X] `ArrayRef::clone()` to be more idiomatic with `ArrayRef::clone<A>(arr: A) -> A where A: ArrayRef + Clone`
   - [X] Check for nulls, add panics, etc.
   - [X] Write tests, testing memory usage during clones
-- [X] Completely unchecked arrays whose size is never known and whose state needs
-  to be manually handled. Purpose is two-fold: makes it possible to turn `ThinPtrArray`
-  into a special case of a more general struct; also makes it *really* easy to write
-  the constant-sized arrays (as they're another special case)  
-  *implemented through `MemBlock`*
 
 ## Brainstorming
 -  `HeapArray`, `FatPtrArray`, and `ThinPtrArray` are references that are tied to

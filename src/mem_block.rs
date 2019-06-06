@@ -40,7 +40,7 @@ pub fn block_max_len<E, L>() -> usize {
 #[repr(C)]
 pub struct MemBlock<E, L = ()> {
     /// Metadata about the block
-    label: ManuallyDrop<L>,
+    pub label: ManuallyDrop<L>,
     /// First element in the block
     elements: ManuallyDrop<E>,
 }
@@ -98,7 +98,7 @@ impl<E, L> MemBlock<E, L> {
     /// initialized label. Does not initialize memory, so use with care.
     ///
     /// If you use this function, remember to prevent the compiler from
-    /// running the destructor for the memory wasn't initialized. i.e.
+    /// running the destructor for the memory that wasn't initialized. i.e.
     /// something like this:
     ///
     /// ```rust
@@ -115,6 +115,7 @@ impl<E, L> MemBlock<E, L> {
     pub unsafe fn new<'a>(label: L, len: usize) -> *mut Self {
         #[cfg(not(feature = "no-asserts"))]
         assert!(len <= block_max_len::<E, L>());
+
         let (size, align) = Self::memory_layout(len);
         let new_ptr = allocate::<Self>(size, align);
         ptr::write(&mut (&mut *new_ptr).label, ManuallyDrop::new(label));
@@ -144,6 +145,11 @@ impl<E, L> MemBlock<E, L> {
             mem::forget(garbage);
         }
         new_ptr
+    }
+
+    pub fn get_ptr(&self, idx: usize) -> *const E {
+        let element = (&*self.elements) as *const E;
+        unsafe { element.add(idx) }
     }
 
     /// Gets a mutable reference to the element at the index `idx` in this
