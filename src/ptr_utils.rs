@@ -27,3 +27,12 @@ impl<T> UnsafeRef<T> for AtomicPtr<T> {
         &mut *self.load(Ordering::Acquire)
     }
 }
+
+impl<T> UnsafeRef<T> for *mut T {
+    unsafe fn as_ref(&self) -> &T {
+        &**self
+    }
+    unsafe fn as_mut(&mut self) -> &mut T {
+        &mut **self
+    }
+}
