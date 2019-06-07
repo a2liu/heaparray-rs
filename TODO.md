@@ -5,6 +5,7 @@
   `AtomicPtrArray`, then extend those tests to `ThinPtrArray` and so on
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
+- [ ] Begin changelog and yank other versions
 
 ### Features
 - [ ] From and To `Vec` and `(Label, Vec)`
