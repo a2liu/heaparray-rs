@@ -1,4 +1,5 @@
-use crate::prelude::*;
+use crate::mem_block::*;
+pub use crate::prelude::*;
 use core::ptr::NonNull;
 
 #[repr(transparent)]
@@ -119,6 +120,20 @@ where
     pub unsafe fn clone(&self, len: usize) -> Self {
         Self::new(self.get_label().clone(), len, |_, i| self.get(i).clone())
     }
+}
+
+unsafe impl<E, L> Send for BaseArray<E, L>
+where
+    E: Send,
+    L: Send,
+{
+}
+
+unsafe impl<E, L> Sync for BaseArray<E, L>
+where
+    E: Sync,
+    L: Sync,
+{
 }
 
 impl<E, L> Iterator for BaseArrayIter<E, L> {
