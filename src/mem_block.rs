@@ -128,7 +128,8 @@ impl<E, L> MemBlock<E, L> {
         #[cfg(not(feature = "no-asserts"))]
         assert!(
             len <= block_max_len::<E, L>(),
-            "Cannot allocate a block larger than core::isize::MAX bytes ({} elements)",
+            "New array of length {} is invalid: Cannot allocate a block larger than core::isize::MAX bytes ({} elements)",
+            len,
             block_max_len::<E, L>()
         );
 
