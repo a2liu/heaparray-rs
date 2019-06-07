@@ -1,4 +1,5 @@
 //! Contains pointer math and allocation utilities.
+use const_utils::cond;
 use core::alloc::Layout;
 use core::mem::{align_of, size_of};
 use std::alloc::{alloc, dealloc};
@@ -43,7 +44,6 @@ pub const fn size_align<T>() -> (usize, usize) {
     (size, align)
 }
 
-///
 pub const fn aligned_size<T>(align: usize) -> usize {
     let size = size_of::<T>();
     ensure_align(size, align).0
@@ -54,51 +54,4 @@ pub const fn ensure_align(size: usize, align: usize) -> (usize, usize) {
     let off_by = size % align;
     let adjusted_size = size - off_by + align;
     (cond(off_by == 0, size, adjusted_size), align)
-}
-
-// TODO move this to separate crate
-/// Returns 1 if `n` is zero and 0 if `n` is greater than zero
-///
-/// ```rust
-/// use heaparray::alloc_utils::is_zero;
-/// assert!(is_zero(0) == 1);
-/// assert!(is_zero(1) == 0);
-/// assert!(is_zero(2) == 0);
-/// assert!(is_zero(3) == 0);
-/// assert!(is_zero(4) == 0);
-/// assert!(is_zero(5) == 0);
-/// ```
-pub const fn is_zero(n: usize) -> usize {
-    (n == 0) as usize
-}
-
-/// Returns 1 if `n` is zero and 0 if `n` is greater than zero
-pub const fn not_zero(n: usize) -> usize {
-    is_zero(is_zero(n))
-}
-
-/// Returns `if_true` if cond is true, and otherwise returns `if_false`
-///
-/// ```rust
-/// use heaparray::alloc_utils::cond;
-/// assert!(cond(true, 33, 121) == 33);
-/// assert!(cond(false, 33, 121) == 121);
-/// ```
-pub const fn cond(cond: bool, if_true: usize, if_false: usize) -> usize {
-    (cond as usize) * if_true + (!cond as usize) * if_false
-}
-
-/// Returns `dividend - divisor` if divisor isn't zero, and `core::usize::MAX`
-/// otherwise.
-pub const fn safe_div(dividend: usize, divisor: usize) -> usize {
-    let val = dividend / (divisor + is_zero(divisor));
-    cond(divisor == 0, core::usize::MAX, val)
-}
-
-pub const fn max(a: usize, b: usize) -> usize {
-    cond(a > b, a, b)
-}
-
-pub const fn min(a: usize, b: usize) -> usize {
-    cond(a > b, b, a)
 }

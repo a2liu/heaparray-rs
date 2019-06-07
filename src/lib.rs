@@ -132,6 +132,7 @@
 //! this crate, note that you don't need to reinvent the wheel; many of the types in
 //! this crate are generic over certain traits, so you might not need to do that much.
 
+extern crate const_utils;
 extern crate containers_rs as containers;
 
 pub mod alloc_utils;

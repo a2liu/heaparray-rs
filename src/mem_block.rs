@@ -2,6 +2,7 @@
 //! interactions with memory.
 
 use super::alloc_utils::*;
+use crate::const_utils::*;
 use core::mem;
 use core::mem::ManuallyDrop;
 use core::ptr;
