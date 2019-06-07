@@ -51,6 +51,8 @@ impl<T> RefCounter<T> for RcStruct<T> {
         self.counter
     }
     fn increment(&self) -> usize {
+        #[cfg(not(feature = "no-asserts"))]
+        assert!(self.counter < core::usize::MAX, "Incrementing the reference count of an `RcStruct` past `core::usize::MAX` is unsafe and results in undefined behavior");
         unsafe {
             *(&self.counter as *const usize as *mut usize) += 1;
         }
@@ -93,6 +95,8 @@ impl<T> RefCounter<T> for ArcStruct<T> {
         self.counter.fetch_sub(1, Ordering::AcqRel) - 1
     }
     fn increment(&self) -> usize {
+        #[cfg(not(feature = "no-asserts"))]
+        assert!(self.counter.load(Ordering::Acquire) < core::usize::MAX, "Incrementing the reference count of an `ArcStruct` past `core::usize::MAX` is unsafe and results in undefined behavior");
         self.counter.fetch_add(1, Ordering::Relaxed) + 1
     }
     fn counter(&self) -> usize {
