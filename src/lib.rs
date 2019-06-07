@@ -121,6 +121,7 @@
 //!         }
 //!     });
 //! ```
+//!
 //! ## Use of `unsafe` Keyword
 //! This library relies heavily on the use of the `unsafe` keyword to do both
 //! reference counting and atomic operations; there are 40 instances total,
@@ -135,15 +136,14 @@
 extern crate const_utils;
 extern crate containers_rs as containers;
 
-pub mod alloc_utils;
+mod alloc_utils;
 mod api;
 pub mod base;
-pub mod mem_block;
+mod mem_block;
 pub mod naive_rc;
 mod traits;
 
 mod prelude {
-    pub(crate) use super::mem_block::*;
     pub use super::traits::*;
     pub use containers::{Container, CopyMap};
     pub(crate) use core::fmt;

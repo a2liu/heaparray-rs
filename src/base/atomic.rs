@@ -3,6 +3,7 @@
 use super::base::BaseArray;
 use super::iter::ThinPtrArrayIter;
 use super::thin::LenLabel;
+use crate::mem_block::MemBlock;
 use crate::prelude::*;
 use core::marker::PhantomData;
 use core::sync::atomic::{AtomicPtr, Ordering};
