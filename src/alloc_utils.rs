@@ -18,19 +18,6 @@ pub unsafe fn deallocate<T>(ptr: *mut T, size: usize, align: usize) {
     dealloc(ptr as *mut u8, layout);
 }
 
-/// Aligns everything and potentially slightly overestimates the amount of space necessary
-pub fn size_align_multiple(alignments: &[(usize, usize)]) -> (usize, usize) {
-    let mut max_align: usize = 0;
-    for (_, align) in alignments {
-        max_align = core::cmp::max(max_align, *align);
-    }
-    let mut total_size = 0;
-    for (size, _) in alignments {
-        total_size += ensure_align(*size, max_align).0;
-    }
-    (total_size, max_align)
-}
-
 /// Returns the (size, alignment) of an array of elements with capacity T
 pub const fn size_align_array<T>(capacity: usize) -> (usize, usize) {
     let (size, align) = size_align::<T>();
