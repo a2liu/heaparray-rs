@@ -145,7 +145,14 @@ impl<E, L> MemBlock<E, L> {
         );
 
         let (size, align) = Self::memory_layout(len);
-        let block = &mut *allocate::<Self>(size, align);
+        let block = allocate::<Self>(size, align);
+        #[cfg(not(feature = "no-asserts"))]
+        assert!(
+            !block.is_null(),
+            "Allocated a null pointer; You may be out of memory."
+        );
+        let block = &mut *block;
+
         ptr::write(&mut block.label, ManuallyDrop::new(label));
         block
     }
