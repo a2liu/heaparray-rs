@@ -2,7 +2,7 @@
 //! interactions with memory.
 
 use super::alloc_utils::*;
-use crate::const_utils::*;
+use crate::const_utils::{cond, max, safe_div};
 use core::mem;
 use core::mem::ManuallyDrop;
 use core::ptr;
@@ -27,9 +27,17 @@ pub const fn block_max_len<E, L>() -> usize {
 /// types that refer to these, namely `BaseArray`, `HeapArray`, `FatPtrArray`, and
 /// `ThinPtrArray`.
 ///
+/// # Safety
+/// The functions below are safe as long as the following conditions hold:
+/// - `core::mem::drop` is never called
+///
 /// # Invariants
+/// These conditions will hold as long as you hold a reference to an instance of
+/// `MemBlock` that you haven't deallocated yet.
+///
 /// - The public field `label` will always be initialized
-/// - The memory block allocated will always have
+/// - The memory block allocated will always have a size (in bytes) less than
+///   or equal to `core::isize::MAX`
 #[repr(C)]
 pub struct MemBlock<E, L = ()> {
     /// Metadata about the block. Always safe to access.
@@ -64,7 +72,10 @@ impl<E, L> MemBlock<E, L> {
             block_max_len::<E, L>()
         );
 
-        let element = (&*self.elements) as *const E as *mut E;
+        // let element = (&*self.elements) as *const E as *mut E;
+        let e_align = mem::align_of::<E>();
+        let lsize = aligned_size::<L>(e_align);
+        let element = unsafe { (&*self.label as *const L as *const u8).add(lsize) as *mut E };
         unsafe { element.add(idx) }
     }
 
@@ -72,7 +83,7 @@ impl<E, L> MemBlock<E, L> {
     /// contained in it.
     ///
     /// # Safety
-    /// This function is safe given that the following preconditions hold:
+    /// This method is safe given that the following preconditions hold:
     ///
     /// - This reference hasn't been deallocated
     /// - The operation of dereferencing an element at index `i`, where
@@ -80,7 +91,7 @@ impl<E, L> MemBlock<E, L> {
     ///
     /// Upon being deallocated, this reference is no longer valid.
     pub unsafe fn dealloc(&mut self, len: usize) {
-        ptr::drop_in_place(&mut *self.label);
+        ManuallyDrop::drop(&mut self.label);
         for i in 0..len {
             ptr::drop_in_place(self.get_ptr(i));
         }
@@ -96,7 +107,7 @@ impl<E, L> MemBlock<E, L> {
     /// `dealloc` function instead.
     ///
     /// # Safety
-    /// This function is safe given that the following preconditions hold:
+    /// This method is safe given that the following preconditions hold:
     ///
     /// - This reference hasn't been deallocated previously
     ///
