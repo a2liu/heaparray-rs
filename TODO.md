@@ -7,6 +7,8 @@
   of traits, then overriding trait docs when necessary.
 
 ### Features
+- [ ] From and To `Vec` and `(Label, Vec)`
+- [ ] From and To `&mut [E]` and `(Label, &mut [E])`
 - [ ] Ability to change size of length and reference counting fields
 - [ ] SharedRcArray, that allows for pointer swapping through RAII stuff. Wrapper
   around RcArray that doesn't allow for access unless you first increment the
@@ -24,6 +26,7 @@
 - [ ] Constant-sized arrays whose size is known at compile time.  
       **Blocked by:** *const generics*
   - [ ] Write tests
+- [X] Const functions for calculating constants
 - [X] Completely unchecked arrays whose size is never known and whose state needs
   to be manually handled. Purpose is two-fold: makes it possible to turn `ThinPtrArray`
   into a special case of a more general struct; also makes it *really* easy to write

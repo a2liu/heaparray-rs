@@ -1,25 +1,21 @@
 //! Contains the struct `MemBlock`, which handles pointer math and very low-level
 //! interactions with memory.
+
 use super::alloc_utils::*;
 use core::mem;
 use core::mem::ManuallyDrop;
 use core::ptr;
 
-// TODO Make this function a const function when if statements are stabilized in
-// const functions
 /// Get the maximum length of a memory block, based on the types that it contains.
-/// Returns a length that ensures that no more than
-pub fn block_max_len<E, L>() -> usize {
+/// Prevents blocks from allocating more than `core::isize::MAX` bytes.
+pub const fn block_max_len<E, L>() -> usize {
     let max_len = core::isize::MAX as usize;
-    if mem::size_of::<E>() == 0 {
-        max_len - 1
-    } else {
-        let (lsize, lalign) = size_align::<L>();
+    let max_len_calc = {
         let (esize, ealign) = size_align::<E>();
-        let align = core::cmp::max(lalign, ealign);
-        let ((lsize, _), (esize, _)) = (ensure_align(lsize, align), ensure_align(esize, align));
-        (max_len - lsize) / esize - 1
-    }
+        let lsize = aligned_size::<L>(ealign);
+        safe_div(max_len - lsize, esize)
+    };
+    cond(mem::size_of::<E>() == 0, max_len, max_len_calc)
 }
 
 /// An array block that can hold arbitrary information, and cannot be
@@ -27,50 +23,61 @@ pub fn block_max_len<E, L>() -> usize {
 /// number of times, and the `L` type can be repeated exactly once.
 ///
 /// It's not recommended to use this directly; instead, use the pointer
-/// types that refer to these, namely `HeapArray`, `FatPtrArray`, and
+/// types that refer to these, namely `BaseArray`, `HeapArray`, `FatPtrArray`, and
 /// `ThinPtrArray`.
 ///
 /// # Invariants
-/// The code for this struct does little to no runtime checks for validity;
-/// thus, you need to do them yourself. Length checks, runtime validity
-/// checks, etc. all need to be done at runtime before using the methods
-/// associated with this type, as forgetting to do so leads to undefined
-/// behavior (likely a segmentation fault or an invalid pointer
-/// dereference). To avoid these errors, you can instead use the safe API
-/// provided by the `ThinPtrArray` and `FatPtrArray` structs, or by the
-/// `HeapArray` struct, which internally is implemented as a `FatPtrArray`.
+/// - The public field `label` will always be initialized
+/// - The memory block allocated will always have
 #[repr(C)]
 pub struct MemBlock<E, L = ()> {
-    /// Metadata about the block
+    /// Metadata about the block. Always safe to access.
     pub label: ManuallyDrop<L>,
-    /// First element in the block
+    /// First element in the block. May not be initialized.
     elements: ManuallyDrop<E>,
 }
 
 impl<E, L> MemBlock<E, L> {
     /// Get size and alignment of the memory that a block of length `len`
     /// would need.
-    pub fn memory_layout(len: usize) -> (usize, usize) {
-        let l_layout = size_align::<L>();
-        if len == 0 {
-            l_layout
-        } else {
-            let d_layout = size_align_array::<E>(len);
-            size_align_multiple(&[l_layout, d_layout])
-        }
+    pub const fn memory_layout(len: usize) -> (usize, usize) {
+        let (l_size, l_align) = size_align::<L>();
+        let (calc_size, calc_align) = {
+            let (dsize, dalign) = size_align_array::<E>(len);
+            let (l_size, align) = ensure_align(l_size, max(dalign, l_align));
+            (l_size + dsize, align)
+        };
+        (
+            cond(len == 0, l_size, calc_size),
+            cond(len == 0, l_align, calc_align),
+        )
+    }
+
+    /// Returns a `*mut` pointer to an object at index `idx`.
+    pub fn get_ptr(&self, idx: usize) -> *mut E {
+        #[cfg(not(feature = "no-asserts"))]
+        assert!(
+            idx < block_max_len::<E, L>(),
+            "Index {} is invalid: Block cannot be bigger than core::isize::MAX bytes ({} elements)",
+            idx,
+            block_max_len::<E, L>()
+        );
+
+        let element = (&*self.elements) as *const E as *mut E;
+        unsafe { element.add(idx) }
     }
 
     /// Deallocates a reference to this struct, as well as all objects
-    /// contained in it. This function is safe given that the following
-    /// preconditions hold:
+    /// contained in it.
     ///
-    /// - The reference `&self` is valid, and points to a valid instance
-    ///   of this type
-    /// - The memory block pointed to by `&self` was initialized with
-    ///   length of `len`
+    /// # Safety
+    /// This function is safe given that the following preconditions hold:
+    ///
+    /// - This reference hasn't been deallocated
     /// - The operation of dereferencing an element at index `i`, where
-    ///   `0 <= i < len`, accesses valid memory that has been
-    ///   properly initialized. This is NOT checked at runtime.
+    ///   `i < len`, accesses allocated memory that has been properly initialized.
+    ///
+    /// Upon being deallocated, this reference is no longer valid.
     pub unsafe fn dealloc(&mut self, len: usize) {
         ptr::drop_in_place(&mut *self.label);
         for i in 0..len {
@@ -80,17 +87,18 @@ impl<E, L> MemBlock<E, L> {
     }
 
     /// Deallocates a reference to this struct, without running the
-    /// destructor of the elements it contains. This function is safe
-    /// given that the following preconditions hold:
+    /// destructor of the label or elements it contains.
     ///
-    /// - The reference `&self` is valid, and points to a valid instance
-    ///   of this type
-    /// - The memory block pointed to by `&self` was initialized with length
-    ///   of `len`
+    /// **NOTE:** This method will leak memory if your objects have destructors
+    /// that deallocate memory themselves, and you forget to call them before
+    /// deallocating. If that is not the intended behavior, consider using the
+    /// `dealloc` function instead.
     ///
-    /// This function *may* leak memory; be sure to run destructors on
-    /// all initialized elements in this block before calling this method,
-    /// as they may in accessible afterwards if you don't.
+    /// # Safety
+    /// This function is safe given that the following preconditions hold:
+    ///
+    /// - This reference hasn't been deallocated previously
+    ///
     pub unsafe fn dealloc_lazy(&mut self, len: usize) {
         let (size, align) = Self::memory_layout(len);
         deallocate(self, size, align);
@@ -105,31 +113,36 @@ impl<E, L> MemBlock<E, L> {
     ///
     /// ```rust
     /// use heaparray::mem_block::MemBlock;
-    /// use core::mem;
+    /// use core::ptr;
     /// let len = 100;
     /// let block = unsafe { &mut *MemBlock::<usize, ()>::new((), len) };
     /// for i in 0..len {
     ///     let item = i * i;
-    ///     let garbage = mem::replace(unsafe { &mut *block.get_ptr(i) }, item);
-    ///     mem::forget(garbage);
+    ///     unsafe {
+    ///         ptr::write(block.get_ptr(i), item);
+    ///     }
     /// }
     /// ```
     pub unsafe fn new<'a>(label: L, len: usize) -> *mut Self {
         #[cfg(not(feature = "no-asserts"))]
-        assert!(len <= block_max_len::<E, L>());
+        assert!(
+            len <= block_max_len::<E, L>(),
+            "Cannot allocate a block larger than core::isize::MAX bytes ({} elements)",
+            block_max_len::<E, L>()
+        );
 
         let (size, align) = Self::memory_layout(len);
-        let new_ptr = allocate::<Self>(size, align);
-        ptr::write(&mut (&mut *new_ptr).label, ManuallyDrop::new(label));
-        new_ptr
+        let block = &mut *allocate::<Self>(size, align);
+        ptr::write(&mut block.label, ManuallyDrop::new(label));
+        block
     }
 
     /// Returns a pointer to a labelled memory block, with elements initialized
     /// using the provided function. Function is safe, because the following
     /// invariants will always hold:
     ///
-    /// - A memory access `block.get(i)` where `0 <= i < len` will always
-    ///   be valid.
+    /// - A pointer returned by `block.get_ptr(i)` where `i < len` will always
+    ///   point to a valid, aligned instance of `E`
     /// - A memory access `block.label` will always be valid.
     ///
     /// However, note that *deallocating* the resulting block can *never*
@@ -140,17 +153,11 @@ impl<E, L> MemBlock<E, L> {
     where
         F: FnMut(&mut L, usize) -> E,
     {
-        let new_ptr = unsafe { &mut *Self::new(label, len) };
+        let block = unsafe { &mut *Self::new(label, len) };
         for i in 0..len {
-            let item = func(&mut new_ptr.label, i);
-            let garbage = mem::replace(unsafe { &mut *new_ptr.get_ptr(i) }, item);
-            mem::forget(garbage);
+            let item = func(&mut block.label, i);
+            unsafe { ptr::write(block.get_ptr(i), item) }
         }
-        new_ptr
-    }
-
-    pub fn get_ptr(&self, idx: usize) -> *mut E {
-        let element = (&*self.elements) as *const E as *mut E;
-        unsafe { element.add(idx) }
+        block
     }
 }
