@@ -5,8 +5,38 @@
   `AtomicPtrArray`, then extend those tests to `ThinPtrArray` and so on
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
+
+  ```
+  src
+  ├── alloc_utils.rs
+  ├── api.rs
+  ├── base
+  │   ├── atomic.rs
+  │   ├── base.rs
+  │   ├── fat.rs
+  │   ├── iter.rs
+  │   ├── mem_block.rs
+  │   ├── mod.rs
+  │   └── thin.rs
+  ├── lib.rs
+  ├── naive_rc
+  │   ├── arc_array.rs
+  │   ├── generic.rs
+  │   ├── mod.rs
+  │   ├── ref_counters.rs
+  │   └── types.rs
+  ├── ptr_utils.rs
+  └── traits
+      ├── array_ref.rs
+      ├── labelled_array.rs
+      ├── make_array.rs
+      ├── mod.rs
+      └── slice_array.rs
+  ```
+
 - [ ] Begin changelog and yank other versions
 - [X] Use `NonNull` where possible to make API intentions explicit
+- [X] Use `Layout` instead of `(size, align)`
 
 ### Features
 - [ ] Try-allocate functions; i.e. `try_new` and `try_new_lazy`
