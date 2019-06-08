@@ -38,7 +38,7 @@ where
     where
         F: FnMut(&mut L, usize) -> E,
     {
-        unsafe { Self::from_ref(P::new(MemBlock::new_init(label, len, func))) }
+        unsafe { Self::from_ptr(MemBlock::new_init(label, len, func)) }
     }
 
     /// Doesn't initialize the elements of the array, or check for null references.
