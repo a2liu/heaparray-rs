@@ -143,7 +143,8 @@ impl<E, L> LabelledArray<E, L> for AtomicPtrArray<E, L> {
     {
         let block_ptr = Block::new_init(LenLabel { len, label }, len, |lbl, idx| {
             func(&mut lbl.label, idx)
-        });
+        })
+        .as_ptr();
         let new_obj = Self {
             data: AtomicPtr::new(block_ptr),
             phantom: PhantomData,
@@ -151,7 +152,7 @@ impl<E, L> LabelledArray<E, L> for AtomicPtrArray<E, L> {
         new_obj
     }
     unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
-        let new_ptr = Block::new(LenLabel { len, label }, len);
+        let new_ptr = Block::new(LenLabel { len, label }, len).as_ptr();
         Self {
             data: AtomicPtr::new(new_ptr),
             phantom: PhantomData,

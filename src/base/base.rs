@@ -38,12 +38,12 @@ where
     where
         F: FnMut(&mut L, usize) -> E,
     {
-        unsafe { Self::from_ptr(MemBlock::new_init(label, len, func)) }
+        unsafe { Self::from_ptr(MemBlock::new_init(label, len, func).as_ptr()) }
     }
 
     /// Doesn't initialize the elements of the array, or check for null references.
     pub unsafe fn new_lazy(label: L, len: usize) -> Self {
-        Self::from_ptr(MemBlock::new(label, len))
+        Self::from_ptr(MemBlock::new(label, len).as_ptr())
     }
 
     pub unsafe fn from_ptr(ptr: *mut MemBlock<E, L>) -> Self {
