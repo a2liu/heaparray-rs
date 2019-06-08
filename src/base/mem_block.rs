@@ -229,25 +229,32 @@ impl<E, L> MemBlock<E, L> {
         deallocate(self, layout);
     }
 
-    /// Returns a pointer to a new memory block on the heap with an
-    /// initialized label. Does not initialize memory, so use with care.
+    /// Returns a pointer to a new `MemBlock` without initializing the elements
+    /// in the block.
     ///
-    /// If you use this function, remember to prevent the compiler from
-    /// running the destructor for the memory that wasn't initialized. i.e.
-    /// something like this:
+    /// If you use this function, and don't initialize all the elements in the array
+    /// you need to remember to deallocate using `dealloc_lazy`, and optionally
+    /// run the destructor for the `label` field as well (as `dealloc_lazy` doesn't
+    /// run *any* destructors).
+    ///
+    /// To initialize the elements of this block yourself, consider doing something
+    /// like the following:
     ///
     /// ```rust
-    /// use heaparray::mem_block::MemBlock;
+    /// use heaparray::base::mem_block::MemBlock;
     /// use core::ptr;
     /// let len = 100;
-    /// let block = unsafe { &mut *MemBlock::<usize, ()>::new((), len) };
+    /// let initialize = |i| { i * i };
+    /// let mut block = unsafe { MemBlock::<usize, ()>::new((), len) };
     /// for i in 0..len {
-    ///     let item = i * i;
     ///     unsafe {
-    ///         ptr::write(block.get_ptr_mut(i), item);
+    ///         ptr::write(block.as_mut().get_ptr_mut(i), initialize(i));
     ///     }
     /// }
     /// ```
+    ///
+    /// Note that the above is almost the exact same thing that `MemBlock::new_init`
+    /// does under the hood.
     pub unsafe fn new<'a>(label: L, len: usize) -> NonNull<Self> {
         #[cfg(not(feature = "mem-block-skip-size-check"))]
         assert!(
@@ -282,17 +289,15 @@ impl<E, L> MemBlock<E, L> {
     }
 
     /// Returns a pointer to a labelled memory block, with elements initialized
-    /// using the provided function. Function is safe, because the following
-    /// invariants will always hold:
+    /// using the provided function.
+    ///
+    /// Function is safe, because the following invariants will always hold:
     ///
     /// - A pointer returned by `block.get_ptr(i)` where `i < len` will always
     ///   point to a valid, aligned instance of `E`
-    /// - A memory access `block.label` will always be valid.
-    ///
-    /// However, note that *deallocating* the resulting block can *never*
-    /// be safe; there is not guarrantee provided by the type system
-    /// that the block you deallocate will have the length that you assume
-    /// it has.
+    /// - A memory access `block.label` will always be valid
+    /// - Dropping the value doesn't run any destructors; thus the worst that can
+    ///   happen is leaking memory
     pub fn new_init<F>(label: L, len: usize, mut func: F) -> NonNull<Self>
     where
         F: FnMut(&mut L, usize) -> E,
