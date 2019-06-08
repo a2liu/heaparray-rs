@@ -161,10 +161,7 @@ impl<E, L> LabelledArray<E, L> for AtomicPtrArray<E, L> {
     fn get_label(&self) -> &L {
         &self.as_ref().label.label
     }
-    unsafe fn get_label_unsafe(&self) -> &mut L {
-        &mut *(&self.as_ref().label.label as *const L as *mut L)
-    }
-    unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
+    unsafe fn get_unchecked(&self, idx: usize) -> &E {
         &mut *(self.as_ref().get_ptr(idx) as *mut E)
     }
 }
@@ -207,7 +204,10 @@ impl<E, L> Drop for AtomicPtrArray<E, L> {
 
 impl<E, L> LabelledArrayMut<E, L> for AtomicPtrArray<E, L> {
     fn get_label_mut(&mut self) -> &mut L {
-        unsafe { self.get_label_unsafe() }
+        &mut (*self.as_mut().label).label
+    }
+    unsafe fn get_mut_unchecked(&mut self, idx: usize) -> &mut E {
+        &mut *self.as_mut().get_ptr_mut(idx)
     }
 }
 

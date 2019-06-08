@@ -170,17 +170,17 @@ impl<E, L> LabelledArray<E, L> for FatPtrArray<E, L> {
     fn get_label(&self) -> &L {
         self.data.get_label()
     }
-    unsafe fn get_label_unsafe(&self) -> &mut L {
-        &mut *(self.data.get_label() as *const L as *mut L)
-    }
-    unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
-        &mut *(self.data.get(idx) as *const E as *mut E)
+    unsafe fn get_unchecked(&self, idx: usize) -> &E {
+        self.data.get(idx)
     }
 }
 
 impl<E, L> LabelledArrayMut<E, L> for FatPtrArray<E, L> {
     fn get_label_mut(&mut self) -> &mut L {
         self.data.get_label_mut()
+    }
+    unsafe fn get_mut_unchecked(&mut self, idx: usize) -> &mut E {
+        self.data.get_mut(idx)
     }
 }
 

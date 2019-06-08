@@ -8,16 +8,12 @@ pub trait LabelledArray<E, L>: containers::CopyMap<usize, E> {
     /// Create a new array, without initializing the values in it.
     unsafe fn with_label_unsafe(label: L, len: usize) -> Self;
 
-    /// Get immutable access to the label.
+    /// Get a reference to the label.
     fn get_label(&self) -> &L;
 
-    /// Get a mutable reference to the label. Implementations of this
-    /// method shouldn't do any safety checks.
-    unsafe fn get_label_unsafe(&self) -> &mut L;
-
-    /// Get a mutable reference to the element at a specified index.
+    /// Get a reference to the element at a specified index.
     /// Implementations of this method shouldn't do any safety checks.
-    unsafe fn get_unsafe(&self, idx: usize) -> &mut E;
+    unsafe fn get_unchecked(&self, idx: usize) -> &E;
 }
 
 /// Array with optional label struct stored next to the data that can
@@ -25,6 +21,10 @@ pub trait LabelledArray<E, L>: containers::CopyMap<usize, E> {
 pub trait LabelledArrayMut<E, L>: LabelledArray<E, L> {
     /// Get mutable reference to the label.
     fn get_label_mut(&mut self) -> &mut L;
+
+    /// Get a mutable reference to the element at a specified index.
+    /// Implementations of this method shouldn't do any safety checks.
+    unsafe fn get_mut_unchecked(&mut self, idx: usize) -> &mut E;
 }
 
 /// Array with optional label struct stored next to the data that can

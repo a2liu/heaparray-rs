@@ -203,11 +203,8 @@ where
     fn get_label(&self) -> &L {
         self.data.get_label().get_data()
     }
-    unsafe fn get_label_unsafe(&self) -> &mut L {
-        self.data.get_label_unsafe().get_data_mut()
-    }
-    unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
-        self.data.get_unsafe(idx)
+    unsafe fn get_unchecked(&self, idx: usize) -> &E {
+        self.data.get_unchecked(idx)
     }
 }
 

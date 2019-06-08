@@ -159,19 +159,19 @@ impl<E, L> LabelledArray<E, L> for ThinPtrArray<E, L> {
         }
     }
     fn get_label(&self) -> &L {
-        unsafe { self.get_label_unsafe() }
+        &self.data.get_label().label
     }
-    unsafe fn get_label_unsafe(&self) -> &mut L {
-        &mut *(&self.data.get_label().label as *const L as *mut L)
-    }
-    unsafe fn get_unsafe(&self, idx: usize) -> &mut E {
-        &mut *(self.data.get_ptr(idx) as *mut E)
+    unsafe fn get_unchecked(&self, idx: usize) -> &E {
+        self.data.get(idx)
     }
 }
 
 impl<E, L> LabelledArrayMut<E, L> for ThinPtrArray<E, L> {
     fn get_label_mut(&mut self) -> &mut L {
-        unsafe { self.get_label_unsafe() }
+        &mut self.data.get_label_mut().label
+    }
+    unsafe fn get_mut_unchecked(&mut self, idx: usize) -> &mut E {
+        self.data.get_mut(idx)
     }
 }
 
