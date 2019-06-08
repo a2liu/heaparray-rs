@@ -11,6 +11,7 @@ pub unsafe fn allocate<T>(size: usize, align: usize) -> *mut T {
 }
 
 /// Deallocate a block of memory using the given size and alignment information.
+///
 /// Completely ignores the type of the input pointer, so the size and
 /// align need to be correct.
 pub unsafe fn deallocate<T>(ptr: *mut T, size: usize, align: usize) {
@@ -31,14 +32,10 @@ pub const fn size_align<T>() -> (usize, usize) {
     (size, align)
 }
 
+/// Gets the aligned size of a type given a specific alignment
 pub const fn aligned_size<T>(align: usize) -> usize {
     let size = size_of::<T>();
-    ensure_align(size, align).0
-}
-
-/// Ensure size is a multiple of align.
-pub const fn ensure_align(size: usize, align: usize) -> (usize, usize) {
     let off_by = size % align;
-    let adjusted_size = size - off_by + align;
-    (cond(off_by == 0, size, adjusted_size), align)
+    let adjusted_size = size + align - off_by;
+    cond(off_by == 0, size, adjusted_size)
 }
