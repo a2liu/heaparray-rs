@@ -8,6 +8,9 @@
 - [ ] Begin changelog and yank other versions
 
 ### Features
+- [ ] Try-allocate functions; i.e. `try_new` and `try_new_lazy`
+  - [ ] Use `NonNull` where possible
+  - [ ] And otherwise use `Result<NonNull<MemBlock<E,L>>, ()>`
 - [ ] From and To `Vec` and `(Label, Vec)`
 - [ ] From and To `&mut [E]` and `(Label, &mut [E])`
 - [ ] Ability to change size of length and reference counting fields
