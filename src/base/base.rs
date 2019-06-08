@@ -100,7 +100,7 @@ where
     }
 
     pub fn get_ptr_mut(&mut self, idx: usize) -> *mut E {
-        self._mut().get_ptr(idx)
+        self._mut().get_ptr_mut(idx)
     }
 
     pub unsafe fn get(&self, idx: usize) -> &E {
@@ -188,7 +188,7 @@ where
     P: UnsafePtr<MemBlock<E, L>>,
 {
     fn drop(&mut self) {
-        let begin = self.array.get_ptr(0) as usize;
+        let begin = self.array.get_ptr_mut(0) as usize;
         let len = ((self.end as usize) - begin) / mem::size_of::<E>();
         unsafe { self.array.drop(len) }
     }

@@ -107,7 +107,7 @@ impl<E, L> MemBlock<E, L> {
     ///     size of `L` aligned to the alignment of `E`, plus the size of `E`
     ///     times `idx + 1`, i.e. `size_of(L).aligned_to(E) + size_of(E) * (idx + 1)`
     /// 3.  The element pointed to `r.get_ptr(idx)`
-    pub fn get_ptr(&self, idx: usize) -> *mut E {
+    pub fn get_ptr(&self, idx: usize) -> *const E {
         #[cfg(all(not(feature = "mem-block-no-check"), not(release)))]
         assert!(
             idx < Self::block_max_len(),
@@ -119,8 +119,12 @@ impl<E, L> MemBlock<E, L> {
         // let element = (&*self.elements) as *const E as *mut E;
         let e_align = mem::align_of::<E>();
         let lsize = aligned_size::<L>(e_align);
-        let element = unsafe { (self as *const _ as *const u8).add(lsize) as *mut E };
+        let element = unsafe { (self as *const _ as *const u8).add(lsize) as *const E };
         unsafe { element.add(idx) }
+    }
+
+    pub fn get_ptr_mut(&mut self, idx: usize) -> *mut E {
+        self.get_ptr(idx) as *mut E
     }
 
     /// Deallocates a reference to this struct, as well as all objects
@@ -137,7 +141,7 @@ impl<E, L> MemBlock<E, L> {
     pub unsafe fn dealloc(&mut self, len: usize) {
         ManuallyDrop::drop(&mut self.label);
         for i in 0..len {
-            ptr::drop_in_place(self.get_ptr(i));
+            ptr::drop_in_place(self.get_ptr_mut(i));
         }
         self.dealloc_lazy(len);
     }
@@ -175,7 +179,7 @@ impl<E, L> MemBlock<E, L> {
     /// for i in 0..len {
     ///     let item = i * i;
     ///     unsafe {
-    ///         ptr::write(block.get_ptr(i), item);
+    ///         ptr::write(block.get_ptr_mut(i), item);
     ///     }
     /// }
     /// ```
@@ -228,7 +232,7 @@ impl<E, L> MemBlock<E, L> {
         let block_ref = unsafe { block.as_mut() };
         for i in 0..len {
             let item = func(&mut block_ref.label, i);
-            unsafe { ptr::write(block_ref.get_ptr(i), item) }
+            unsafe { ptr::write(block_ref.get_ptr_mut(i), item) }
         }
         block
     }
