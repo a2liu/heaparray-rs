@@ -19,4 +19,6 @@ interloc = "0.1.0"
 
 [features]
 default = []
-no-asserts = [] # does what it says on the tin - removes assertions.
+no-asserts = ["mem-block-fast-alloc","mem-block-no-check"] # does what it says on the tin - removes all assertions; this can cause undefined behavior.
+mem-block-fast-alloc = []
+mem-block-no-check = []
