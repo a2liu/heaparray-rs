@@ -38,7 +38,7 @@ pub trait ArrayRef: BaseArrayRef + Clone {
 /// atomic loads.
 ///
 /// For more details on the expected behavior of these methods, see the
-/// documentation for `std::sync::atomic::AtomicPtr`.
+/// documentation for `core::sync::atomic::AtomicPtr`.
 pub trait AtomicArrayRef: BaseArrayRef + Sized {
     fn as_ref(&self) -> usize;
     /// Returns the previous value, and also the struct you passed in if the value
