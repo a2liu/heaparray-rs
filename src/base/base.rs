@@ -1,4 +1,4 @@
-use crate::mem_block::*;
+use super::mem_block::*;
 pub use crate::prelude::*;
 use crate::ptr_utils::UnsafePtr;
 use core::marker::PhantomData;

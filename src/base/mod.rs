@@ -5,6 +5,7 @@ mod atomic;
 mod base;
 mod fat;
 pub mod iter;
+pub mod mem_block;
 mod thin;
 
 pub use crate::prelude::*;

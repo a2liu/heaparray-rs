@@ -139,7 +139,6 @@ extern crate containers_rs as containers;
 mod alloc_utils;
 mod api;
 pub mod base;
-mod mem_block;
 pub mod naive_rc;
 mod ptr_utils;
 mod traits;

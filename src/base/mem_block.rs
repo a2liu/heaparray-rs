@@ -1,7 +1,7 @@
 //! Contains the struct `MemBlock`, which handles pointer math and very low-level
 //! interactions with memory.
 
-use super::alloc_utils::*;
+use crate::alloc_utils::*;
 use crate::const_utils::{cond, max, safe_div};
 use core::mem;
 use core::mem::ManuallyDrop;
