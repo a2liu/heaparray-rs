@@ -4,9 +4,10 @@ version = "0.4.3"
 authors = ["Albert Liu <albertymliu@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/A1Liu/heaparray-rs"
-description = "Flexible support for dynamically sized types, using heap-allocated array of structs"
+description = "Flexible support for dynamically-sized types, using heap-allocated array of structs"
 readme = "README.md"
-keywords = ["array", "heap", "atomic"]
+keywords = ["array", "heap", "dynamically-sized-types"]
+categories = ["data-structures", "memory-management"]
 license = "MIT"
 
 [dependencies]
