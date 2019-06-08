@@ -37,6 +37,9 @@
 - [ ] Begin changelog and yank other versions
 - [X] Use `NonNull` where possible to make API intentions explicit
 - [X] Use `Layout` instead of `(size, align)`
+- [ ] Use struct for `AtomicPtr` trait
+- [ ] Remove `get_label_unsafe`
+- [ ] Replace `get_unchecked` with `get_unchecked` and `get_mut_unchecked`
 
 ### Features
 - [ ] Try-allocate functions; i.e. `try_new` and `try_new_lazy`
