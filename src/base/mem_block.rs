@@ -3,6 +3,7 @@
 
 use crate::alloc_utils::*;
 use crate::const_utils::{cond, max, safe_div};
+use core::alloc::Layout;
 use core::mem;
 use core::mem::ManuallyDrop;
 use core::ptr;
@@ -156,7 +157,7 @@ impl<E, L> MemBlock<E, L> {
     ///
     pub unsafe fn dealloc_lazy(&mut self, len: usize) {
         let (size, align) = Self::memory_layout(len);
-        deallocate(self, size, align);
+        deallocate(self, Layout::from_size_align_unchecked(size, align));
     }
 
     /// Returns a pointer to a new memory block on the heap with an
@@ -190,11 +191,18 @@ impl<E, L> MemBlock<E, L> {
         let (size, align) = Self::memory_layout(len);
 
         #[cfg(not(feature = "mem-block-fast-alloc"))]
-        let mut block = NonNull::new(allocate::<Self>(size, align))
-            .expect("Allocated a null pointer. You may be out of memory.");
+        let mut block = NonNull::new(allocate::<Self>(
+            Layout::from_size_align(size, align).expect(&format!(
+                "MemBlock<E,L> of length {} is invalid for this platform",
+                len
+            )),
+        ))
+        .expect("Allocated a null pointer. You may be out of memory.");
 
         #[cfg(feature = "mem-block-fast-alloc")]
-        let mut block = NonNull::new_unchecked(allocate::<Self>(size, align));
+        let mut block = NonNull::new_unchecked(allocate::<Self>(
+            Layout::from_size_align_unchecked(size, align),
+        ));
 
         ptr::write(&mut block.as_mut().label, ManuallyDrop::new(label));
         block
