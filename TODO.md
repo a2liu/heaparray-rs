@@ -6,10 +6,10 @@
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
 - [ ] Begin changelog and yank other versions
+- [X] Use `NonNull` where possible to make API intentions explicit
 
 ### Features
 - [ ] Try-allocate functions; i.e. `try_new` and `try_new_lazy`
-  - [ ] Use `NonNull` where possible
   - [ ] And otherwise use `Result<NonNull<MemBlock<E,L>>, ()>`
 - [ ] From and To `Vec` and `(Label, Vec)`
 - [ ] From and To `&mut [E]` and `(Label, &mut [E])`
