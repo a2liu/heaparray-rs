@@ -4,6 +4,11 @@ use crate::ptr_utils::UnsafePtr;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 
+/// Base array that handles converting a memory block into a constructible object.
+///
+/// Doesn't store length information, but contains logic necessary to handle
+/// allocation, deallocation, iteration, and slices given length. Holds
+/// the bulk of the unsafe logic in this library.
 #[repr(transparent)]
 pub struct BaseArray<E, L, P = NonNull<MemBlock<E, L>>>
 where

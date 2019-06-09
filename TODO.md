@@ -1,7 +1,7 @@
 # TODO
 
 ### Producton-Ready Version
-- [ ] Verify correctness w/ lots and lots of tests on `BaseArray` and
+- [ ] Verify correctness w/ lots and lots of tests on `MemBlock`, `BaseArray` and
   `AtomicPtrArray`, then extend those tests to `ThinPtrArray` and so on
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
@@ -35,11 +35,11 @@
   ```
 
 - [ ] Begin changelog and yank other versions
+- [ ] Use struct for `AtomicPtr` trait
 - [X] Use `NonNull` where possible to make API intentions explicit
 - [X] Use `Layout` instead of `(size, align)`
-- [ ] Use struct for `AtomicPtr` trait
-- [ ] Remove `get_label_unsafe`
-- [ ] Replace `get_unchecked` with `get_unchecked` and `get_mut_unchecked`
+- [X] Remove `get_label_unsafe`
+- [X] Replace `get_unchecked` with `get_unchecked` and `get_mut_unchecked`
 
 ### Features
 - [ ] Try-allocate functions; i.e. `try_new` and `try_new_lazy`
