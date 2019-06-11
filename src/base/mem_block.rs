@@ -112,6 +112,12 @@ impl<E, L> MemBlock<E, L> {
 
     /// Returns a `*const` pointer to an object at index `idx`.
     ///
+    /// # Panics
+    /// This method panics if `idx` is greater than or equal to the largest value
+    /// that this `MemBlock`'s length could be (as defined by
+    /// `MemBlock::block_max_len()`), unless the feature `mem-block-skip-size-check`
+    /// is enabled.
+    ///
     /// # Safety
     /// The following must hold to safely dereference the pointer `r.get_ptr(idx)`
     /// for some `let r: &MemBlock<E,L>`:
@@ -128,9 +134,9 @@ impl<E, L> MemBlock<E, L> {
     ///
     /// ### Safety with `mem-block-skip-size-check` Enabled
     /// In addition to the above conditions, `idx` must also be less than
-    /// `MemBlock::<E,L>::block_max_len()`. This is checked at runtime with an
-    /// assertion, unless the feature `mem-block-skip-size-check` is enabled, and causes
-    /// undefined behavior with pointer math.
+    /// `MemBlock::block_max_len()`. This is checked at runtime with an
+    /// assertion, unless the feature `mem-block-skip-size-check` is enabled,
+    /// and causes undefined behavior with pointer math.
     pub fn get_ptr(&self, idx: usize) -> *const E {
         #[cfg(not(feature = "mem-block-skip-size-check"))]
         assert!(
@@ -147,12 +153,47 @@ impl<E, L> MemBlock<E, L> {
         unsafe { element.add(idx) }
     }
 
+    /// Returns a `*mut` pointer to an object at index `idx`.
+    ///
+    /// # Panics
+    /// This method panics if `idx` is greater than or equal to the largest value
+    /// that this `MemBlock`'s length could be (as defined by
+    /// `MemBlock::block_max_len()`), unless the feature `mem-block-skip-size-check`
+    /// is enabled.
+    ///
+    /// # Safety
+    /// The following must hold to safely dereference the pointer `r.get_ptr(idx)`
+    /// for some `let r: &MemBlock<E,L>`:
+    ///
+    /// 1. The memory pointed to by `r` has not already been deallocated
+    /// 2. `r` was allocated with a size, large enough to hold at least
+    ///    `idx + 1` many elements; this means that its size is at least the
+    ///    size of `L` aligned to the alignment of `E`, plus the size of `E`
+    ///    times `idx + 1`, i.e. `size_of(L).aligned_to(E) + size_of(E) * (idx + 1)`
+    /// 3. The element pointed to by `r.get_ptr_mut(idx)` has been properly
+    ///    initialized.
+    ///
+    /// The above is sufficient to ensure safe behavior using the default feature
+    /// set of this crate. See below for exceptions.
+    ///
+    /// ### Safety with `mem-block-skip-size-check` Enabled
+    /// In addition to the above conditions, `idx` must also be less than
+    /// `MemBlock::block_max_len()`. This is checked at runtime with an
+    /// assertion, unless the feature `mem-block-skip-size-check` is enabled,
+    /// and causes undefined behavior with pointer math.
     pub fn get_ptr_mut(&mut self, idx: usize) -> *mut E {
         self.get_ptr(idx) as *mut E
     }
 
     /// Deallocates a reference to this struct, calling the destructor of its
     /// label as well as all contained elements in the process.
+    ///
+    /// # Panics
+    /// This method panics if `len` is larger than the maximum size for a `MemBlock`,
+    /// as defined by `MemBlock::block_max_len()`, unless the feature
+    /// `mem-block-skip-size-check` is enabled. It also panics if `len` is too
+    /// large for the target platform or the alignment of the block is incorrect,
+    /// unless the feature `mem-block-skip-layout-check` is enabled.
     ///
     /// # Safety
     /// The following must hold to safely use `r.dealloc(len)` to deallocate a
@@ -173,8 +214,8 @@ impl<E, L> MemBlock<E, L> {
     /// ### Safety with `mem-block-skip-size-check` Enabled
     /// In addition to the above conditions, `len` must also be less than or equal to
     /// `MemBlock::<E,L>::block_max_len()`. This is checked at runtime with an
-    /// assertion, unless the feature `mem-block-skip-size-check` is enabled, and causes
-    /// undefined behavior with pointer math.
+    /// assertion, unless the feature `mem-block-skip-size-check` is enabled, and
+    /// causes undefined behavior with pointer math.
     pub unsafe fn dealloc(&mut self, len: usize) {
         #[cfg(not(feature = "mem-block-skip-size-check"))]
         assert!(
@@ -194,6 +235,11 @@ impl<E, L> MemBlock<E, L> {
     /// Deallocates a reference to this struct, without destructing the associated
     /// label or the elements contained inside.
     ///
+    /// # Panics
+    /// This method panics if `len` is too large for the target platform or the
+    /// alignment of the block is incorrect, unless the feature
+    /// `mem-block-skip-layout-check` is enabled.
+    ///
     /// # Safety
     /// The following must hold to safely use `r.dealloc(len)` to deallocate a
     /// `MemBlock` for some `let r: &mut MemBlock<E,L>`, in addition to all
@@ -208,11 +254,11 @@ impl<E, L> MemBlock<E, L> {
     /// The above is sufficient to ensure safe behavior using the default feature
     /// set of this crate. See below for exceptions.
     ///
-    /// ### Safety with `mem-block-skip-size-check` Enabled
+    /// ### Safety with `mem-block-skip-layout-check` Enabled
     /// In addition to the above conditions, `len` must also be less than or equal to
     /// `MemBlock::<E,L>::block_max_len()`. This is checked at runtime with an
-    /// assertion, unless the feature `mem-block-skip-size-check` is enabled, and causes
-    /// undefined behavior with pointer math.
+    /// assertion, unless the feature `mem-block-skip-layout-check` is enabled, and
+    /// causes undefined behavior with pointer math.
     pub unsafe fn dealloc_lazy(&mut self, len: usize) {
         let (size, align) = Self::memory_layout(len);
         let layout = if cfg!(feature = "mem-block-skip-layout-check") {
