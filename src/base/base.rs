@@ -117,11 +117,11 @@ where
     }
 
     pub fn get_label(&self) -> &L {
-        &self._ref().label
+        self._ref().get_label()
     }
 
     pub fn get_label_mut(&mut self) -> &mut L {
-        &mut self._mut().label
+        self._mut().get_label_mut()
     }
 
     pub unsafe fn as_slice(&self, len: usize) -> &[E] {
@@ -180,9 +180,9 @@ where
             None
         } else {
             unsafe {
-                let out = ptr::read(self.current);
+                let out = Some(ptr::read(self.current));
                 self.current = self.current.add(1);
-                Some(out)
+                out
             }
         }
     }

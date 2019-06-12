@@ -96,7 +96,7 @@ impl<E, L> AtomicPtrArray<E, L> {
 
 impl<E, L> Container for AtomicPtrArray<E, L> {
     fn len(&self) -> usize {
-        self.as_ref().label.len
+        self.as_ref().get_label().len
     }
 }
 
@@ -159,7 +159,7 @@ impl<E, L> LabelledArray<E, L> for AtomicPtrArray<E, L> {
         }
     }
     fn get_label(&self) -> &L {
-        &self.as_ref().label.label
+        &self.as_ref().get_label().label
     }
     unsafe fn get_unchecked(&self, idx: usize) -> &E {
         &mut *(self.as_ref().get_ptr(idx) as *mut E)
@@ -204,7 +204,7 @@ impl<E, L> Drop for AtomicPtrArray<E, L> {
 
 impl<E, L> LabelledArrayMut<E, L> for AtomicPtrArray<E, L> {
     fn get_label_mut(&mut self) -> &mut L {
-        &mut (*self.as_mut().label).label
+        &mut self.as_mut().get_label_mut().label
     }
     unsafe fn get_mut_unchecked(&mut self, idx: usize) -> &mut E {
         &mut *self.as_mut().get_ptr_mut(idx)

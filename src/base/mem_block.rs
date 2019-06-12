@@ -74,7 +74,7 @@ use core::ptr::NonNull;
 pub struct MemBlock<E, L = ()> {
     /// Metadata about the block. Will always be initialized on a valid `MemBlock`
     /// instance, as discussed in the invarants section above.
-    pub label: ManuallyDrop<L>,
+    label: ManuallyDrop<L>,
     phantom: PhantomData<E>,
 }
 
@@ -355,5 +355,13 @@ impl<E, L> MemBlock<E, L> {
             unsafe { ptr::write(block_ref.get_ptr_mut(i), item) }
         }
         block
+    }
+
+    pub fn get_label(&self) -> &L {
+        &self.label
+    }
+
+    pub fn get_label_mut(&mut self) -> &mut L {
+        &mut self.label
     }
 }
