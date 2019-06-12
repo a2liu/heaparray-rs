@@ -22,7 +22,7 @@ pub trait BaseArrayRef {}
 ///     assert!(r1 == r2);
 /// }
 /// ```
-pub trait ArrayRef: BaseArrayRef + Clone {
+pub trait ArrayRef: Clone {
     /// Clones the array reference. Internally just calls its `.clone()`
     /// method.
     fn clone(ptr: &Self) -> Self {
@@ -39,7 +39,7 @@ pub trait ArrayRef: BaseArrayRef + Clone {
 ///
 /// For more details on the expected behavior of these methods, see the
 /// documentation for `core::sync::atomic::AtomicPtr`.
-pub trait AtomicArrayRef: BaseArrayRef + Sized {
+pub trait AtomicArrayRef: Sized {
     fn as_ref(&self) -> usize;
     /// Returns the previous value, and also the struct you passed in if the value
     /// wasn't updated

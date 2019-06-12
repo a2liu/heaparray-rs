@@ -3,6 +3,7 @@ pub use crate::prelude::*;
 use crate::ptr_utils::UnsafePtr;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
+use core::sync::atomic::{AtomicPtr, Ordering};
 
 /// Base array that handles converting a memory block into a constructible object.
 ///
@@ -15,7 +16,7 @@ where
     P: UnsafePtr<MemBlock<E, L>>,
 {
     data: P,
-    phantom: PhantomData<(E, L)>,
+    phantom: PhantomData<(E, L, *mut u8)>,
 }
 
 pub struct BaseArrayIter<E, L, P = NonNull<MemBlock<E, L>>>
@@ -39,6 +40,17 @@ where
         unsafe { self.data.as_ref() }
     }
 
+    pub unsafe fn from_ptr(ptr: *mut MemBlock<E, L>) -> Self {
+        Self::from_ref(P::new_unchecked(ptr))
+    }
+
+    pub unsafe fn from_ref(ptr: P) -> Self {
+        Self {
+            data: ptr,
+            phantom: PhantomData,
+        }
+    }
+
     pub fn new<F>(label: L, len: usize, func: F) -> Self
     where
         F: FnMut(&mut L, usize) -> E,
@@ -49,17 +61,6 @@ where
     /// Doesn't initialize the elements of the array, or check for null references.
     pub unsafe fn new_lazy(label: L, len: usize) -> Self {
         Self::from_ptr(MemBlock::new(label, len).as_ptr())
-    }
-
-    pub unsafe fn from_ptr(ptr: *mut MemBlock<E, L>) -> Self {
-        Self::from_ref(P::new_unchecked(ptr))
-    }
-
-    pub unsafe fn from_ref(ptr: P) -> Self {
-        Self {
-            data: ptr,
-            phantom: PhantomData,
-        }
     }
 
     pub unsafe fn as_ptr(&self) -> *const MemBlock<E, L> {
@@ -162,14 +163,6 @@ where
 {
 }
 
-unsafe impl<E, L, P> Sync for BaseArray<E, L, P>
-where
-    E: Sync,
-    L: Sync,
-    P: UnsafePtr<MemBlock<E, L>>,
-{
-}
-
 impl<E, L, P> Iterator for BaseArrayIter<E, L, P>
 where
     P: UnsafePtr<MemBlock<E, L>>,
@@ -196,5 +189,70 @@ where
         let begin = self.array.get_ptr_mut(0) as usize;
         let len = ((self.end as usize) - begin) / mem::size_of::<E>();
         unsafe { self.array.drop(len) }
+    }
+}
+
+impl<E, L> AtomicArrayRef for BaseArray<E, L, AtomicPtr<MemBlock<E, L>>> {
+    fn as_ref(&self) -> usize {
+        self._ref() as *const MemBlock<E, L> as usize
+    }
+    fn compare_and_swap(
+        &self,
+        current: usize,
+        new: Self,
+        order: Ordering,
+    ) -> Result<usize, (Self, usize)> {
+        let current = current as *mut MemBlock<E, L>;
+        let new_ref = new.as_ref() as *const MemBlock<E, L> as *mut MemBlock<E, L>;
+        let actual = self.data.compare_and_swap(current, new_ref, order);
+        if actual == current {
+            mem::forget(new);
+            Ok(current as usize)
+        } else {
+            Err((new, current as usize))
+        }
+    }
+    fn compare_exchange(
+        &self,
+        current: usize,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<usize, (Self, usize)> {
+        let current = current as *mut MemBlock<E, L>;
+        let new_ref = new.as_ref() as *const MemBlock<E, L> as *mut MemBlock<E, L>;
+        match self
+            .data
+            .compare_exchange(current, new_ref, success, failure)
+        {
+            Ok(ptr) => {
+                mem::forget(new);
+                Ok(ptr as usize)
+            }
+            Err(ptr) => Err((new, ptr as usize)),
+        }
+    }
+    fn compare_exchange_weak(
+        &self,
+        current: usize,
+        new: Self,
+        success: Ordering,
+        failure: Ordering,
+    ) -> Result<usize, (Self, usize)> {
+        let current = current as *mut MemBlock<E, L>;
+        let new_ref = new.as_ref() as *const MemBlock<E, L> as *mut MemBlock<E, L>;
+        match self
+            .data
+            .compare_exchange_weak(current, new_ref, success, failure)
+        {
+            Ok(ptr) => {
+                mem::forget(new);
+                Ok(ptr as usize)
+            }
+            Err(ptr) => Err((new, ptr as usize)),
+        }
+    }
+    fn swap(&self, mut ptr: Self, order: Ordering) -> Self {
+        unsafe { Self::from_ref(AtomicPtr::new(self.data.swap(ptr._mut(), order))) }
     }
 }
