@@ -6,6 +6,67 @@ contains metadata about the block itself. This makes it much easier to implement
 Dynamically-Sized Types (DSTs), and also reduces the number of pointer
 indirections necessary to share data between threads.
 
+### Features
+- Safe API to dynamically-sized types
+- Generic implementations of common tasks so you can customize the
+  implementation of a type without having to write additional boilerplate
+- Atomically reference-counted memory blocks of arbitrary size without
+  using a `Vec`; this means you can access reference-counted memory with
+  only a single pointer indirection.
+
+### Examples
+Creating an array:
+
+```rust
+use heaparray::*;
+let len = 10;
+let array = HeapArray::new(len, |idx| idx + 3);
+assert!(array[1] == 4);
+```
+
+Indexing works as you would expect:
+
+```rust
+use heaparray::*;
+let mut array = HeapArray::new(10, |_| 0);
+array[3] = 2;
+assert!(array[3] == 2);
+```
+
+You can take ownership of objects back from the container:
+
+```rust
+let mut array = HeapArray::new(10, |_| Vec::<u8>::new());
+let replacement_object = Vec::new();
+let owned_object = array.insert(0, replacement_object);
+```
+
+but you need to give the array a replacement object to fill its slot with.
+
+Additionally, you can customize what information should be stored alongside
+the elements in the array using the `HeapArray::with_label` function:
+
+```rust
+struct MyLabel {
+    pub even: usize,
+    pub odd: usize,
+}
+
+let mut array = HeapArray::with_label(
+    MyLabel { even: 0, odd: 0 },
+    100,
+    |label, index| {
+        if index % 2 == 0 {
+            label.even += 1;
+            index
+        } else {
+            label.odd += 1;
+            index
+        }
+    });
+```
+
+### Dynamically Sized Types
 It has two main features that provide the foundation for the rest:
 
 - **Storing data next to an array:** From the
@@ -61,66 +122,6 @@ It has two main features that provide the foundation for the rest:
   both thin and fat pointer-referenced arrays, where the length is stored
   with the data instead of with the pointer in the thin pointer variant.
 
-### Features
-- Arrays are allocated on the heap, with optional extra space allocated for metadata
-- Support for 1-word and 2-word pointers
-- Atomically reference-counted memory blocks of arbitrary size without using a `Vec`;
-  this means you can access reference-counted memory with only a single pointer
-  indirection.
-- Swap owned objects in and out with `array.insert()`
-- Arbitrarily sized objects using label and an array of bytes (`u8`)
-
-### Examples
-Creating an array:
-
-```rust
-use heaparray::*;
-let len = 10;
-let array = HeapArray::new(len, |idx| idx + 3);
-assert!(array[1] == 4);
-```
-
-Indexing works as you would expect:
-
-```rust
-use heaparray::*;
-let mut array = HeapArray::new(10, |_| 0);
-array[3] = 2;
-assert!(array[3] == 2);
-```
-
-You can take ownership of objects back from the container:
-
-```rust
-let mut array = HeapArray::new(10, |_| Vec::<u8>::new());
-let replacement_object = Vec::new();
-let owned_object = array.insert(0, replacement_object);
-```
-
-but you need to give the array a replacement object to fill its slot with.
-
-Additionally, you can customize what information should be stored alongside
-the elements in the array using the `HeapArray::with_label` function:
-
-```rust
-struct MyLabel {
-    pub even: usize,
-    pub odd: usize,
-}
-
-let mut array = HeapArray::with_label(
-    MyLabel { even: 0, odd: 0 },
-    100,
-    |label, index| {
-        if index % 2 == 0 {
-            label.even += 1;
-            index
-        } else {
-            label.odd += 1;
-            index
-        }
-    });
-```
 ### Use of `unsafe` Keyword
 This library relies heavily on the use of the `unsafe` keyword to do both
 reference counting and atomic operations; there are 40 instances total,
