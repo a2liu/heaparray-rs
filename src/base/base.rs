@@ -11,6 +11,21 @@ use core::sync::atomic::Ordering;
 /// Doesn't store length information, but contains logic necessary to handle
 /// allocation, deallocation, iteration, and slices given length. Holds
 /// the bulk of the unsafe logic in this library.
+///
+/// # Invariants
+/// This struct follows some of the invariants as discussed in
+/// [`heaparray::base::mem_block::MemBlock`](mem_block/struct.MemBlock.html),
+/// as it internally is just a pointer to a `MemBlock`. Specifically, it maintains
+/// the invariant that the memory block allocated will always have a size (in bytes)
+/// less than or equal to `core::isize::MAX`. However, note that the internal
+/// pointer isn't necessarily valid; while the associated functions `new` and
+/// `new_lazy` do uphold this invariant, this type can be constructed without
+/// allocating anything (e.g. `BaseArray::<u8, ()>::from_ptr(core::ptr::null())`).
+///
+/// # Safety
+/// Generally, the functions of this struct are safe given that the length that
+/// you provide to the function is less than or equal to that of the underlying
+/// memory. For more specifics, please see the documentation for each function.
 #[repr(transparent)]
 pub struct BaseArray<E, L, P = NonNull<MemBlock<E, L>>>
 where
@@ -20,6 +35,11 @@ where
     phantom: PhantomData<(E, L, *mut u8)>,
 }
 
+/// Iterator for an instance of `BaseArray` by ownership.
+///
+/// `BaseArray` can't be safely iterated over, so this object can only be constructed
+/// via the unsafe method `BaseArray::into_iter`, which takes as a parameter an
+/// associated length.
 pub struct BaseArrayIter<E, L, P = NonNull<MemBlock<E, L>>>
 where
     P: UnsafePtr<MemBlock<E, L>>,

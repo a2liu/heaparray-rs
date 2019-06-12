@@ -26,11 +26,9 @@ use core::ptr::NonNull;
 /// These conditions will hold as long as you hold a reference to an instance of
 /// `MemBlock` that you haven't deallocated yet.
 ///
-/// 1. The public field `label` will be initialized to a valid instance of `L`,
-///    as long as you provide a valid instance to the constructor of `MemBlock`
-/// 2. The memory block allocated will always have a size (in bytes) less than
+/// 1. The memory block allocated will always have a size (in bytes) less than
 ///    or equal to `core::isize::MAX`
-/// 3. Pointers to valid memory blocks cannot be null
+/// 2. Pointers to valid memory blocks cannot be null
 ///
 /// Additional guarrantees are provided by the instantiation functions, `new`
 /// and `new_init`.
