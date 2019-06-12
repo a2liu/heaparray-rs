@@ -1,9 +1,10 @@
 use super::mem_block::*;
 pub use crate::prelude::*;
 use crate::ptr_utils::UnsafePtr;
+use atomic_types::*;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
-use core::sync::atomic::{AtomicPtr, Ordering};
+use core::sync::atomic::Ordering;
 
 /// Base array that handles converting a memory block into a constructible object.
 ///
@@ -155,14 +156,6 @@ where
     }
 }
 
-unsafe impl<E, L, P> Send for BaseArray<E, L, P>
-where
-    E: Send,
-    L: Send,
-    P: UnsafePtr<MemBlock<E, L>>,
-{
-}
-
 impl<E, L, P> Iterator for BaseArrayIter<E, L, P>
 where
     P: UnsafePtr<MemBlock<E, L>>,
@@ -192,21 +185,23 @@ where
     }
 }
 
-impl<E, L> AtomicArrayRef for BaseArray<E, L, AtomicPtr<MemBlock<E, L>>> {
+impl<E, L, P> AtomicArrayRef for BaseArray<E, L, P>
+where
+    P: UnsafePtr<MemBlock<E, L>> + Atomic<*mut MemBlock<E, L>>,
+{
     fn as_ref(&self) -> usize {
         self._ref() as *const MemBlock<E, L> as usize
     }
     fn compare_and_swap(
         &self,
         current: usize,
-        new: Self,
+        mut new: Self,
         order: Ordering,
     ) -> Result<usize, (Self, usize)> {
         let current = current as *mut MemBlock<E, L>;
-        let new_ref = new.as_ref() as *const MemBlock<E, L> as *mut MemBlock<E, L>;
+        let new_ref = new._mut() as *mut MemBlock<E, L>;
         let actual = self.data.compare_and_swap(current, new_ref, order);
         if actual == current {
-            mem::forget(new);
             Ok(current as usize)
         } else {
             Err((new, current as usize))
@@ -225,10 +220,7 @@ impl<E, L> AtomicArrayRef for BaseArray<E, L, AtomicPtr<MemBlock<E, L>>> {
             .data
             .compare_exchange(current, new_ref, success, failure)
         {
-            Ok(ptr) => {
-                mem::forget(new);
-                Ok(ptr as usize)
-            }
+            Ok(ptr) => Ok(ptr as usize),
             Err(ptr) => Err((new, ptr as usize)),
         }
     }
@@ -245,14 +237,15 @@ impl<E, L> AtomicArrayRef for BaseArray<E, L, AtomicPtr<MemBlock<E, L>>> {
             .data
             .compare_exchange_weak(current, new_ref, success, failure)
         {
-            Ok(ptr) => {
-                mem::forget(new);
-                Ok(ptr as usize)
-            }
+            Ok(ptr) => Ok(ptr as usize),
             Err(ptr) => Err((new, ptr as usize)),
         }
     }
     fn swap(&self, mut ptr: Self, order: Ordering) -> Self {
-        unsafe { Self::from_ref(AtomicPtr::new(self.data.swap(ptr._mut(), order))) }
+        unsafe {
+            Self::from_ref(<P as UnsafePtr<MemBlock<E, L>>>::new(
+                self.data.swap(ptr._mut(), order),
+            ))
+        }
     }
 }
