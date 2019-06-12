@@ -4,69 +4,13 @@
 //! Dynamically-Sized Types (DSTs), and also reduces the number of pointer
 //! indirections necessary to share data between threads.
 //!
-//! It has two main features that provide the foundation for the rest:
-//!
-//! - **Storing data next to an array:** From the
-//!   [Rust documentation on exotically sized types](https://doc.rust-lang.org/nomicon/exotic-sizes.html),
-//!   at the end of the section on dynamically-sized types:
-//!
-//!   > Currently the only properly supported way to create a custom DST is by
-//!   > making your type generic and performing an unsizing coercion
-//!   > ...
-//!   > (Yes, custom DSTs are a largely half-baked feature for now.)
-//!
-//!   This crate aims to provide *some* of that functionality; the code that
-//!   the docs give is the following:
-//!
-//!   ```rust
-//!   struct MySuperSliceable<T: ?Sized> {
-//!       info: u32,
-//!       data: T
-//!   }
-//!
-//!   fn main() {
-//!       let sized: MySuperSliceable<[u8; 8]> = MySuperSliceable {
-//!           info: 17,
-//!           data: [0; 8],
-//!       };
-//!
-//!       let dynamic: &MySuperSliceable<[u8]> = &sized;
-//!
-//!       // prints: "17 [0, 0, 0, 0, 0, 0, 0, 0]"
-//!       println!("{} {:?}", dynamic.info, &dynamic.data);
-//!   }
-//!   ```
-//!
-//!   using this crate, the `MySuperSliceable<[u8]>` type would be
-//!   implemented like this:
-//!
-//!   ```rust
-//!   use heaparray::*;
-//!
-//!   type MySuperSliceable = HeapArray<u8, u32>;
-//!
-//!   fn main() {
-//!       let info = 17;
-//!       let len = 8;
-//!       let dynamic = MySuperSliceable::with_label(info, len, |_,_| 0);
-//!       println!("{:?}", dynamic);
-//!   }
-//!   ```
-//!
-//! - **Thin pointer arrays:** in Rust, unsized structs are referenced with
-//!   pointers that are stored with an associated length.
-//!   This behavior isn't always desired, so this crate provides
-//!   both thin and fat pointer-referenced arrays, where the length is stored
-//!   with the data instead of with the pointer in the thin pointer variant.
-//!
 //! ## Features
-//! - Arrays are allocated on the heap, with optional extra space allocated for metadata
-//! - Support for 1-word and 2-word pointers
+//! - Safe API to dynamically-sized types
+//! - Generic implementations of common tasks so you can customize the
+//!   implementation of a type without having to write additional boilerplate
 //! - Atomically reference-counted memory blocks of arbitrary size without
 //!   using a `Vec`; this means you can access reference-counted memory with
 //!   only a single pointer indirection.
-//! - Swap owned objects in and out with `array.insert()`
-//! - Arbitrarily sized objects using label and an array of bytes (`u8`)
 //!
 //! ## Examples
 //! Creating an array:
@@ -121,6 +65,62 @@
 //!         }
 //!     });
 //! ```
+//!
+//! ## Dynamically Sized Types
+//! It has two main features that provide the foundation for the rest:
+//!
+//! - **Storing data next to an array:** From the
+//!   [Rust documentation on exotically sized types](https://doc.rust-lang.org/nomicon/exotic-sizes.html),
+//!   at the end of the section on dynamically-sized types:
+//!
+//!   > Currently the only properly supported way to create a custom DST is by
+//!   > making your type generic and performing an unsizing coercion
+//!   > ...
+//!   > (Yes, custom DSTs are a largely half-baked feature for now.)
+//!
+//!   This crate aims to provide *some* of that functionality; the code that
+//!   the docs give is the following:
+//!
+//!   ```rust
+//!   struct MySuperSliceable<T: ?Sized> {
+//!       info: u32,
+//!       data: T
+//!   }
+//!
+//!   fn main() {
+//!       let sized: MySuperSliceable<[u8; 8]> = MySuperSliceable {
+//!           info: 17,
+//!           data: [0; 8],
+//!       };
+//!
+//!       let dynamic: &MySuperSliceable<[u8]> = &sized;
+//!
+//!       // prints: "17 [0, 0, 0, 0, 0, 0, 0, 0]"
+//!       println!("{} {:?}", dynamic.info, &dynamic.data);
+//!   }
+//!   ```
+//!
+//!   using this crate, the `MySuperSliceable<[u8]>` type would be
+//!   implemented like this:
+//!
+//!   ```rust
+//!   use heaparray::*;
+//!
+//!   type MySuperSliceable = HeapArray<u8, u32>;
+//!
+//!   fn main() {
+//!       let info = 17;
+//!       let len = 8;
+//!       let dynamic = MySuperSliceable::with_label(info, len, |_,_| 0);
+//!       println!("{:?}", dynamic);
+//!   }
+//!   ```
+//!
+//! - **Thin pointer arrays:** in Rust, unsized structs are referenced with
+//!   pointers that are stored with an associated length.
+//!   This behavior isn't always desired, so this crate provides
+//!   both thin and fat pointer-referenced arrays, where the length is stored
+//!   with the data instead of with the pointer in the thin pointer variant.
 //!
 //! ## Use of `unsafe` Keyword
 //! This library relies heavily on the use of the `unsafe` keyword to do both

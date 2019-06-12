@@ -22,7 +22,7 @@ pub trait BaseArrayRef {}
 ///     assert!(r1 == r2);
 /// }
 /// ```
-pub trait ArrayRef: Clone {
+pub trait ArrayRef: Clone + Sized {
     /// Clones the array reference. Internally just calls its `.clone()`
     /// method.
     fn clone(ptr: &Self) -> Self {

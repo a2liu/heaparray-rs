@@ -12,15 +12,12 @@ use core::marker::PhantomData;
 ///
 /// ```text
 /// A: A struct that acts as a reference to an array.
-/// R: A reference-counting structure, that wraps the label.
+/// R: A reference-counting structure, that wraps the label. Note that this
+///    *can be the label itself*. It just needs to have defined ways of incrementing
+///    and decrementing its reference count.
 /// E: The elements that this array contains.
 /// L: The label that is associated with this array.
 /// ```
-///
-/// # Implementation
-/// Reference counting is done by a struct stored directly next to the data;
-/// this means that this struct is *a single pointer indirection* from its underlying
-/// data.
 #[repr(transparent)]
 pub struct RcArray<A, R, E, L = ()>
 where

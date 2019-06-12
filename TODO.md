@@ -35,13 +35,18 @@
   ```
 
 - [ ] Begin changelog and yank other versions
-- [ ] Use struct for `AtomicPtr` trait
 - [X] Use `NonNull` where possible to make API intentions explicit
 - [X] Use `Layout` instead of `(size, align)`
 - [X] Remove `get_label_unsafe`
 - [X] Replace `get_unchecked` with `get_unchecked` and `get_mut_unchecked`
 
+
 ### Features
+- [ ] Eq, PartialEq
+- [ ] Add benchmarks, comparing to best standard library equivalents
+  - [ ] `Arc<(TestStruct, Vec<AtomicUsize>)>` vs `FpArcArray<...>`
+  - [ ] `Rc<(TestStruct, Vec<AtomicUsize>)>` vs `FpRcArray<...>`
+- [ ] Use struct instead of `usize` for return type of `AtomicArrayRef::as_ref`
 - [ ] `get_fast`, that uses `const` functions to test whether the size
   works and then performs pointer math with a smaller value, like `u8` or
   `u16`

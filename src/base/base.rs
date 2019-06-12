@@ -53,18 +53,24 @@ impl<E, L, P> BaseArray<E, L, P>
 where
     P: UnsafePtr<MemBlock<E, L>>,
 {
+    /// Get a mutable reference to this struct's memory block
     fn _mut(&mut self) -> &mut MemBlock<E, L> {
         unsafe { self.data.as_mut() }
     }
 
+    /// Get a reference to this struct's memory block
     fn _ref(&self) -> &MemBlock<E, L> {
         unsafe { self.data.as_ref() }
     }
 
+    /// Construct an instance of this struct from a raw pointer; doesn't do any
+    /// checking for validity of the pointer.
     pub unsafe fn from_ptr(ptr: *mut MemBlock<E, L>) -> Self {
         Self::from_ref(P::new_unchecked(ptr))
     }
 
+    /// Construct an instance of this struct from an instance of the pointer type
+    /// `P`.
     pub unsafe fn from_ref(ptr: P) -> Self {
         Self {
             data: ptr,
