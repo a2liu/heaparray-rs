@@ -42,6 +42,9 @@
 - [X] Replace `get_unchecked` with `get_unchecked` and `get_mut_unchecked`
 
 ### Features
+- [ ] `get_fast`, that uses `const` functions to test whether the size
+  works and then performs pointer math with a smaller value, like `u8` or
+  `u16`
 - [ ] Try-allocate functions; i.e. `try_new` and `try_new_lazy`
   - [ ] And otherwise use `Result<NonNull<MemBlock<E,L>>, ()>`
 - [ ] From and To `Vec` and `(Label, Vec)`
