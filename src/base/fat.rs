@@ -3,7 +3,7 @@
 //! This is the typical representation of unsized references in Rust,
 //! and is thus also the default implementation of `HeapArray` as imported by `use heaparray::*;`
 use super::base::{BaseArray, BaseArrayIter};
-pub use crate::prelude::*;
+use crate::prelude::*;
 
 /// Heap-allocated array, with array size stored with the pointer to the memory.
 ///
