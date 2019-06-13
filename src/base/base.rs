@@ -25,7 +25,8 @@ use core::sync::atomic::Ordering;
 /// # Safety
 /// Generally, the functions of this struct are safe given that the length that
 /// you provide to the function is less than or equal to that of the underlying
-/// memory. For more specifics, please see the documentation for each function.
+/// memory. Functions with more restrictive requirements will describe those
+/// requirements in more detail.
 #[repr(transparent)]
 pub struct BaseArray<E, L, P = NonNull<MemBlock<E, L>>>
 where
@@ -85,16 +86,21 @@ where
         unsafe { Self::from_ptr(MemBlock::new_init(label, len, func).as_ptr()) }
     }
 
-    /// Doesn't initialize the elements of the array, or check for null references.
+    /// Doesn't initialize anything in the array. Just allocates a block of memory.
+    pub unsafe fn alloc(len: usize) -> Self {
+        Self::from_ptr(MemBlock::alloc(len).as_ptr())
+    }
+
+    /// Doesn't initialize the elements of the array.
     pub unsafe fn new_lazy(label: L, len: usize) -> Self {
         Self::from_ptr(MemBlock::new(label, len).as_ptr())
     }
 
-    pub unsafe fn as_ptr(&self) -> *const MemBlock<E, L> {
+    pub unsafe fn as_block_ptr(&self) -> *const MemBlock<E, L> {
         self.data.as_ref()
     }
 
-    pub unsafe fn as_ptr_mut(&mut self) -> *mut MemBlock<E, L> {
+    pub unsafe fn as_block_ptr_mut(&mut self) -> *mut MemBlock<E, L> {
         self.data.as_mut()
     }
 
@@ -134,6 +140,10 @@ where
 
     pub fn get_ptr_mut(&mut self, idx: usize) -> *mut E {
         self._mut().get_ptr_mut(idx)
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.data.is_null()
     }
 
     pub unsafe fn get(&self, idx: usize) -> &E {

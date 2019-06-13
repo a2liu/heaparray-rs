@@ -281,8 +281,8 @@ impl<E, L> MemBlock<E, L> {
     /// run the destructor for the `label` field as well (as `dealloc_lazy` doesn't
     /// run *any* destructors).
     ///
-    /// To initialize the elements of this block yourself, consider doing something
-    /// like the following:
+    /// ## Initialization of Fields
+    /// You will need to initialize the elements of the block yourself:
     ///
     /// ```rust
     /// use heaparray::base::mem_block::MemBlock;
@@ -300,6 +300,50 @@ impl<E, L> MemBlock<E, L> {
     /// Note that the above is almost the exact same thing that `MemBlock::new_init`
     /// does under the hood.
     pub unsafe fn new<'a>(label: L, len: usize) -> NonNull<Self> {
+        let mut block = Self::alloc(len);
+        ptr::write(&mut block.as_mut().label, ManuallyDrop::new(label));
+        block
+    }
+
+    /// Returns a pointer to a new `MemBlock` without initializing the elements
+    /// or label in the block.
+    ///
+    /// If you use this function, and don't initialize all the elements in the array
+    /// you need to remember to deallocate using `dealloc_lazy`, as it skips
+    /// destructors alltogether.
+    ///
+    /// ## Initialization of Fields
+    /// You will need to initialize the label yourself to use it:
+    ///
+    /// ```rust
+    /// use heaparray::base::mem_block::MemBlock;
+    /// use core::ptr;
+    /// let len = 100;
+    /// let initial_value = 12;
+    /// let mut block = unsafe { MemBlock::<usize, usize>::alloc(len) };
+    /// unsafe {
+    ///     ptr::write(block.as_mut().get_label_mut(), initial_value);
+    /// }
+    /// ```
+    ///
+    /// ... and also initialize the elements of the block yourself:
+    ///
+    /// ```rust
+    /// use heaparray::base::mem_block::MemBlock;
+    /// use core::ptr;
+    /// let len = 100;
+    /// let initialize = |i| { i * i };
+    /// let mut block = unsafe { MemBlock::<usize, ()>::new((), len) };
+    /// for i in 0..len {
+    ///     unsafe {
+    ///         ptr::write(block.as_mut().get_ptr_mut(i), initialize(i));
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// Note that the above is almost the exact same thing that `MemBlock::new_init`
+    /// does under the hood.
+    pub unsafe fn alloc(len: usize) -> NonNull<Self> {
         #[cfg(not(feature = "mem-block-skip-size-check"))]
         assert!(
             len <= Self::block_max_len(),
@@ -321,15 +365,12 @@ impl<E, L> MemBlock<E, L> {
             ))
         };
 
-        let mut block = if cfg!(feature = "mem-block-allow-null") {
+        if cfg!(feature = "mem-block-allow-null") {
             NonNull::new_unchecked(allocate::<Self>(layout))
         } else {
             NonNull::new(allocate::<Self>(layout))
                 .expect("Allocated a null pointer. You may be out of memory.")
-        };
-
-        ptr::write(&mut block.as_mut().label, ManuallyDrop::new(label));
-        block
+        }
     }
 
     /// Returns a pointer to a labelled memory block, with elements initialized
@@ -355,10 +396,12 @@ impl<E, L> MemBlock<E, L> {
         block
     }
 
+    /// Get an immutable reference to the label of this array.
     pub fn get_label(&self) -> &L {
         &self.label
     }
 
+    /// Get a mutable reference to the label of this array.
     pub fn get_label_mut(&mut self) -> &mut L {
         &mut self.label
     }

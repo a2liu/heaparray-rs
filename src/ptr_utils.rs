@@ -10,6 +10,8 @@ pub trait UnsafePtr<T>: Sized {
     unsafe fn new_unchecked(ptr: *mut T) -> Self {
         Self::new(ptr)
     }
+    /// Returns whether or not this pointer is null
+    fn is_null(&self) -> bool;
     /// Returns a reference to the underlying data that this pointer represents
     unsafe fn as_ref(&self) -> &T;
     /// Returns a mutable reference to the underlying data that this pointer
@@ -31,6 +33,9 @@ impl<T> UnsafePtr<T> for NonNull<T> {
     unsafe fn new_unchecked(ptr: *mut T) -> Self {
         Self::new_unchecked(ptr)
     }
+    fn is_null(&self) -> bool {
+        self.as_ptr().is_null()
+    }
     unsafe fn as_ref(&self) -> &T {
         self.as_ref()
     }
@@ -43,6 +48,9 @@ impl<T> UnsafePtr<T> for AtomicPtr<T> {
     fn new(ptr: *mut T) -> Self {
         Self::new(ptr)
     }
+    fn is_null(&self) -> bool {
+        self.load(Ordering::Acquire).is_null()
+    }
     unsafe fn as_ref(&self) -> &T {
         &*self.load(Ordering::Acquire)
     }
@@ -54,6 +62,9 @@ impl<T> UnsafePtr<T> for AtomicPtr<T> {
 impl<T> UnsafePtr<T> for *mut T {
     fn new(ptr: *mut T) -> Self {
         ptr
+    }
+    fn is_null(&self) -> bool {
+        (*self).is_null()
     }
     unsafe fn as_ref(&self) -> &T {
         &**self
