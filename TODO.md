@@ -42,6 +42,7 @@
 
 
 ### Features
+- [ ] `cast_into` more flexible
 - [ ] Eq, PartialEq
 - [ ] Add benchmarks, comparing to best standard library equivalents
   - [ ] `Arc<(TestStruct, Vec<AtomicUsize>)>` vs `FpArcArray<...>`

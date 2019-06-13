@@ -96,22 +96,29 @@ where
         Self::from_ptr(MemBlock::new(label, len).as_ptr())
     }
 
+    /// Returns the internal pointer of this array as a pointer to a `MemBlock`
+    /// instance.
     pub unsafe fn as_block_ptr(&self) -> *const MemBlock<E, L> {
         self.data.as_ref()
     }
 
+    /// Returns the internal pointer of this array as a mutable pointer to a
+    /// `MemBlock` instance.
     pub unsafe fn as_block_ptr_mut(&mut self) -> *mut MemBlock<E, L> {
         self.data.as_mut()
     }
 
+    /// Runs destructor code for elements and for label, then deallocates block.
     pub unsafe fn drop(&mut self, len: usize) {
         self._mut().dealloc(len)
     }
 
+    /// Deallocates block without running destructor code for elements or label.
     pub unsafe fn drop_lazy(&mut self, len: usize) {
         self._mut().dealloc_lazy(len)
     }
 
+    /// Cast this array into a different array.
     pub unsafe fn cast_into<T, Q>(self) -> BaseArray<T, L, Q>
     where
         Q: UnsafePtr<MemBlock<T, L>>,
