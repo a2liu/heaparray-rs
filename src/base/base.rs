@@ -1,5 +1,5 @@
 use super::mem_block::*;
-pub use crate::prelude::*;
+use crate::prelude::*;
 use crate::ptr_utils::UnsafePtr;
 use atomic_types::*;
 use core::marker::PhantomData;
@@ -79,6 +79,10 @@ where
         }
     }
 
+    /// Creates a new array of size `len`.
+    ///
+    /// Initializes all elements using the given function, and initializes the
+    /// label with the provided value.
     pub fn new<F>(label: L, len: usize, func: F) -> Self
     where
         F: FnMut(&mut L, usize) -> E,
@@ -127,6 +131,7 @@ where
         BaseArray::<T, L, Q>::from_ptr(ptr.as_mut() as *mut MemBlock<T, L>)
     }
 
+    /// Cast a reference to this array into a reference to a different array.
     pub unsafe fn cast_ref<T, Q>(&self) -> &BaseArray<T, L, Q>
     where
         Q: UnsafePtr<MemBlock<T, L>>,
@@ -134,6 +139,8 @@ where
         &*(self as *const BaseArray<E, L, P> as *const BaseArray<T, L, Q>)
     }
 
+    /// Cast a mutable reference to this array into a mutable reference to a
+    /// different array.
     pub unsafe fn cast_mut<T, Q>(&mut self) -> &mut BaseArray<T, L, Q>
     where
         Q: UnsafePtr<MemBlock<T, L>>,
@@ -141,42 +148,56 @@ where
         &mut *(self as *mut BaseArray<E, L, P> as *mut BaseArray<T, L, Q>)
     }
 
+    /// Returns a pointer to the element at the index `idx`
     pub fn get_ptr(&self, idx: usize) -> *const E {
         self._ref().get_ptr(idx)
     }
 
+    /// Returns a mutable pointer to the element at the index `idx`
     pub fn get_ptr_mut(&mut self, idx: usize) -> *mut E {
         self._mut().get_ptr_mut(idx)
     }
 
+    /// Returns whether or not the internal pointer in this array is null
     pub fn is_null(&self) -> bool {
         self.data.is_null()
     }
 
+    /// Returns a reference to the element at the index `idx`
     pub unsafe fn get(&self, idx: usize) -> &E {
         &*self.get_ptr(idx)
     }
 
+    /// Returns a mutable reference to the element at the index `idx`
     pub unsafe fn get_mut(&mut self, idx: usize) -> &mut E {
         &mut *self.get_ptr_mut(idx)
     }
 
+    /// Returns a reference to the label
     pub fn get_label(&self) -> &L {
         self._ref().get_label()
     }
 
+    /// Returns a mutable reference to the label
     pub fn get_label_mut(&mut self) -> &mut L {
         self._mut().get_label_mut()
     }
 
+    /// Returns a reference to a slice into this array
+    ///
+    /// The slice is from element 0 to `len - 1` inclusive.
     pub unsafe fn as_slice(&self, len: usize) -> &[E] {
         core::slice::from_raw_parts(self.get(0), len)
     }
 
+    /// Returns a mutable reference to a slice into this array
+    ///
+    /// The slice is from element 0 to `len - 1` inclusive.
     pub unsafe fn as_slice_mut(&mut self, len: usize) -> &mut [E] {
         core::slice::from_raw_parts_mut(self.get_mut(0), len)
     }
 
+    /// Returns an iterator into this array, consuming the array in the process
     pub unsafe fn into_iter(mut self, len: usize) -> BaseArrayIter<E, L, P> {
         let current = self.get_mut(0) as *mut E;
         let end = current.add(len);
@@ -194,6 +215,8 @@ where
     L: Clone,
     P: UnsafePtr<MemBlock<E, L>>,
 {
+    /// Clones the elements and label of this array into a new array of the same
+    /// size
     pub unsafe fn clone(&self, len: usize) -> Self {
         Self::new(self.get_label().clone(), len, |_, i| self.get(i).clone())
     }
