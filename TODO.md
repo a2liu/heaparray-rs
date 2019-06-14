@@ -1,6 +1,6 @@
 # TODO
 
-### Producton-Ready Version, MVC
+### Producton-Ready Version, MVP
 - [ ] Verify correctness w/ lots and lots of tests on `MemBlock`, `BaseArray`
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
