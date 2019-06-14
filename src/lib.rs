@@ -57,9 +57,8 @@ let mut array = HeapArray::with_label(
 ```
 
 ## Dynamically Sized Types
-This crate enables dynamically sized types by storing arbitrary sized data next
-to array; from the [Rust documentation on exotically sized types][rust-docs-dsts],
-at the end of the section on dynamically-sized types:
+The [Rust documentation on exotically sized types][rust-docs-dsts],
+at the end of the section on dynamically-sized types states that:
 
 [rust-docs-dsts]: https://doc.rust-lang.org/nomicon/exotic-sizes.html
 
