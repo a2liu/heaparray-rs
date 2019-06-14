@@ -283,7 +283,7 @@ impl<E, L> MemBlock<E, L> {
     /// You will need to initialize the elements of the block yourself:
     ///
     /// ```rust
-    /// use heaparray::base::mem_block::MemBlock;
+    /// use heaparray::base::MemBlock;
     /// use core::ptr;
     /// let len = 100;
     /// let initialize = |i| { i * i };
@@ -314,7 +314,7 @@ impl<E, L> MemBlock<E, L> {
     /// You will need to initialize the label yourself to use it:
     ///
     /// ```rust
-    /// use heaparray::base::mem_block::MemBlock;
+    /// use heaparray::base::MemBlock;
     /// use core::ptr;
     /// let len = 100;
     /// let initial_value = 12;
@@ -327,7 +327,7 @@ impl<E, L> MemBlock<E, L> {
     /// ... and also initialize the elements of the block yourself:
     ///
     /// ```rust
-    /// use heaparray::base::mem_block::MemBlock;
+    /// use heaparray::base::MemBlock;
     /// use core::ptr;
     /// let len = 100;
     /// let initialize = |i| { i * i };

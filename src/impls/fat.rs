@@ -2,7 +2,7 @@
 //!
 //! This is the typical representation of unsized references in Rust,
 //! and is thus also the default implementation of `HeapArray` as imported by `use heaparray::*;`
-use super::base::{BaseArray, BaseArrayIter};
+use crate::base::{BaseArray, BaseArrayIter};
 use crate::prelude::*;
 
 /// Heap-allocated array, with array size stored with the pointer to the memory.
@@ -11,14 +11,14 @@ use crate::prelude::*;
 ///
 /// Creating an array:
 /// ```rust
-/// use heaparray::base::*;
+/// use heaparray::impls::*;
 /// let len = 10;
 /// let array = FatPtrArray::new(len, |idx| idx + 3);
 /// ```
 ///
 /// Indexing works as you would expect:
 /// ```rust
-/// # use heaparray::base::*;
+/// # use heaparray::impls::*;
 /// # let mut array = FatPtrArray::new(10, |idx| idx + 3);
 /// array[3] = 2;
 /// assert!(array[3] == 2);
@@ -27,7 +27,7 @@ use crate::prelude::*;
 /// Notably, you can take ownership of objects back from the container:
 ///
 /// ```rust
-/// # use heaparray::base::*;
+/// # use heaparray::impls::*;
 /// let mut array = FatPtrArray::new(10, |_| Vec::<u8>::new());
 /// let replacement_object = Vec::new();
 /// let owned_object = array.insert(0, replacement_object);
@@ -39,7 +39,7 @@ use crate::prelude::*;
 /// the array using the `FatPtrArray::with_label` function:
 ///
 /// ```rust
-/// # use heaparray::base::*;
+/// # use heaparray::impls::*;
 /// struct MyLabel {
 ///     pub even: usize,
 ///     pub odd: usize,
@@ -67,8 +67,6 @@ pub struct FatPtrArray<E, L = ()> {
     data: BaseArray<E, L>,
     len: usize,
 }
-
-impl<E, L> BaseArrayRef for FatPtrArray<E, L> {}
 
 impl<E, L> Clone for FatPtrArray<E, L>
 where

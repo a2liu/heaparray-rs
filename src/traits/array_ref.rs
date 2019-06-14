@@ -1,6 +1,6 @@
 use core::sync::atomic::Ordering;
 
-/// A reference to an array, whose clone points to the same data.
+/*/// A reference to an array, whose clone points to the same data.
 ///
 /// Allows for idiomatic cloning of array references:
 ///
@@ -22,7 +22,7 @@ pub trait ArrayRef: Clone + Sized {
     fn clone(ptr: &Self) -> Self {
         ptr.clone()
     }
-}
+}*/
 
 /// Atomically modified array reference.
 ///

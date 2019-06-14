@@ -42,7 +42,7 @@ struct MyLabel {
     pub odd: usize,
 }
 
-let mut array = HeapArray::with_label(
+let array = HeapArray::with_label(
     MyLabel { even: 0, odd: 0 },
     100,
     |label, index| {
@@ -107,20 +107,25 @@ fn main() {
 
 extern crate atomic_types;
 extern crate const_utils;
-// extern crate containers_rs as containers;
+extern crate containers_rs as containers;
 
 mod api;
 pub mod base;
+pub mod impls;
 // pub mod naive_rc;
 mod traits;
 
-mod prelude {
+mod api_prelude {
     pub use crate::traits::*;
-    // pub use containers::{Container, CopyMap};
-    // pub(crate) use core::fmt;
-    // pub(crate) use core::mem;
+    pub use containers::{Container, CopyMap};
+}
+
+mod prelude {
+    pub use crate::api_prelude::*;
+    pub(crate) use core::fmt;
+    pub(crate) use core::mem;
     // pub(crate) use core::mem::ManuallyDrop;
-    // pub(crate) use core::ops::{Index, IndexMut};
+    pub(crate) use core::ops::{Index, IndexMut};
     // pub(crate) use core::ptr;
 }
 
