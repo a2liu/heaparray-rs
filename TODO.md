@@ -8,7 +8,7 @@
   ```
   src
   ├── api.rs -- done
-  ├── memory
+  ├── base
   │   ├── alloc_utils.rs -- done
   │   ├── base.rs
   │   ├── mem_block.rs -- done
