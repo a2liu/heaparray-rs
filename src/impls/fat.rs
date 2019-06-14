@@ -159,12 +159,6 @@ impl<E, L> LabelledArray<E, L> for FatPtrArray<E, L> {
             len,
         }
     }
-    unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
-        Self {
-            data: BaseArray::new_lazy(label, len),
-            len,
-        }
-    }
     fn get_label(&self) -> &L {
         self.data.get_label()
     }
@@ -209,6 +203,9 @@ impl<E, L> SliceArray<E> for FatPtrArray<E, L> {
         let len = self.len();
         unsafe { self.data.as_slice(len) }
     }
+}
+
+impl<E, L> SliceArrayMut<E> for FatPtrArray<E, L> {
     fn as_slice_mut(&mut self) -> &mut [E] {
         let len = self.len();
         unsafe { self.data.as_slice_mut(len) }

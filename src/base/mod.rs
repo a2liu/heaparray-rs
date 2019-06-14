@@ -1,4 +1,6 @@
-//! Module for simple operations on memory.
+/*!
+Defines the `BaseArray` struct.
+*/
 
 mod alloc_utils;
 mod base;

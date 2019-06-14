@@ -13,7 +13,8 @@
   │   ├── base.rs
   │   ├── mem_block.rs -- done
   │   ├── ptr_utils.rs -- done
-  │   └── mod.rs
+  │   └── mod.rs -- done
+  ├── impls -- done
   └── lib.rs
   ```
 

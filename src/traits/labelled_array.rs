@@ -5,8 +5,6 @@ pub trait LabelledArray<E, L>: containers::CopyMap<usize, E> {
     fn with_label<F>(label: L, len: usize, func: F) -> Self
     where
         F: FnMut(&mut L, usize) -> E;
-    /// Create a new array, without initializing the values in it.
-    unsafe fn with_label_unsafe(label: L, len: usize) -> Self;
 
     /// Get a reference to the label.
     fn get_label(&self) -> &L;

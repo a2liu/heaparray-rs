@@ -28,8 +28,8 @@ pub trait ArrayRef: Clone + Sized {
 ///
 /// Guarrantees that all operations on the
 /// array reference are atomic (i.e. all changes to the internal array pointer).
-/// Additionally, guarrantees that all reads to a reference of this pointer use
-/// atomic loads.
+/// Additionally, guarrantees that all reads of the value of the internal pointer
+/// are done with atomic loads.
 ///
 /// For more details on the expected behavior of these methods, see the
 /// documentation for `core::sync::atomic::AtomicPtr`.

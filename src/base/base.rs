@@ -23,6 +23,10 @@ use core::{mem, ptr};
 /// `new_lazy` do uphold this invariant, this type can be constructed without
 /// allocating anything (e.g. `BaseArray::<u8, ()>::from_ptr(core::ptr::null())`).
 ///
+/// # Memory Leaks
+/// This struct doesn't perform memory cleanup automatically; it must be done manually
+/// with methods `drop` or `drop_lazy`.
+///
 /// # Safety
 /// Generally, the functions of this struct are safe given that the length that
 /// you provide to the function is less than or equal to that of the underlying
@@ -114,16 +118,26 @@ where
     }
 
     /// Runs destructor code for elements and for label, then deallocates block.
+    ///
+    /// # Safety
+    /// Function is safe as long as the underlying array is at least length `len`,
+    /// and the elements in the array have been initialized.
     pub unsafe fn drop(&mut self, len: usize) {
         self._mut().dealloc(len)
     }
 
     /// Deallocates block without running destructor code for elements or label.
+    ///
+    /// # Safety
+    /// Function is safe as long as the underlying array is at least length `len`.
     pub unsafe fn drop_lazy(&mut self, len: usize) {
         self._mut().dealloc_lazy(len)
     }
 
     /// Cast this array into a different array.
+    ///
+    /// Doesn't alter the length information of the array at all, or perform
+    /// alignment/reference checks.
     pub unsafe fn cast_into<T, Q>(self) -> BaseArray<T, L, Q>
     where
         Q: UnsafePtr<MemBlock<T, L>>,
@@ -133,6 +147,9 @@ where
     }
 
     /// Cast a reference to this array into a reference to a different array.
+    ///
+    /// Doesn't alter the length information of the array at all, or perform
+    /// alignment/reference checks.
     pub unsafe fn cast_ref<T, Q>(&self) -> &BaseArray<T, L, Q>
     where
         Q: UnsafePtr<MemBlock<T, L>>,
@@ -142,6 +159,9 @@ where
 
     /// Cast a mutable reference to this array into a mutable reference to a
     /// different array.
+    ///
+    /// Doesn't alter the length information of the array at all, or perform
+    /// alignment/reference checks.
     pub unsafe fn cast_mut<T, Q>(&mut self) -> &mut BaseArray<T, L, Q>
     where
         Q: UnsafePtr<MemBlock<T, L>>,
@@ -150,11 +170,21 @@ where
     }
 
     /// Returns a pointer to the element at the index `idx`
+    ///
+    /// # Safety
+    /// Pointer is safe to dereference as long as the underlying array has a
+    /// length greater than `idx`, and the element at `idx` has already been
+    /// initialized.
     pub fn get_ptr(&self, idx: usize) -> *const E {
         self._ref().get_ptr(idx)
     }
 
     /// Returns a mutable pointer to the element at the index `idx`
+    ///
+    /// # Safety
+    /// Pointer is safe to dereference as long as the underlying array has a
+    /// length greater than `idx`, and the element at `idx` has already been
+    /// initialized.
     pub fn get_ptr_mut(&mut self, idx: usize) -> *mut E {
         self._mut().get_ptr_mut(idx)
     }
@@ -165,11 +195,19 @@ where
     }
 
     /// Returns a reference to the element at the index `idx`
+    ///
+    /// # Safety
+    /// Safe as long as the underlying array has a length greater than `idx`, and
+    /// the element at `idx` has already been initialized.
     pub unsafe fn get(&self, idx: usize) -> &E {
         &*self.get_ptr(idx)
     }
 
     /// Returns a mutable reference to the element at the index `idx`
+    ///
+    /// # Safety
+    /// Safe as long as the underlying array has a length greater than `idx`, and
+    /// the element at `idx` has already been initialized.
     pub unsafe fn get_mut(&mut self, idx: usize) -> &mut E {
         &mut *self.get_ptr_mut(idx)
     }
