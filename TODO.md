@@ -1,8 +1,7 @@
 # TODO
 
-### Producton-Ready Version
-- [ ] Verify correctness w/ lots and lots of tests on `MemBlock`, `BaseArray` and
-  `AtomicPtrArray`, then extend those tests to `ThinPtrArray` and so on
+### Producton-Ready Version, MVC
+- [ ] Verify correctness w/ lots and lots of tests on `MemBlock`, `BaseArray`
 - [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
 
@@ -11,27 +10,11 @@
   ├── alloc_utils.rs -- done
   ├── api.rs -- done
   ├── base
-  │   ├── atomic.rs
   │   ├── base.rs
-  │   ├── fat.rs
-  │   ├── iter.rs
   │   ├── mem_block.rs -- done
   │   ├── mod.rs
-  │   └── thin.rs
   ├── lib.rs
-  ├── naive_rc
-  │   ├── arc_array.rs
-  │   ├── generic.rs
-  │   ├── mod.rs
-  │   ├── ref_counters.rs
-  │   └── types.rs
-  ├── ptr_utils.rs -- done
-  └── traits
-      ├── array_ref.rs
-      ├── labelled_array.rs
-      ├── make_array.rs
-      ├── mod.rs
-      └── slice_array.rs
+  └── ptr_utils.rs -- done
   ```
 
 - [ ] Begin changelog and yank other versions
