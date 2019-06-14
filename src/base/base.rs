@@ -1,10 +1,11 @@
-use super::mem_block::*;
-use crate::prelude::*;
+use crate::base::mem_block::*;
 use crate::ptr_utils::UnsafePtr;
+use crate::traits::AtomicArrayRef;
 use atomic_types::*;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use core::sync::atomic::Ordering;
+use core::{mem, ptr};
 
 /// Base array that handles converting a memory block into a constructible object.
 ///

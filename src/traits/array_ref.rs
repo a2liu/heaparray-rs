@@ -1,11 +1,5 @@
 use core::sync::atomic::Ordering;
 
-/// A reference to a heap-allocated array.
-///
-/// Should be paired with exactly one of either `heaparray::UnsafeArrayRef`
-/// or `heaparray::ArrayRef`.
-pub trait BaseArrayRef {}
-
 /// A reference to an array, whose clone points to the same data.
 ///
 /// Allows for idiomatic cloning of array references:
