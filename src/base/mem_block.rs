@@ -396,12 +396,12 @@ impl<E, L> MemBlock<E, L> {
         block
     }
 
-    /// Get an immutable reference to the label of this array.
+    /// Returns an immutable reference to the label of this array.
     pub fn get_label(&self) -> &L {
         &self.label
     }
 
-    /// Get a mutable reference to the label of this array.
+    /// Returns a mutable reference to the label of this array.
     pub fn get_label_mut(&mut self) -> &mut L {
         &mut self.label
     }
