@@ -33,16 +33,6 @@ array[3] = 2;
 assert!(array[3] == 2);
 ```
 
-You can take ownership of objects back from the container:
-
-```rust
-let mut array = HeapArray::new(10, |_| Vec::<u8>::new());
-let replacement_object = Vec::new();
-let owned_object = array.insert(0, replacement_object);
-```
-
-but you need to give the array a replacement object to fill its slot with.
-
 Additionally, you can customize what information should be stored alongside
 the elements in the array using the `HeapArray::with_label` function:
 
@@ -67,70 +57,52 @@ let mut array = HeapArray::with_label(
 ```
 
 ### Dynamically Sized Types
-It has two main features that provide the foundation for the rest:
+This crate enables dynamically sized types by storing arbitrary sized data next
+to array; from the [Rust documentation on exotically sized types][rust-docs-dsts],
+at the end of the section on dynamically-sized types:
 
-- **Storing data next to an array:** From the
-  [Rust documentation on exotically sized types](https://doc.rust-lang.org/nomicon/exotic-sizes.html),
-  at the end of the section on dynamically-sized types:
+[rust-docs-dsts]: https://doc.rust-lang.org/nomicon/exotic-sizes.html
 
-  > Currently the only properly supported way to create a custom DST is by
-  > making your type generic and performing an unsizing coercion
-  > ...
-  > (Yes, custom DSTs are a largely half-baked feature for now.)
+> Currently the only properly supported way to create a custom DST is by
+> making your type generic and performing an unsizing coercion...
+> (Yes, custom DSTs are a largely half-baked feature for now.)
 
-  This crate aims to provide *some* of that functionality; the code that
-  the docs give is the following:
+This crate aims to provide *some* of that functionality; the code that
+the docs give is the following:
 
-  ```rust
-  struct MySuperSliceable<T: ?Sized> {
-      info: u32,
-      data: T
-  }
+```rust
+struct MySuperSliceable<T: ?Sized> {
+    info: u32,
+    data: T
+}
 
-  fn main() {
-      let sized: MySuperSliceable<[u8; 8]> = MySuperSliceable {
-          info: 17,
-          data: [0; 8],
-      };
+fn main() {
+    let sized: MySuperSliceable<[u8; 8]> = MySuperSliceable {
+        info: 17,
+        data: [0; 8],
+    };
 
-      let dynamic: &MySuperSliceable<[u8]> = &sized;
+    let dynamic: &MySuperSliceable<[u8]> = &sized;
 
-      // prints: "17 [0, 0, 0, 0, 0, 0, 0, 0]"
-      println!("{} {:?}", dynamic.info, &dynamic.data);
-  }
-  ```
+    // prints: "17 [0, 0, 0, 0, 0, 0, 0, 0]"
+    println!("{} {:?}", dynamic.info, &dynamic.data);
+}
+```
 
-  using this crate, the `MySuperSliceable<[u8]>` type would be
-  implemented like this:
+using this crate, the `MySuperSliceable<[u8]>` type would be
+implemented like this:
 
-  ```rust
-  use heaparray::*;
+```rust
+use heaparray::*;
 
-  type MySuperSliceable = HeapArray<u8, u32>;
+type MySuperSliceable = HeapArray<u8, u32>;
 
-  fn main() {
-      let info = 17;
-      let len = 8;
-      let dynamic = MySuperSliceable::with_label(info, len, |_,_| 0);
-      println!("{:?}", dynamic);
-  }
-  ```
-
-- **Thin pointer arrays:** in Rust, unsized structs are referenced with
-  pointers that are stored with an associated length.
-  This behavior isn't always desired, so this crate provides
-  both thin and fat pointer-referenced arrays, where the length is stored
-  with the data instead of with the pointer in the thin pointer variant.
-
-### Use of `unsafe` Keyword
-This library relies heavily on the use of the `unsafe` keyword to do both
-reference counting and atomic operations; there are 40 instances total,
-not including tests.
-
-### Customizability
-All of the implementation details of this crate are public and documented;
-if you'd like to implement your own version of the tools available through
-this crate, note that you don't need to reinvent the wheel; many of the types in
-this crate are generic over certain traits, so you might not need to do that much.
+fn main() {
+    let info = 17;
+    let len = 8;
+    let dynamic = MySuperSliceable::with_label(info, len, |_,_| 0);
+    println!("{:?}", dynamic);
+}
+```
 
 License: MIT
