@@ -23,3 +23,14 @@ pub fn ref_dealloc_normal() {
     unsafe { blk.as_mut().dealloc(200) };
     after_alloc(blk, info);
 }
+
+#[test]
+pub fn ref_dealloc_lazy_leak() {
+    let vec = Vec::with_capacity(10);
+    let info = before_alloc();
+    let mut blk = unsafe { MemBlock::<u8, Vec<u8>>::new(vec, 200) };
+    unsafe {
+        blk.as_mut().dealloc_lazy(200);
+    }
+    after_alloc(blk, info);
+}
