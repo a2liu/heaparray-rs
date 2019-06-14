@@ -64,6 +64,7 @@ pub fn ref_alloc_efficient() {
         blk.as_mut().dealloc(200);
     }
     let info_diff = before_alloc().relative_to(&info_2);
+
     assert!(
         info_diff.bytes_dealloc == alloc_size,
         "Deallocation had incorrect size;\n\
@@ -78,3 +79,8 @@ pub fn ref_alloc_efficient() {
         info_diff
     );
 }
+
+// #[test]
+// pub fn block_alignment() {
+//     let blk = MemBlock::<(), Vec<
+// }
