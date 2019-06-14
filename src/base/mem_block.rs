@@ -68,12 +68,10 @@ use core::ptr::NonNull;
 ///
 /// The above are sufficient for a memory block to be safely deallocated; depending
 /// on the invariants your codebase holds, they may not be necessary.
-#[repr(transparent)]
+#[repr(align(1))]
 pub struct MemBlock<E, L = ()> {
-    /// Metadata about the block. Will always be initialized on a valid `MemBlock`
-    /// instance, as discussed in the invarants section above.
     label: ManuallyDrop<L>,
-    phantom: PhantomData<E>,
+    phantom: PhantomData<(E, L)>,
 }
 
 impl<E, L> MemBlock<E, L> {
@@ -81,7 +79,7 @@ impl<E, L> MemBlock<E, L> {
     ///
     /// This function is used to maintain the invariant that all `MemBlock` instances
     /// are of size (in bytes) less than or equal to `core::isize::MAX`.
-    pub const fn block_max_len() -> usize {
+    pub const fn max_len() -> usize {
         let max_len = core::isize::MAX as usize;
         let max_len_calc = {
             let (esize, ealign) = size_align::<E>();
@@ -113,7 +111,7 @@ impl<E, L> MemBlock<E, L> {
     /// # Panics
     /// This method panics if `idx` is greater than or equal to the largest value
     /// that this `MemBlock`'s length could be (as defined by
-    /// `MemBlock::block_max_len()`), unless the feature `mem-block-skip-size-check`
+    /// `MemBlock::max_len()`), unless the feature `mem-block-skip-size-check`
     /// is enabled.
     ///
     /// # Safety
@@ -132,16 +130,16 @@ impl<E, L> MemBlock<E, L> {
     ///
     /// ### Safety with `mem-block-skip-size-check` Enabled
     /// In addition to the above conditions, `idx` must also be less than
-    /// `MemBlock::block_max_len()`. This is checked at runtime with an
+    /// `MemBlock::max_len()`. This is checked at runtime with an
     /// assertion, unless the feature `mem-block-skip-size-check` is enabled,
     /// and causes undefined behavior with pointer math.
     pub fn get_ptr(&self, idx: usize) -> *const E {
         #[cfg(not(feature = "mem-block-skip-size-check"))]
         assert!(
-            idx < Self::block_max_len(),
+            idx < Self::max_len(),
             "Index {} is invalid: Block cannot be bigger than core::isize::MAX bytes ({} elements)",
             idx,
-            Self::block_max_len()
+            Self::max_len()
         );
 
         // let element = (&*self.elements) as *const E as *mut E;
@@ -156,7 +154,7 @@ impl<E, L> MemBlock<E, L> {
     /// # Panics
     /// This method panics if `idx` is greater than or equal to the largest value
     /// that this `MemBlock`'s length could be (as defined by
-    /// `MemBlock::block_max_len()`), unless the feature `mem-block-skip-size-check`
+    /// `MemBlock::max_len()`), unless the feature `mem-block-skip-size-check`
     /// is enabled.
     ///
     /// # Safety
@@ -176,7 +174,7 @@ impl<E, L> MemBlock<E, L> {
     ///
     /// ### Safety with `mem-block-skip-size-check` Enabled
     /// In addition to the above conditions, `idx` must also be less than
-    /// `MemBlock::block_max_len()`. This is checked at runtime with an
+    /// `MemBlock::max_len()`. This is checked at runtime with an
     /// assertion, unless the feature `mem-block-skip-size-check` is enabled,
     /// and causes undefined behavior with pointer math.
     pub fn get_ptr_mut(&mut self, idx: usize) -> *mut E {
@@ -188,7 +186,7 @@ impl<E, L> MemBlock<E, L> {
     ///
     /// # Panics
     /// This method panics if `len` is larger than the maximum size for a `MemBlock`,
-    /// as defined by `MemBlock::block_max_len()`, unless the feature
+    /// as defined by `MemBlock::max_len()`, unless the feature
     /// `mem-block-skip-size-check` is enabled. It also panics if `len` is too
     /// large for the target platform or the alignment of the block is incorrect,
     /// unless the feature `mem-block-skip-layout-check` is enabled.
@@ -211,16 +209,16 @@ impl<E, L> MemBlock<E, L> {
     ///
     /// ### Safety with `mem-block-skip-size-check` Enabled
     /// In addition to the above conditions, `len` must also be less than or equal to
-    /// `MemBlock::<E,L>::block_max_len()`. This is checked at runtime with an
+    /// `MemBlock::<E,L>::max_len()`. This is checked at runtime with an
     /// assertion, unless the feature `mem-block-skip-size-check` is enabled, and
     /// causes undefined behavior with pointer math.
     pub unsafe fn dealloc(&mut self, len: usize) {
         #[cfg(not(feature = "mem-block-skip-size-check"))]
         assert!(
-            len <= Self::block_max_len(),
+            len <= Self::max_len(),
             "Deallocating array of length {} is invalid: Blocks cannot be larger than core::isize::MAX bytes ({} elements)",
             len,
-            Self::block_max_len()
+            Self::max_len()
         );
 
         ManuallyDrop::drop(&mut self.label);
@@ -254,7 +252,7 @@ impl<E, L> MemBlock<E, L> {
     ///
     /// ### Safety with `mem-block-skip-layout-check` Enabled
     /// In addition to the above conditions, `len` must also be less than or equal to
-    /// `MemBlock::<E,L>::block_max_len()`. This is checked at runtime with an
+    /// `MemBlock::<E,L>::max_len()`. This is checked at runtime with an
     /// assertion, unless the feature `mem-block-skip-layout-check` is enabled, and
     /// causes undefined behavior with pointer math.
     pub unsafe fn dealloc_lazy(&mut self, len: usize) {
@@ -346,10 +344,10 @@ impl<E, L> MemBlock<E, L> {
     pub unsafe fn alloc(len: usize) -> NonNull<Self> {
         #[cfg(not(feature = "mem-block-skip-size-check"))]
         assert!(
-            len <= Self::block_max_len(),
+            len <= Self::max_len(),
             "New array of length {} is invalid: Cannot allocate a block larger than core::isize::MAX bytes ({} elements)",
             len,
-            Self::block_max_len()
+            Self::max_len()
         );
 
         let (size, align) = Self::memory_layout(len);

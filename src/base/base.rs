@@ -37,7 +37,7 @@ where
     phantom: PhantomData<(E, L, *mut u8)>,
 }
 
-/// Iterator for an instance of `BaseArray` by ownership.
+/// Iterator for an instance of `BaseArray` that takes ownership of the array
 ///
 /// `BaseArray` can't be safely iterated over, so this object can only be constructed
 /// via the unsafe method `BaseArray::into_iter`, which takes as a parameter an
