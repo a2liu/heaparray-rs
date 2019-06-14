@@ -4,10 +4,6 @@ pub const LENGTH: usize = 10;
 pub type Load = Large;
 pub type LabelLoad = Large;
 
-pub trait ArrayTest: containers::Array<Load> + Sized {
-    fn get_self(len: usize) -> Self;
-}
-
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 pub struct Light {
     _data: u8,

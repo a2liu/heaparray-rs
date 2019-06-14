@@ -1,29 +1,43 @@
-mod memory_model;
+#[cfg(not(bench))]
+pub mod memory_model;
 
 extern crate containers_rs as containers;
 extern crate heaparray;
+extern crate interloc;
+
+use interloc::*;
+use std::alloc::System;
 
 mod prelude {
     pub use crate::memory_model::test_utils::*;
-    pub use heaparray::*;
+    pub use heaparray::base::*;
 }
 
-#[cfg(not(bench))]
-extern crate interloc;
+pub struct TestMonitor {
+    local: ThreadMonitor,
+}
 
-#[cfg(not(bench))]
-use interloc::*;
+impl TestMonitor {
+    // This needs to be const to be usable in static functions
+    pub const fn new() -> Self {
+        Self {
+            local: ThreadMonitor::new(),
+        }
+    }
 
-#[cfg(not(bench))]
-use memory_model::monitor::*;
+    pub fn local_info(&self) -> AllocInfo {
+        self.local.info()
+    }
+}
 
-#[cfg(not(bench))]
-use std::alloc::System;
+impl AllocMonitor for TestMonitor {
+    fn monitor(&self, layout: Layout, action: AllocAction) {
+        self.local.monitor(layout, action);
+    }
+}
 
-#[cfg(not(bench))]
 static TEST_MONITOR: TestMonitor = TestMonitor::new();
 
-#[cfg(not(bench))]
 #[global_allocator]
 static GLOBAL: InterAlloc<System, TestMonitor> = InterAlloc {
     inner: System,
