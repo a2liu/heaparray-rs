@@ -260,12 +260,16 @@ impl<E, L> MemBlock<E, L> {
         let layout = if cfg!(feature = "mem-block-skip-layout-check") {
             Layout::from_size_align_unchecked(size, align)
         } else {
-            Layout::from_size_align(size, align).expect(&format!(
-                "MemBlock of length {} is invalid for this platform; it has (size, align) = ({}, {})",
-                len,
-                size,
-                align
-            ))
+            match Layout::from_size_align(size, align) {
+                Ok(layout) => layout,
+                Err(err) => {
+                    panic!(
+                        "MemBlock of length {} is invalid for this platform; \n\
+                         it has (size, align) = ({}, {}), and caused error \n{:#?}",
+                        len, size, align, err
+                    );
+                }
+            }
         };
 
         deallocate(self, layout);
@@ -299,7 +303,9 @@ impl<E, L> MemBlock<E, L> {
     /// does under the hood.
     pub unsafe fn new<'a>(label: L, len: usize) -> NonNull<Self> {
         let mut block = Self::alloc(len);
-        ptr::write(&mut block.as_mut().label, ManuallyDrop::new(label));
+        if mem::size_of::<L>() != 0 {
+            ptr::write(&mut block.as_mut().label, ManuallyDrop::new(label));
+        }
         block
     }
 
@@ -355,12 +361,16 @@ impl<E, L> MemBlock<E, L> {
         let layout = if cfg!(feature = "mem-block-skip-layout-check") {
             Layout::from_size_align_unchecked(size, align)
         } else {
-            Layout::from_size_align(size, align).expect(&format!(
-                "MemBlock of length {} is invalid for this platform; it has (size, align) = ({}, {})",
-                len,
-                size,
-                align
-            ))
+            match Layout::from_size_align(size, align) {
+                Ok(layout) => layout,
+                Err(err) => {
+                    panic!(
+                        "MemBlock of length {} is invalid for this platform; \n\
+                         it has (size, align) = ({}, {}), and caused error \n{:#?}",
+                        len, size, align, err
+                    );
+                }
+            }
         };
 
         if cfg!(feature = "mem-block-allow-null") {
