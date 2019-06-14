@@ -1,5 +1,5 @@
-use crate::base::mem_block::*;
-use crate::ptr_utils::UnsafePtr;
+use super::mem_block::*;
+use super::ptr_utils::UnsafePtr;
 use crate::traits::AtomicArrayRef;
 use atomic_types::*;
 use core::marker::PhantomData;

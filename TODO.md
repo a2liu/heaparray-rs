@@ -7,14 +7,14 @@
 
   ```
   src
-  ├── alloc_utils.rs -- done
   ├── api.rs -- done
-  ├── base
+  ├── memory
+  │   ├── alloc_utils.rs -- done
   │   ├── base.rs
   │   ├── mem_block.rs -- done
-  │   ├── mod.rs
-  ├── lib.rs
-  └── ptr_utils.rs -- done
+  │   ├── ptr_utils.rs -- done
+  │   └── mod.rs
+  └── lib.rs
   ```
 
 - [ ] Begin changelog and yank other versions

@@ -139,11 +139,9 @@ extern crate atomic_types;
 extern crate const_utils;
 // extern crate containers_rs as containers;
 
-mod alloc_utils;
 // mod api;
 pub mod base;
 // pub mod naive_rc;
-mod ptr_utils;
 mod traits;
 
 mod prelude {
