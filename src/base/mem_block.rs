@@ -8,7 +8,6 @@ use const_utils::{cond, max, safe_div};
 use core::alloc::Layout;
 use core::marker::PhantomData;
 use core::mem;
-use core::mem::ManuallyDrop;
 use core::ptr;
 use core::ptr::NonNull;
 use core::sync::atomic::{AtomicPtr, Ordering};
@@ -73,7 +72,7 @@ use core::sync::atomic::{AtomicPtr, Ordering};
 /// on the invariants your codebase holds, they may not be necessary.
 #[repr(align(1))]
 pub struct MemBlock<E, L = ()> {
-    label: ManuallyDrop<L>,
+    label: L,
     phantom: PhantomData<(E, L)>,
 }
 
@@ -308,7 +307,7 @@ impl<E, L> MemBlock<E, L> {
     pub unsafe fn new<'a>(label: L, len: usize) -> NonNull<Self> {
         let mut block = Self::alloc(len);
         if mem::size_of::<L>() != 0 {
-            ptr::write(&mut block.as_mut().label, ManuallyDrop::new(label));
+            ptr::write(&mut block.as_mut().label, label);
         }
         block
     }
