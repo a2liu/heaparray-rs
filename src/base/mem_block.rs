@@ -2,6 +2,8 @@
 //! interactions with memory.
 
 use super::alloc_utils::*;
+use super::traits::BaseArrayPtr;
+use crate::traits::LabelWrapper;
 use const_utils::{cond, max, safe_div};
 use core::alloc::Layout;
 use core::marker::PhantomData;
@@ -9,6 +11,7 @@ use core::mem;
 use core::mem::ManuallyDrop;
 use core::ptr;
 use core::ptr::NonNull;
+use core::sync::atomic::{AtomicPtr, Ordering};
 
 /// An array block that can hold arbitrary information, and cannot be
 /// constructed on the stack.
@@ -36,7 +39,7 @@ use core::ptr::NonNull;
 /// ### Invariant Invalidation
 /// Some crate features invalidate the invariants above. Namely:
 /// - **`mem-block-skip-size-check`** prevents `MemBlock::new`, `MemBlock::new_init`,
-///   `MemBlock::dealloc`, `MemBlock::get_ptr`, and `MemBlock::get_ptr_mut`
+///   `MemBlock::dealloc`, and `MemBlock::get_ptr`
 ///   from checking the size of the array being created or accessed. This can
 ///   cause undefined behavior with pointer arithmetic when accessing elements
 ///   with `MemBlock::get_ptr`; note that `MemBlock::dealloc` and `MemBlock::new_init`
@@ -74,6 +77,8 @@ pub struct MemBlock<E, L = ()> {
     phantom: PhantomData<(E, L)>,
 }
 
+type MutMB<E, L> = *mut MemBlock<E, L>;
+
 impl<E, L> MemBlock<E, L> {
     /// Get the maximum length of a `MemBlock`, based on the types that it contains.
     ///
@@ -104,7 +109,72 @@ impl<E, L> MemBlock<E, L> {
             cond(len == 0, l_align, calc_align),
         )
     }
+}
 
+fn check_len<E, L>(len: usize) {
+    if cfg!(not(feature = "mem-block-skip-size-check")) && len > MemBlock::<E, L>::max_len() {
+        panic!(
+            "Length {} is invalid: Block cannot be bigger than\
+             core::isize::MAX bytes ({} elements)",
+            len,
+            MemBlock::<E, L>::max_len()
+        );
+    }
+}
+
+fn get_layout<E, L>(len: usize) -> Layout {
+    check_len::<E, L>(len);
+    let (size, align) = MemBlock::<E, L>::memory_layout(len);
+    if cfg!(feature = "mem-block-skip-layout-check") {
+        unsafe { Layout::from_size_align_unchecked(size, align) }
+    } else {
+        match Layout::from_size_align(size, align) {
+            Ok(layout) => layout,
+            Err(err) => {
+                panic!(
+                    "MemBlock of length {} is invalid for this platform;\n\
+                     it has (size, align) = ({}, {}), causing error\n{:#?}",
+                    len, size, align, err
+                );
+            }
+        }
+    }
+}
+
+unsafe impl<E, L, W> BaseArrayPtr<E, L> for MutMB<E, W>
+where
+    W: LabelWrapper<L>,
+{
+    unsafe fn alloc(len: usize) -> Self {
+        let layout = get_layout::<E, L>(len);
+        allocate::<MemBlock<E, W>>(layout)
+    }
+    unsafe fn dealloc(&mut self, len: usize) {
+        let layout = get_layout::<E, L>(len);
+        deallocate(self, layout);
+    }
+    unsafe fn from_ptr(ptr: *mut u8) -> Self {
+        ptr as *mut MemBlock<E, W>
+    }
+    fn as_ptr(&self) -> *mut u8 {
+        self.clone() as *const u8 as *mut u8
+    }
+    fn is_null(&self) -> bool {
+        self.clone().is_null()
+    }
+    fn lbl_ptr(&self) -> *mut L {
+        *self as *mut L
+    }
+    fn elem_ptr(&self, idx: usize) -> *mut E {
+        check_len::<E, L>(idx + 1);
+        let e_align = mem::align_of::<E>();
+        let lsize = aligned_size::<L>(e_align);
+        let element = unsafe { (*self as *mut u8).add(lsize) as *mut E };
+        unsafe { element.add(idx) }
+    }
+}
+
+impl<E, L> MemBlock<E, L> {
     /// Returns a `*const` pointer to an object at index `idx`.
     ///
     /// # Panics
@@ -132,52 +202,8 @@ impl<E, L> MemBlock<E, L> {
     /// `MemBlock::max_len()`. This is checked at runtime with an
     /// assertion, unless the feature `mem-block-skip-size-check` is enabled,
     /// and causes undefined behavior with pointer math.
-    pub fn get_ptr(&self, idx: usize) -> *const E {
-        #[cfg(not(feature = "mem-block-skip-size-check"))]
-        assert!(
-            idx < Self::max_len(),
-            "Index {} is invalid: Block cannot be bigger than\
-             core::isize::MAX bytes ({} elements)",
-            idx,
-            Self::max_len()
-        );
-
-        let e_align = mem::align_of::<E>();
-        let lsize = aligned_size::<L>(e_align);
-        let element = unsafe { (self as *const _ as *const u8).add(lsize) as *const E };
-        unsafe { element.add(idx) }
-    }
-
-    /// Returns a `*mut` pointer to an object at index `idx`.
-    ///
-    /// # Panics
-    /// This method panics if `idx` is greater than or equal to the largest value
-    /// that this `MemBlock`'s length could be (as defined by
-    /// `MemBlock::max_len()`), unless the feature `mem-block-skip-size-check`
-    /// is enabled.
-    ///
-    /// # Safety
-    /// The following must hold to safely dereference the pointer `r.get_ptr(idx)`
-    /// for some `let r: &MemBlock<E,L>`:
-    ///
-    /// 1. The memory pointed to by `r` has not already been deallocated
-    /// 2. `r` was allocated with a size, large enough to hold at least
-    ///    `idx + 1` many elements; this means that its size is at least the
-    ///    size of `L` aligned to the alignment of `E`, plus the size of `E`
-    ///    times `idx + 1`, i.e. `size_of(L).aligned_to(E) + size_of(E) * (idx + 1)`
-    /// 3. The element pointed to by `r.get_ptr_mut(idx)` has been properly
-    ///    initialized.
-    ///
-    /// The above is sufficient to ensure safe behavior using the default feature
-    /// set of this crate. See below for exceptions.
-    ///
-    /// ### Safety with `mem-block-skip-size-check` Enabled
-    /// In addition to the above conditions, `idx` must also be less than
-    /// `MemBlock::max_len()`. This is checked at runtime with an
-    /// assertion, unless the feature `mem-block-skip-size-check` is enabled,
-    /// and causes undefined behavior with pointer math.
-    pub fn get_ptr_mut(&mut self, idx: usize) -> *mut E {
-        self.get_ptr(idx) as *mut E
+    pub fn get_ptr(&self, idx: usize) -> *mut E {
+        (self as *const Self as *mut Self).elem_ptr(idx)
     }
 
     /// Deallocates a reference to this struct, calling the destructor of its
@@ -212,18 +238,11 @@ impl<E, L> MemBlock<E, L> {
     /// assertion, unless the feature `mem-block-skip-size-check` is enabled, and
     /// causes undefined behavior with pointer math.
     pub unsafe fn dealloc(&mut self, len: usize) {
-        #[cfg(not(feature = "mem-block-skip-size-check"))]
-        assert!(
-            len <= Self::max_len(),
-            "Deallocating array of length {} is invalid:\
-             Blocks cannot be larger than core::isize::MAX bytes ({} elements)",
-            len,
-            Self::max_len()
-        );
+        check_len::<E, L>(len);
 
         ptr::drop_in_place(self.get_label_mut());
         for i in 0..len {
-            ptr::drop_in_place(self.get_ptr_mut(i));
+            ptr::drop_in_place(self.get_ptr(i));
         }
         self.dealloc_lazy(len);
     }
@@ -256,22 +275,7 @@ impl<E, L> MemBlock<E, L> {
     /// assertion, unless the feature `mem-block-skip-layout-check` is enabled, and
     /// causes undefined behavior with pointer math.
     pub unsafe fn dealloc_lazy(&mut self, len: usize) {
-        let (size, align) = Self::memory_layout(len);
-        let layout = if cfg!(feature = "mem-block-skip-layout-check") {
-            Layout::from_size_align_unchecked(size, align)
-        } else {
-            match Layout::from_size_align(size, align) {
-                Ok(layout) => layout,
-                Err(err) => {
-                    panic!(
-                        "MemBlock of length {} is invalid for this platform;\n\
-                         it has (size, align) = ({}, {}), causing error\n{:#?}",
-                        len, size, align, err
-                    );
-                }
-            }
-        };
-
+        let layout = get_layout::<E, L>(len);
         deallocate(self, layout);
     }
 
@@ -294,7 +298,7 @@ impl<E, L> MemBlock<E, L> {
     /// let mut block = unsafe { MemBlock::<usize, ()>::new((), len) };
     /// for i in 0..len {
     ///     unsafe {
-    ///         ptr::write(block.as_mut().get_ptr_mut(i), initialize(i));
+    ///         ptr::write(block.as_mut().get_ptr(i), initialize(i));
     ///     }
     /// }
     /// ```
@@ -340,7 +344,7 @@ impl<E, L> MemBlock<E, L> {
     /// let mut block = unsafe { MemBlock::<usize, ()>::new((), len) };
     /// for i in 0..len {
     ///     unsafe {
-    ///         ptr::write(block.as_mut().get_ptr_mut(i), initialize(i));
+    ///         ptr::write(block.as_mut().get_ptr(i), initialize(i));
     ///     }
     /// }
     /// ```
@@ -348,31 +352,9 @@ impl<E, L> MemBlock<E, L> {
     /// Note that the above is almost the exact same thing that `MemBlock::new_init`
     /// does under the hood.
     pub unsafe fn alloc(len: usize) -> NonNull<Self> {
-        #[cfg(not(feature = "mem-block-skip-size-check"))]
-        assert!(
-            len <= Self::max_len(),
-            "New array of length {} is invalid: Cannot allocate a block\
-             larger than core::isize::MAX bytes ({} elements)",
-            len,
-            Self::max_len()
-        );
+        check_len::<E, L>(len);
 
-        let (size, align) = Self::memory_layout(len);
-
-        let layout = if cfg!(feature = "mem-block-skip-layout-check") {
-            Layout::from_size_align_unchecked(size, align)
-        } else {
-            match Layout::from_size_align(size, align) {
-                Ok(layout) => layout,
-                Err(err) => {
-                    panic!(
-                        "MemBlock of length {} is invalid for this platform;\n\
-                         it has (size, align) = ({}, {}), causing error\n{:#?}",
-                        len, size, align, err
-                    );
-                }
-            }
-        };
+        let layout = get_layout::<E, L>(len);
 
         if cfg!(feature = "mem-block-skip-ptr-check") {
             NonNull::new_unchecked(allocate::<Self>(layout))
@@ -400,7 +382,7 @@ impl<E, L> MemBlock<E, L> {
         let block_ref = unsafe { block.as_mut() };
         for i in 0..len {
             let item = func(&mut block_ref.label, i);
-            unsafe { ptr::write(block_ref.get_ptr_mut(i), item) }
+            unsafe { ptr::write(block_ref.get_ptr(i), item) }
         }
         block
     }
@@ -413,5 +395,64 @@ impl<E, L> MemBlock<E, L> {
     /// Returns a mutable reference to the label of this array.
     pub fn get_label_mut(&mut self) -> &mut L {
         &mut self.label
+    }
+}
+
+unsafe impl<E, L, W> BaseArrayPtr<E, L> for NonNull<MemBlock<E, W>>
+where
+    W: LabelWrapper<L>,
+{
+    unsafe fn alloc(len: usize) -> Self {
+        let ptr = MutMB::alloc(len);
+        if cfg!(feature = "mem-block-skip-ptr-check") {
+            NonNull::new_unchecked(ptr)
+        } else {
+            NonNull::new(ptr).expect("Allocated a null pointer. You may be out of memory.")
+        }
+    }
+    unsafe fn dealloc(&mut self, len: usize) {
+        self.clone().as_ptr().dealloc(len)
+    }
+    unsafe fn from_ptr(ptr: *mut u8) -> Self {
+        NonNull::new_unchecked(MutMB::from_ptr(ptr))
+    }
+    fn as_ptr(&self) -> *mut u8 {
+        self.clone().cast::<u8>().as_ptr()
+    }
+    fn is_null(&self) -> bool {
+        self.as_ptr().is_null()
+    }
+    fn lbl_ptr(&self) -> *mut L {
+        self.clone().as_ptr().lbl_ptr()
+    }
+    fn elem_ptr(&self, idx: usize) -> *mut E {
+        self.clone().as_ptr().elem_ptr(idx)
+    }
+}
+
+unsafe impl<E, L, W> BaseArrayPtr<E, L> for AtomicPtr<MemBlock<E, W>>
+where
+    W: LabelWrapper<L>,
+{
+    unsafe fn alloc(len: usize) -> Self {
+        AtomicPtr::new(MutMB::alloc(len))
+    }
+    unsafe fn dealloc(&mut self, len: usize) {
+        self.load(Ordering::Acquire).dealloc(len)
+    }
+    unsafe fn from_ptr(ptr: *mut u8) -> Self {
+        AtomicPtr::new(MutMB::from_ptr(ptr))
+    }
+    fn as_ptr(&self) -> *mut u8 {
+        self.load(Ordering::Acquire) as *mut u8
+    }
+    fn is_null(&self) -> bool {
+        self.load(Ordering::Acquire).is_null()
+    }
+    fn lbl_ptr(&self) -> *mut L {
+        self.load(Ordering::Acquire).lbl_ptr()
+    }
+    fn elem_ptr(&self, idx: usize) -> *mut E {
+        self.load(Ordering::Acquire).elem_ptr(idx)
     }
 }

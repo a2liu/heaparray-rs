@@ -186,7 +186,7 @@ where
     /// length greater than `idx`, and the element at `idx` has already been
     /// initialized.
     pub fn get_ptr_mut(&mut self, idx: usize) -> *mut E {
-        self._mut().get_ptr_mut(idx)
+        self._mut().get_ptr(idx)
     }
 
     /// Returns whether or not the internal pointer in this array is null

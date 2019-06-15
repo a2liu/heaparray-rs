@@ -1,3 +1,5 @@
+use core::mem::ManuallyDrop;
+
 /// Trait for a struct that wraps another struct of some kind
 pub trait LabelWrapper<L>: Sized {
     fn get_inner(&self) -> &L;
@@ -12,6 +14,15 @@ impl<L> LabelWrapper<L> for L {
     #[inline(always)]
     fn get_inner_mut(&mut self) -> &mut L {
         self
+    }
+}
+
+impl<L> LabelWrapper<L> for ManuallyDrop<L> {
+    fn get_inner(&self) -> &L {
+        &*self
+    }
+    fn get_inner_mut(&mut self) -> &mut L {
+        &mut *self
     }
 }
 

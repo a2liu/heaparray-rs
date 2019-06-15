@@ -1,18 +1,14 @@
 //! Defines `BaseArrayPtr`, the interface `BaseArray` uses when defining methods.
 
-use super::mem_block::MemBlock;
-use crate::traits::LabelWrapper;
-use core::ptr::NonNull;
-use core::sync::atomic::{AtomicPtr, Ordering};
-
 /// Trait representing an unsafe reference to an array.
 ///
 /// Should be the same size as the underlying pointer.
 ///
 /// # Implementation
-/// - Destructors for the label and elements are run by the callee;
-///   don't implement `drop` unless you have internal state besides the label
-///   and elements that needs to be destructed.
+/// - Destructors for the label and elements are run by the callee; that means that
+///   any implementation of `Drop` that you write no longer has access to the data
+///   that the array contained. To run code before the buffer is deallocated,
+///   use the `_drop()` function.
 /// - Constructors are *also* run by the callee; don't try to initialize elements,
 ///   as it might result in a memory leak.
 pub unsafe trait BaseArrayPtr<E, L>: Sized {
@@ -47,19 +43,22 @@ pub unsafe trait BaseArrayPtr<E, L>: Sized {
     /// or `elem_ptr` is safe, but may potentially result in a memory leak. However,
     /// the memory accessed in this function is not initialized, so reading memory
     /// in this function causes undefined behavior.
-    unsafe fn init(&mut self) {}
+    unsafe fn _init(&mut self) {}
+
+    /// Runs destructors right before deallocating the buffer.
+    ///
+    /// In `BaseArray` this will run *after* all other destructors; this means that
+    /// the memory this method has access to is almost entirely uninitialized.
+    ///
+    /// # Safety
+    /// Almost all accesses are unsafe. Tread with caution.
+    unsafe fn _drop(&mut self) {}
 
     /// Returns a raw pointer to the element at `idx`
     ///
     /// Dereferencing this pointer is only safe if there actually is a properly
     /// initialized element at that location
     fn elem_ptr(&self, idx: usize) -> *mut E;
-
-    unsafe fn new_lazy(lbl: L, len: usize) -> Self {
-        let obj = Self::alloc(len);
-        core::ptr::write(obj.lbl_ptr(), lbl);
-        obj
-    }
 
     /// Casts this pointer to another value, by transferring the internal pointer
     /// to its constructor. Super unsafe
@@ -68,108 +67,5 @@ pub unsafe trait BaseArrayPtr<E, L>: Sized {
         P: BaseArrayPtr<T, Q>,
     {
         P::from_ptr(self.as_ptr() as *mut u8)
-    }
-}
-
-unsafe impl<E, L, W> BaseArrayPtr<E, L> for NonNull<MemBlock<E, W>>
-where
-    W: LabelWrapper<L>,
-{
-    unsafe fn alloc(len: usize) -> Self {
-        MemBlock::<E, W>::alloc(len)
-    }
-
-    unsafe fn dealloc(&mut self, len: usize) {
-        self.as_mut().dealloc_lazy(len)
-    }
-
-    unsafe fn from_ptr(ptr: *mut u8) -> Self {
-        NonNull::new_unchecked(ptr as *mut MemBlock<E, W>)
-    }
-
-    fn as_ptr(&self) -> *mut u8 {
-        self.clone().cast::<u8>().as_ptr()
-    }
-
-    fn is_null(&self) -> bool {
-        self.as_ptr().is_null()
-    }
-
-    fn lbl_ptr(&self) -> *mut L {
-        unsafe { self.as_ref().get_label().get_inner() as *const L as *mut L }
-    }
-
-    fn elem_ptr(&self, idx: usize) -> *mut E {
-        unsafe { self.as_ref().get_ptr(idx) as *mut E }
-    }
-}
-
-unsafe impl<E, L, W> BaseArrayPtr<E, L> for *mut MemBlock<E, W>
-where
-    W: LabelWrapper<L>,
-{
-    unsafe fn alloc(len: usize) -> Self {
-        MemBlock::<E, W>::alloc(len).as_ptr()
-    }
-
-    unsafe fn dealloc(&mut self, len: usize) {
-        (&mut **self).dealloc_lazy(len)
-    }
-
-    unsafe fn from_ptr(ptr: *mut u8) -> Self {
-        ptr as *mut MemBlock<E, W>
-    }
-
-    fn as_ptr(&self) -> *mut u8 {
-        self.clone() as *const u8 as *mut u8
-    }
-
-    fn is_null(&self) -> bool {
-        self.clone().is_null()
-    }
-
-    fn lbl_ptr(&self) -> *mut L {
-        unsafe { (&mut **self).get_label_mut().get_inner_mut() as *mut L }
-    }
-
-    fn elem_ptr(&self, idx: usize) -> *mut E {
-        unsafe { (&**self).get_ptr(idx) as *mut E }
-    }
-}
-
-unsafe impl<E, L, W> BaseArrayPtr<E, L> for AtomicPtr<MemBlock<E, W>>
-where
-    W: LabelWrapper<L>,
-{
-    unsafe fn alloc(len: usize) -> Self {
-        AtomicPtr::new(MemBlock::<E, W>::alloc(len).as_ptr())
-    }
-
-    unsafe fn dealloc(&mut self, len: usize) {
-        (&mut *self.load(Ordering::Acquire)).dealloc_lazy(len)
-    }
-
-    unsafe fn from_ptr(ptr: *mut u8) -> Self {
-        AtomicPtr::new(ptr as *mut MemBlock<E, W>)
-    }
-
-    fn as_ptr(&self) -> *mut u8 {
-        self.load(Ordering::Acquire) as *mut u8
-    }
-
-    fn is_null(&self) -> bool {
-        self.load(Ordering::Acquire).is_null()
-    }
-
-    fn lbl_ptr(&self) -> *mut L {
-        unsafe {
-            (&mut *self.load(Ordering::Acquire))
-                .get_label_mut()
-                .get_inner_mut() as *mut L
-        }
-    }
-
-    fn elem_ptr(&self, idx: usize) -> *mut E {
-        unsafe { (&*self.load(Ordering::Acquire)).get_ptr(idx) as *mut E }
     }
 }
