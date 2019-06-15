@@ -11,23 +11,17 @@ pub unsafe fn allocate<T>(layout: Layout) -> *mut T {
 
 /// Deallocate a block of memory using the given size and alignment information.
 ///
-/// Completely ignores the type of the input pointer, so the size and
-/// align need to be correct.
+/// Completely ignores the type of the input pointer, so the layout
+/// needs to be correct.
 pub unsafe fn deallocate<T>(ptr: *mut T, layout: Layout) {
     dealloc(ptr as *mut u8, layout);
 }
 
-/// Returns the (size, alignment) of an array of elements with capacity T
-pub const fn size_align_array<T>(capacity: usize) -> (usize, usize) {
-    let (size, align) = size_align::<T>();
-    (size * capacity, align)
-}
-
-/// Get the size and alignment of a type in bytes
-pub const fn size_align<T>() -> (usize, usize) {
+/// Get the size and alignment, in bytes, of a type repeated `repeat` many times.
+pub const fn size_align<T>(repeat: usize) -> (usize, usize) {
     let align = align_of::<T>();
     let size = size_of::<T>();
-    (size, align)
+    (size * repeat, align)
 }
 
 /// Gets the aligned size of a type given a specific alignment

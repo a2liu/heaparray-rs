@@ -87,7 +87,7 @@ impl<E, L> MemBlock<E, L> {
     pub const fn max_len() -> usize {
         let max_len = core::isize::MAX as usize;
         let max_len_calc = {
-            let (esize, ealign) = size_align::<E>();
+            let (esize, ealign) = size_align::<E>(1);
             let lsize = aligned_size::<L>(ealign);
             safe_div(max_len - lsize, esize)
         };
@@ -98,9 +98,9 @@ impl<E, L> MemBlock<E, L> {
     ///
     /// Returns a tuple in the form `(size, align)`
     pub const fn memory_layout(len: usize) -> (usize, usize) {
-        let (l_size, l_align) = size_align::<L>();
+        let (l_size, l_align) = size_align::<L>(1);
         let (calc_size, calc_align) = {
-            let (dsize, dalign) = size_align_array::<E>(len);
+            let (dsize, dalign) = size_align::<E>(len);
             let l_size = aligned_size::<L>(dalign);
             (l_size + dsize, max(l_align, dalign))
         };
@@ -141,7 +141,7 @@ fn get_layout<E, L>(len: usize) -> Layout {
     }
 }
 
-unsafe impl<E, L, W> BaseArrayPtr<E, L> for MutMB<E, W>
+unsafe impl<E, L, W> BaseArrayPtr<E, L> for *mut MemBlock<E, W>
 where
     W: LabelWrapper<L>,
 {
