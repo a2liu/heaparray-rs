@@ -77,7 +77,7 @@ pub unsafe trait BaseArrayPtr<E, L>: Sized {
     /// Returns a raw pointer to the element at `idx`
     ///
     /// Dereferencing this pointer is only safe if there actually is a properly
-    /// initialized element at that location
+    /// initialized element at that location.
     fn elem_ptr(&self, idx: usize) -> *mut E;
 
     /// Initializes fields at construction
