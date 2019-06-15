@@ -8,14 +8,14 @@
 
   ```
   src
-  ├── api.rs -- done
+  ├── api.rs
   ├── base
   │   ├── alloc_utils.rs -- done
-  │   ├── base.rs -- done
-  │   ├── mem_block.rs -- done
-  │   ├── ptr_utils.rs -- done
-  │   └── mod.rs -- done
-  ├── impls -- done
+  │   ├── base.rs
+  │   ├── mem_block.rs
+  │   ├── traits.rs
+  │   └── mod.rs
+  ├── impls
   └── lib.rs
   ```
 
