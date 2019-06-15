@@ -1,3 +1,20 @@
+/// Trait for a struct that wraps another struct of some kind
+pub trait LabelWrapper<L>: Sized {
+    fn get_inner(&self) -> &L;
+    fn get_inner_mut(&mut self) -> &mut L;
+}
+
+impl<L> LabelWrapper<L> for L {
+    #[inline(always)]
+    fn get_inner(&self) -> &L {
+        self
+    }
+    #[inline(always)]
+    fn get_inner_mut(&mut self) -> &mut L {
+        self
+    }
+}
+
 /// Array with an optional label struct stored next to the data.
 pub trait LabelledArray<E, L>: containers::CopyMap<usize, E> {
     /// Create a new array, with values initialized using a provided
