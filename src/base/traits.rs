@@ -4,13 +4,49 @@
 ///
 /// Should be the same size as the underlying pointer.
 ///
-/// # Implementation
-/// - Destructors for the label and elements are run by the callee; that means that
-///   any implementation of `Drop` that you write no longer has access to the data
-///   that the array contained. To run code before the buffer is deallocated,
-///   use the `_drop()` function.
-/// - Constructors are *also* run by the callee; don't try to initialize elements,
-///   as it might result in a memory leak.
+/// # Implementing this Type
+/// Let `a` be an instance of `A`, which is a concrete implementation of
+/// `BaseArrayPtr<E, L>`. The following must hold on `a`:
+///
+/// - `a.dealloc(len)` is safe to call on the result of `A::alloc(len)`
+/// - `a.elem_ptr(idx)` and `a.lbl_ptr()` must return properly aligned pointers
+///   for the types `E` and `L` respectively
+/// - `a.lbl_ptr()` must return the same value for the lifetime
+///   of `a` for all `let a = A::alloc(len)`, or at least until `a.dealloc()`
+///   is called.
+/// - `a.elem_ptr(idx)` must return the same value for each value of `idx` for the
+///   lifetime of `a` for all `let a = A::alloc(len)`, or at least until `a.dealloc()`
+///   is called.
+/// - `A::alloc(len).elem_ptr(idx)` returns a pointer to allocated memory for all
+///   `idx < len`
+/// - `A::alloc(len).lbl_ptr()` returns a pointer to allocated memory
+/// - `a._init()` is safe to call on the result of `A::alloc(len)`
+/// - `a._drop()` is safe to call on any result of `A::alloc(len)` for which
+///   `_init()` has been called exactly once
+///
+/// # Use of API by `BaseArray`
+/// Let `A` be a concrete implementation of `BaseArrayPtr`. At initialization via
+/// `BaseArray::new`, `BaseArray::new_lazy`, or `BaseArray::alloc`, `BaseArray`
+/// does the following:
+///
+/// 1. Call `A::alloc(len)`
+/// 2. Call `a._init()` on the newly created instance
+/// 3. Optionally call constructor methods (depending on which method)
+///    1. Label is initialized first by calling `a.lbl_ptr()` and writing to it
+///    2. Elements are initialized by calling `a.elem_ptr(idx)` and writing to it
+///       for each `idx < len`
+///
+/// At destruction via `BaseArray::drop` or `BaseArray::drop_lazy`, `BaseArray`
+/// does the following:
+///
+/// 1. Optionally call destructors (depending on which method)
+///    1. Label is destructed first, in place
+///    2. Elements are destructed in ascending order
+/// 2. Call `a._drop()`
+/// 3. Call `a.dealloc()`
+///
+/// On accessing an element, `BaseArray` calls `elem_ptr`, and on accessing the
+/// label, `BaseArray` calls `lbl_ptr`
 pub unsafe trait BaseArrayPtr<E, L>: Sized {
     /// Allocate the memory necessary for a new instance of `len` elements, without
     /// initializing it
@@ -24,15 +60,27 @@ pub unsafe trait BaseArrayPtr<E, L>: Sized {
     unsafe fn from_ptr(ptr: *mut u8) -> Self;
 
     /// Returns the value of the internal raw pointer in this array pointer
+    ///
+    /// Dereferencing this raw pointer isn't safe unless the original array pointer
+    /// pointed to valid memory.
     fn as_ptr(&self) -> *mut u8;
 
     /// Returns whether or not this pointer is null
     fn is_null(&self) -> bool;
 
     /// Returns a raw pointer to the label associated with this array
+    ///
+    /// Dereferencing this raw pointer isn't safe unless the original array pointer
+    /// pointed to valid memory.
     fn lbl_ptr(&self) -> *mut L;
 
-    /// Initializes fields at construction.
+    /// Returns a raw pointer to the element at `idx`
+    ///
+    /// Dereferencing this pointer is only safe if there actually is a properly
+    /// initialized element at that location
+    fn elem_ptr(&self, idx: usize) -> *mut E;
+
+    /// Initializes fields at construction
     ///
     /// Note that in `BaseArray` this will be run *before* any other initialization
     /// tasks; this means that the memory this method has access to is almost entirely
@@ -45,7 +93,7 @@ pub unsafe trait BaseArrayPtr<E, L>: Sized {
     /// in this function causes undefined behavior.
     unsafe fn _init(&mut self) {}
 
-    /// Runs destructors right before deallocating the buffer.
+    /// Runs destructors right before deallocating the buffer
     ///
     /// In `BaseArray` this will run *after* all other destructors; this means that
     /// the memory this method has access to is almost entirely uninitialized.
@@ -54,14 +102,8 @@ pub unsafe trait BaseArrayPtr<E, L>: Sized {
     /// Almost all accesses are unsafe. Tread with caution.
     unsafe fn _drop(&mut self) {}
 
-    /// Returns a raw pointer to the element at `idx`
-    ///
-    /// Dereferencing this pointer is only safe if there actually is a properly
-    /// initialized element at that location
-    fn elem_ptr(&self, idx: usize) -> *mut E;
-
     /// Casts this pointer to another value, by transferring the internal pointer
-    /// to its constructor. Super unsafe
+    /// to its constructor. Super unsafe.
     unsafe fn cast<T, Q, P>(&self) -> P
     where
         P: BaseArrayPtr<T, Q>,

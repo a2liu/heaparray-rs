@@ -12,6 +12,7 @@ use core::mem::ManuallyDrop;
 use core::ptr;
 use core::ptr::NonNull;
 use core::sync::atomic::{AtomicPtr, Ordering};
+use std::alloc::System;
 
 /// An array block that can hold arbitrary information, and cannot be
 /// constructed on the stack.
@@ -147,11 +148,11 @@ where
 {
     unsafe fn alloc(len: usize) -> Self {
         let layout = get_layout::<E, L>(len);
-        allocate::<MemBlock<E, W>>(layout)
+        allocate(System, layout)
     }
     unsafe fn dealloc(&mut self, len: usize) {
         let layout = get_layout::<E, L>(len);
-        deallocate(self, layout);
+        deallocate(System, self, layout);
     }
     unsafe fn from_ptr(ptr: *mut u8) -> Self {
         ptr as *mut MemBlock<E, W>
@@ -276,7 +277,7 @@ impl<E, L> MemBlock<E, L> {
     /// causes undefined behavior with pointer math.
     pub unsafe fn dealloc_lazy(&mut self, len: usize) {
         let layout = get_layout::<E, L>(len);
-        deallocate(self, layout);
+        deallocate(System, self, layout);
     }
 
     /// Returns a pointer to a new `MemBlock` without initializing the elements
@@ -356,11 +357,14 @@ impl<E, L> MemBlock<E, L> {
 
         let layout = get_layout::<E, L>(len);
 
+        let ptr = allocate(System, layout);
         if cfg!(feature = "mem-block-skip-ptr-check") {
-            NonNull::new_unchecked(allocate::<Self>(layout))
+            NonNull::new_unchecked(ptr)
         } else {
-            NonNull::new(allocate::<Self>(layout))
-                .expect("Allocated a null pointer. You may be out of memory.")
+            NonNull::new(ptr).expect(
+                "Allocated a null pointer.\
+                 You may be out of memory.",
+            )
         }
     }
 
@@ -389,12 +393,12 @@ impl<E, L> MemBlock<E, L> {
 
     /// Returns an immutable reference to the label of this array.
     pub fn get_label(&self) -> &L {
-        &self.label
+        unsafe { &*(self as *const MemBlock<E, L> as *mut MemBlock<E, L>).lbl_ptr() }
     }
 
     /// Returns a mutable reference to the label of this array.
     pub fn get_label_mut(&mut self) -> &mut L {
-        &mut self.label
+        unsafe { &mut *(self as *mut MemBlock<E, L>).lbl_ptr() }
     }
 }
 
@@ -407,7 +411,10 @@ where
         if cfg!(feature = "mem-block-skip-ptr-check") {
             NonNull::new_unchecked(ptr)
         } else {
-            NonNull::new(ptr).expect("Allocated a null pointer. You may be out of memory.")
+            NonNull::new(ptr).expect(
+                "Allocated a null pointer.\
+                 You may be out of memory.",
+            )
         }
     }
     unsafe fn dealloc(&mut self, len: usize) {
@@ -417,16 +424,16 @@ where
         NonNull::new_unchecked(MutMB::from_ptr(ptr))
     }
     fn as_ptr(&self) -> *mut u8 {
-        self.clone().cast::<u8>().as_ptr()
+        (*self).cast::<u8>().as_ptr()
     }
     fn is_null(&self) -> bool {
-        self.as_ptr().is_null()
+        (*self).as_ptr().is_null()
     }
     fn lbl_ptr(&self) -> *mut L {
-        self.clone().as_ptr().lbl_ptr()
+        (*self).as_ptr().lbl_ptr()
     }
     fn elem_ptr(&self, idx: usize) -> *mut E {
-        self.clone().as_ptr().elem_ptr(idx)
+        (*self).as_ptr().elem_ptr(idx)
     }
 }
 
