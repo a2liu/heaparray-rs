@@ -89,8 +89,7 @@ impl<E, L> MemBlock<E, L> {
         cond(mem::size_of::<E>() == 0, max_len, max_len_calc)
     }
 
-    /// Get size and alignment of the memory that a block of length `len`
-    /// would need.
+    /// Get size and alignment of the memory that a block of length `len` would need.
     ///
     /// Returns a tuple in the form `(size, align)`
     pub const fn memory_layout(len: usize) -> (usize, usize) {
@@ -137,7 +136,8 @@ impl<E, L> MemBlock<E, L> {
         #[cfg(not(feature = "mem-block-skip-size-check"))]
         assert!(
             idx < Self::max_len(),
-            "Index {} is invalid: Block cannot be bigger than core::isize::MAX bytes ({} elements)",
+            "Index {} is invalid: Block cannot be bigger than\
+             core::isize::MAX bytes ({} elements)",
             idx,
             Self::max_len()
         );
@@ -215,12 +215,13 @@ impl<E, L> MemBlock<E, L> {
         #[cfg(not(feature = "mem-block-skip-size-check"))]
         assert!(
             len <= Self::max_len(),
-            "Deallocating array of length {} is invalid: Blocks cannot be larger than core::isize::MAX bytes ({} elements)",
+            "Deallocating array of length {} is invalid:\
+             Blocks cannot be larger than core::isize::MAX bytes ({} elements)",
             len,
             Self::max_len()
         );
 
-        ManuallyDrop::drop(&mut self.label);
+        ptr::drop_in_place(self.get_label_mut());
         for i in 0..len {
             ptr::drop_in_place(self.get_ptr_mut(i));
         }
@@ -263,13 +264,14 @@ impl<E, L> MemBlock<E, L> {
                 Ok(layout) => layout,
                 Err(err) => {
                     panic!(
-                        "MemBlock of length {} is invalid for this platform; \n\
-                         it has (size, align) = ({}, {}), causing error \n{:#?}",
+                        "MemBlock of length {} is invalid for this platform;\n\
+                         it has (size, align) = ({}, {}), causing error\n{:#?}",
                         len, size, align, err
                     );
                 }
             }
         };
+
         deallocate(self, layout);
     }
 
@@ -349,7 +351,8 @@ impl<E, L> MemBlock<E, L> {
         #[cfg(not(feature = "mem-block-skip-size-check"))]
         assert!(
             len <= Self::max_len(),
-            "New array of length {} is invalid: Cannot allocate a block larger than core::isize::MAX bytes ({} elements)",
+            "New array of length {} is invalid: Cannot allocate a block\
+             larger than core::isize::MAX bytes ({} elements)",
             len,
             Self::max_len()
         );
@@ -363,8 +366,8 @@ impl<E, L> MemBlock<E, L> {
                 Ok(layout) => layout,
                 Err(err) => {
                     panic!(
-                        "MemBlock of length {} is invalid for this platform; \n\
-                         it has (size, align) = ({}, {}), causing error \n{:#?}",
+                        "MemBlock of length {} is invalid for this platform;\n\
+                         it has (size, align) = ({}, {}), causing error\n{:#?}",
                         len, size, align, err
                     );
                 }
