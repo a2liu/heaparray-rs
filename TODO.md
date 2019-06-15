@@ -26,6 +26,7 @@
 
 
 ### Features
+- [ ] Range indexing
 - [ ] Make pointer of `MemBlock` point to first element instead of label
 - [ ] `cast_into` more flexible
 - [ ] Eq, PartialEq

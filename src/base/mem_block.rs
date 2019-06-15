@@ -41,14 +41,14 @@ use core::ptr::NonNull;
 ///   cause undefined behavior with pointer arithmetic when accessing elements
 ///   with `MemBlock::get_ptr`; note that `MemBlock::dealloc` and `MemBlock::new_init`
 ///   internally use `MemBlock::get_ptr` to do element construction and destruction
-/// - **`mem-block-skip-layout-check`** prevents `MemBlock::new` and `MemBlock::new_init`
-///   from checking whether or not the size of the block you try to allocate is
-///   valid on the platform you're allocating it on
-/// - **`mem-block-allow-null`** prevents `MemBlock::new` and `MemBlock::new_init`
-///   from checking the pointer they return; **this invalidates invariant 3**,
+/// - **`mem-block-skip-layout-check`** prevents `MemBlock::new` and
+///   `MemBlock::new_init` from checking whether or not the size of the block you
+///   try to allocate is valid on the platform you're allocating it on
+/// - **`mem-block-skip-ptr-check`** prevents `MemBlock::new` and `MemBlock::new_init`
+///   from checking the pointer they return; **this invalidates invariant 2**,
 ///   and causes undefined behavior.
-/// - **`mem-block-fast-alloc`** enables `mem-block-skip-layout-check`,
-///   `mem-block-allow-null`, and `mem-block-skip-size-check`
+/// - **`mem-block-skill-all`** enables `mem-block-skip-layout-check`,
+///   `mem-block-skip-ptr-check`, and `mem-block-skip-size-check`
 ///
 /// Use all of the above with caution, as their behavior is inherently undefined.
 ///
@@ -142,7 +142,6 @@ impl<E, L> MemBlock<E, L> {
             Self::max_len()
         );
 
-        // let element = (&*self.elements) as *const E as *mut E;
         let e_align = mem::align_of::<E>();
         let lsize = aligned_size::<L>(e_align);
         let element = unsafe { (self as *const _ as *const u8).add(lsize) as *const E };
@@ -265,13 +264,12 @@ impl<E, L> MemBlock<E, L> {
                 Err(err) => {
                     panic!(
                         "MemBlock of length {} is invalid for this platform; \n\
-                         it has (size, align) = ({}, {}), and caused error \n{:#?}",
+                         it has (size, align) = ({}, {}), causing error \n{:#?}",
                         len, size, align, err
                     );
                 }
             }
         };
-
         deallocate(self, layout);
     }
 
@@ -366,14 +364,14 @@ impl<E, L> MemBlock<E, L> {
                 Err(err) => {
                     panic!(
                         "MemBlock of length {} is invalid for this platform; \n\
-                         it has (size, align) = ({}, {}), and caused error \n{:#?}",
+                         it has (size, align) = ({}, {}), causing error \n{:#?}",
                         len, size, align, err
                     );
                 }
             }
         };
 
-        if cfg!(feature = "mem-block-allow-null") {
+        if cfg!(feature = "mem-block-skip-ptr-check") {
             NonNull::new_unchecked(allocate::<Self>(layout))
         } else {
             NonNull::new(allocate::<Self>(layout))

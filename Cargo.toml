@@ -22,10 +22,10 @@ interloc = "0.1.0"
 default = []
 
 # does what it says on the tin - removes all assertions; this can cause undefined behavior.
-no-asserts = ["mem-block-fast-alloc"]
+no-asserts = ["mem-block-skip-all"]
 
 # Features related to `MemBlock`. See the documentation on `MemBlock` for more details.
-mem-block-fast-alloc = ["mem-block-skip-layout-check","mem-block-allow-null", "mem-block-skip-size-check"]
+mem-block-skip-all = ["mem-block-skip-layout-check","mem-block-skip-ptr-check", "mem-block-skip-size-check"]
 mem-block-skip-size-check = []
 mem-block-skip-layout-check = []
-mem-block-allow-null = []
+mem-block-skip-ptr-check = []
