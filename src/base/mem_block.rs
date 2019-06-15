@@ -12,7 +12,6 @@ use core::mem::ManuallyDrop;
 use core::ptr;
 use core::ptr::NonNull;
 use core::sync::atomic::{AtomicPtr, Ordering};
-use std::alloc::System;
 
 /// An array block that can hold arbitrary information, and cannot be
 /// constructed on the stack.
@@ -148,11 +147,11 @@ where
 {
     unsafe fn alloc(len: usize) -> Self {
         let layout = get_layout::<E, L>(len);
-        allocate(System, layout)
+        allocate(layout)
     }
     unsafe fn dealloc(&mut self, len: usize) {
         let layout = get_layout::<E, L>(len);
-        deallocate(System, self, layout);
+        deallocate(self, layout);
     }
     unsafe fn from_ptr(ptr: *mut u8) -> Self {
         ptr as *mut MemBlock<E, W>
@@ -277,7 +276,7 @@ impl<E, L> MemBlock<E, L> {
     /// causes undefined behavior with pointer math.
     pub unsafe fn dealloc_lazy(&mut self, len: usize) {
         let layout = get_layout::<E, L>(len);
-        deallocate(System, self, layout);
+        deallocate(self, layout);
     }
 
     /// Returns a pointer to a new `MemBlock` without initializing the elements
@@ -357,7 +356,7 @@ impl<E, L> MemBlock<E, L> {
 
         let layout = get_layout::<E, L>(len);
 
-        let ptr = allocate(System, layout);
+        let ptr = allocate(layout);
         if cfg!(feature = "mem-block-skip-ptr-check") {
             NonNull::new_unchecked(ptr)
         } else {

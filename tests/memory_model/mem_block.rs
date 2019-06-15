@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use heaparray::base::MemBlock;
+use heaparray::base::MemBlock as HeapArrayMemBlock;
 
 #[test]
 pub fn ref_no_dealloc() {

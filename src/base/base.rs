@@ -1,10 +1,7 @@
 use super::mem_block::*;
-use super::ptr_utils::UnsafePtr;
-use crate::traits::AtomicArrayRef;
-use atomic_types::*;
+use super::traits::*;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
-use core::sync::atomic::Ordering;
 use core::{mem, ptr};
 
 /// Base array that handles converting a memory block into a constructible object.
@@ -13,29 +10,13 @@ use core::{mem, ptr};
 /// allocation, deallocation, iteration, and slices given length. Holds
 /// the bulk of the unsafe logic in this library.
 ///
-/// # Invariants
-/// This struct follows some of the invariants as discussed in
-/// [`heaparray::base::mem_block::MemBlock`](mem_block/struct.MemBlock.html),
-/// as it internally is just a pointer to a `MemBlock`. Specifically, it maintains
-/// the invariant that the memory block allocated will always have a size (in bytes)
-/// less than or equal to `core::isize::MAX`. However, note that the internal
-/// pointer isn't necessarily valid; while the associated functions `new` and
-/// `new_lazy` do uphold this invariant, this type can be constructed without
-/// allocating anything (e.g. `BaseArray::<u8, ()>::from_ptr(core::ptr::null())`).
-///
 /// # Memory Leaks
 /// This struct doesn't perform memory cleanup automatically; it must be done manually
 /// with methods `drop` or `drop_lazy`.
-///
-/// # Safety
-/// Generally, the functions of this struct are safe given that the length that
-/// you provide to the function is less than or equal to that of the underlying
-/// memory. Functions with more restrictive requirements will describe those
-/// requirements in more detail.
 #[repr(transparent)]
 pub struct BaseArray<E, L, P = NonNull<MemBlock<E, L>>>
 where
-    P: UnsafePtr<MemBlock<E, L>>,
+    P: BaseArrayPtr<E, L>,
 {
     data: P,
     phantom: PhantomData<(E, L, *mut u8)>,
@@ -48,7 +29,7 @@ where
 /// associated length.
 pub struct BaseArrayIter<E, L, P = NonNull<MemBlock<E, L>>>
 where
-    P: UnsafePtr<MemBlock<E, L>>,
+    P: BaseArrayPtr<E, L>,
 {
     array: BaseArray<E, L, P>,
     current: *mut E,
@@ -57,64 +38,46 @@ where
 
 impl<E, L, P> BaseArray<E, L, P>
 where
-    P: UnsafePtr<MemBlock<E, L>>,
+    P: BaseArrayPtr<E, L>,
 {
-    /// Get a mutable reference to this struct's memory block
-    fn _mut(&mut self) -> &mut MemBlock<E, L> {
-        unsafe { self.data.as_mut() }
-    }
-
-    /// Get a reference to this struct's memory block
-    fn _ref(&self) -> &MemBlock<E, L> {
-        unsafe { self.data.as_ref() }
-    }
-
-    /// Construct an instance of this struct from a raw pointer; doesn't do any
-    /// checking for validity of the pointer.
-    pub unsafe fn from_ptr(ptr: *mut MemBlock<E, L>) -> Self {
-        Self::from_ref(P::new_unchecked(ptr))
-    }
-
     /// Construct an instance of this struct from an instance of the pointer type
     /// `P`.
-    pub unsafe fn from_ref(ptr: P) -> Self {
+    pub unsafe fn from_ptr(ptr: P) -> Self {
         Self {
             data: ptr,
             phantom: PhantomData,
         }
     }
 
-    /// Creates a new array of size `len`.
-    ///
-    /// Initializes all elements using the given function, and initializes the
-    /// label with the provided value.
-    pub fn new<F>(label: L, len: usize, func: F) -> Self
-    where
-        F: FnMut(&mut L, usize) -> E,
-    {
-        unsafe { Self::from_ptr(MemBlock::new_init(label, len, func).as_ptr()) }
-    }
-
     /// Doesn't initialize anything in the array. Just allocates a block of memory.
     pub unsafe fn alloc(len: usize) -> Self {
-        Self::from_ptr(MemBlock::alloc(len).as_ptr())
+        let mut array = Self::from_ptr(P::alloc(len));
+        array.data._init();
+        array
     }
 
     /// Doesn't initialize the elements of the array.
     pub unsafe fn new_lazy(label: L, len: usize) -> Self {
-        Self::from_ptr(MemBlock::new(label, len).as_ptr())
+        let mut array = Self::alloc(len);
+        ptr::write(array.get_label_mut(), label);
+        array
     }
 
-    /// Returns the internal pointer of this array as a pointer to a `MemBlock`
-    /// instance.
-    pub unsafe fn as_block_ptr(&self) -> *const MemBlock<E, L> {
-        self.data.as_ref()
-    }
-
-    /// Returns the internal pointer of this array as a mutable pointer to a
-    /// `MemBlock` instance.
-    pub unsafe fn as_block_ptr_mut(&mut self) -> *mut MemBlock<E, L> {
-        self.data.as_mut()
+    /// Creates a new array of size `len`.
+    ///
+    /// Initializes all elements using the given function, and initializes the
+    /// label with the provided value.
+    pub fn new<F>(label: L, len: usize, mut func: F) -> Self
+    where
+        F: FnMut(&mut L, usize) -> E,
+    {
+        let array = unsafe { Self::new_lazy(label, len) };
+        for i in 0..len {
+            unsafe {
+                ptr::write(array.data.elem_ptr(i), func(&mut *array.data.lbl_ptr(), i));
+            }
+        }
+        array
     }
 
     /// Runs destructor code for elements and for label, then deallocates block.
@@ -123,7 +86,11 @@ where
     /// Function is safe as long as the underlying array is at least length `len`,
     /// and the elements in the array have been initialized.
     pub unsafe fn drop(&mut self, len: usize) {
-        self._mut().dealloc(len)
+        ptr::drop_in_place(self.get_label_mut());
+        for i in 0..len {
+            ptr::drop_in_place(self.data.elem_ptr(i));
+        }
+        self.drop_lazy(len);
     }
 
     /// Deallocates block without running destructor code for elements or label.
@@ -131,7 +98,8 @@ where
     /// # Safety
     /// Function is safe as long as the underlying array is at least length `len`.
     pub unsafe fn drop_lazy(&mut self, len: usize) {
-        self._mut().dealloc_lazy(len)
+        self.data._drop();
+        self.data.dealloc(len);
     }
 
     /// Cast this array into a different array.
@@ -140,10 +108,9 @@ where
     /// alignment/reference checks.
     pub unsafe fn cast_into<T, Q>(self) -> BaseArray<T, L, Q>
     where
-        Q: UnsafePtr<MemBlock<T, L>>,
+        Q: BaseArrayPtr<T, L>,
     {
-        let mut ptr = self.data.cast::<MemBlock<T, L>, Q>();
-        BaseArray::<T, L, Q>::from_ptr(ptr.as_mut() as *mut MemBlock<T, L>)
+        BaseArray::<T, L, Q>::from_ptr(self.data.cast::<T, L, Q>())
     }
 
     /// Cast a reference to this array into a reference to a different array.
@@ -152,7 +119,7 @@ where
     /// alignment/reference checks.
     pub unsafe fn cast_ref<T, Q>(&self) -> &BaseArray<T, L, Q>
     where
-        Q: UnsafePtr<MemBlock<T, L>>,
+        Q: BaseArrayPtr<T, L>,
     {
         &*(self as *const BaseArray<E, L, P> as *const BaseArray<T, L, Q>)
     }
@@ -164,7 +131,7 @@ where
     /// alignment/reference checks.
     pub unsafe fn cast_mut<T, Q>(&mut self) -> &mut BaseArray<T, L, Q>
     where
-        Q: UnsafePtr<MemBlock<T, L>>,
+        Q: BaseArrayPtr<T, L>,
     {
         &mut *(self as *mut BaseArray<E, L, P> as *mut BaseArray<T, L, Q>)
     }
@@ -176,7 +143,7 @@ where
     /// length greater than `idx`, and the element at `idx` has already been
     /// initialized.
     pub fn get_ptr(&self, idx: usize) -> *const E {
-        self._ref().get_ptr(idx)
+        self.data.elem_ptr(idx)
     }
 
     /// Returns a mutable pointer to the element at the index `idx`
@@ -186,7 +153,7 @@ where
     /// length greater than `idx`, and the element at `idx` has already been
     /// initialized.
     pub fn get_ptr_mut(&mut self, idx: usize) -> *mut E {
-        self._mut().get_ptr(idx)
+        self.data.elem_ptr(idx)
     }
 
     /// Returns whether or not the internal pointer in this array is null
@@ -214,12 +181,12 @@ where
 
     /// Returns a reference to the label
     pub fn get_label(&self) -> &L {
-        self._ref().get_label()
+        unsafe { &*self.data.lbl_ptr() }
     }
 
     /// Returns a mutable reference to the label
     pub fn get_label_mut(&mut self) -> &mut L {
-        self._mut().get_label_mut()
+        unsafe { &mut *self.data.lbl_ptr() }
     }
 
     /// Returns a reference to a slice into this array
@@ -252,7 +219,7 @@ impl<E, L, P> BaseArray<E, L, P>
 where
     E: Clone,
     L: Clone,
-    P: UnsafePtr<MemBlock<E, L>>,
+    P: BaseArrayPtr<E, L>,
 {
     /// Clones the elements and label of this array into a new array of the same
     /// size
@@ -263,7 +230,7 @@ where
 
 impl<E, L, P> Iterator for BaseArrayIter<E, L, P>
 where
-    P: UnsafePtr<MemBlock<E, L>>,
+    P: BaseArrayPtr<E, L>,
 {
     type Item = E;
     fn next(&mut self) -> Option<E> {
@@ -281,76 +248,11 @@ where
 
 impl<E, L, P> Drop for BaseArrayIter<E, L, P>
 where
-    P: UnsafePtr<MemBlock<E, L>>,
+    P: BaseArrayPtr<E, L>,
 {
     fn drop(&mut self) {
         let begin = self.array.get_ptr_mut(0) as usize;
         let len = ((self.end as usize) - begin) / mem::size_of::<E>();
         unsafe { self.array.drop(len) }
-    }
-}
-
-impl<E, L, P> AtomicArrayRef for BaseArray<E, L, P>
-where
-    P: UnsafePtr<MemBlock<E, L>> + Atomic<*mut MemBlock<E, L>>,
-{
-    fn as_ref(&self) -> usize {
-        self._ref() as *const MemBlock<E, L> as usize
-    }
-    fn compare_and_swap(
-        &self,
-        current: usize,
-        mut new: Self,
-        order: Ordering,
-    ) -> Result<usize, (Self, usize)> {
-        let current = current as *mut MemBlock<E, L>;
-        let new_ref = new._mut() as *mut MemBlock<E, L>;
-        let actual = self.data.compare_and_swap(current, new_ref, order);
-        if actual == current {
-            Ok(current as usize)
-        } else {
-            Err((new, current as usize))
-        }
-    }
-    fn compare_exchange(
-        &self,
-        current: usize,
-        new: Self,
-        success: Ordering,
-        failure: Ordering,
-    ) -> Result<usize, (Self, usize)> {
-        let current = current as *mut MemBlock<E, L>;
-        let new_ref = new.as_ref() as *const MemBlock<E, L> as *mut MemBlock<E, L>;
-        match self
-            .data
-            .compare_exchange(current, new_ref, success, failure)
-        {
-            Ok(ptr) => Ok(ptr as usize),
-            Err(ptr) => Err((new, ptr as usize)),
-        }
-    }
-    fn compare_exchange_weak(
-        &self,
-        current: usize,
-        new: Self,
-        success: Ordering,
-        failure: Ordering,
-    ) -> Result<usize, (Self, usize)> {
-        let current = current as *mut MemBlock<E, L>;
-        let new_ref = new.as_ref() as *const MemBlock<E, L> as *mut MemBlock<E, L>;
-        match self
-            .data
-            .compare_exchange_weak(current, new_ref, success, failure)
-        {
-            Ok(ptr) => Ok(ptr as usize),
-            Err(ptr) => Err((new, ptr as usize)),
-        }
-    }
-    fn swap(&self, mut ptr: Self, order: Ordering) -> Self {
-        unsafe {
-            Self::from_ref(<P as UnsafePtr<MemBlock<E, L>>>::new(
-                self.data.swap(ptr._mut(), order),
-            ))
-        }
     }
 }
