@@ -19,6 +19,9 @@
 ///   is called.
 /// - `A::alloc(len).elem_ptr(idx)` returns a pointer to allocated memory for all
 ///   `idx < len`
+/// - The difference in addresses between `a.elem_ptr(idx + 1)` and `a.elem_ptr(idx)`
+///   is exactly `core::mem::size_of::<E>()`; i.e. the objects that `a.elem_ptr`
+///   points to are in an array
 /// - `A::alloc(len).lbl_ptr()` returns a pointer to allocated memory
 /// - `a._init()` is safe to call on the result of `A::alloc(len)`
 /// - `a._drop()` is safe to call on any result of `A::alloc(len)` for which

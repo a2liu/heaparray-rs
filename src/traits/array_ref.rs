@@ -1,4 +1,4 @@
-use core::sync::atomic::Ordering;
+// use core::sync::atomic::Ordering;
 
 /*/// A reference to an array, whose clone points to the same data.
 ///
@@ -24,6 +24,7 @@ pub trait ArrayRef: Clone + Sized {
     }
 }*/
 
+/*
 /// Atomically modified array reference.
 ///
 /// Guarrantees that all operations on the
@@ -64,4 +65,4 @@ pub trait AtomicArrayRef: Sized {
     ) -> Result<usize, (Self, usize)>;
     /// Swaps in the specified array reference and returns the previous value
     fn swap(&self, ptr: Self, order: Ordering) -> Self;
-}
+}*/

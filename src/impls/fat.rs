@@ -104,29 +104,6 @@ impl<E, L> Container for FatPtrArray<E, L> {
     }
 }
 
-impl<E, L> CopyMap<usize, E> for FatPtrArray<E, L> {
-    fn get(&self, key: usize) -> Option<&E> {
-        if key >= self.len() {
-            None
-        } else {
-            Some(unsafe { self.data.get(key) })
-        }
-    }
-    fn get_mut(&mut self, key: usize) -> Option<&mut E> {
-        if key >= self.len() {
-            None
-        } else {
-            Some(unsafe { self.data.get_mut(key) })
-        }
-    }
-    fn insert(&mut self, key: usize, value: E) -> Option<E> {
-        match self.get_mut(key) {
-            Some(slot) => Some(mem::replace(slot, value)),
-            None => None,
-        }
-    }
-}
-
 impl<E, L> Index<usize> for FatPtrArray<E, L> {
     type Output = E;
     fn index(&self, idx: usize) -> &E {

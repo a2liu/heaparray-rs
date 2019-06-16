@@ -10,6 +10,10 @@ use core::{mem, ptr};
 /// allocation, deallocation, iteration, and slices given length. Holds
 /// the bulk of the unsafe logic in this library.
 ///
+/// Requires the user to specify the internal structure that handles allocation
+/// and pointer math, which can be done through implementing the
+/// [`BaseArrayPtr`](trait.BaseArrayPtr.html) trait.
+///
 /// # Memory Leaks
 /// This struct doesn't perform memory cleanup automatically; it must be done manually
 /// with methods `drop` or `drop_lazy`.
@@ -47,6 +51,16 @@ where
             data: ptr,
             phantom: PhantomData,
         }
+    }
+
+    /// Returns a reference to the underlying pointer of this base array.
+    pub fn as_ptr(&self) -> &P {
+        &self.data
+    }
+
+    /// Returns a mutable reference to the underlying pointer of this base array.
+    pub fn as_ptr_mut(&mut self) -> &mut P {
+        &mut self.data
     }
 
     /// Doesn't initialize anything in the array. Just allocates a block of memory.
@@ -136,7 +150,7 @@ where
         &mut *(self as *mut BaseArray<E, L, P> as *mut BaseArray<T, L, Q>)
     }
 
-    /// Returns a pointer to the element at the index `idx`
+    /// Returns a pointer to the element at the index `idx`.
     ///
     /// # Safety
     /// Pointer is safe to dereference as long as the underlying array has a
@@ -146,7 +160,7 @@ where
         self.data.elem_ptr(idx)
     }
 
-    /// Returns a mutable pointer to the element at the index `idx`
+    /// Returns a mutable pointer to the element at the index `idx`.
     ///
     /// # Safety
     /// Pointer is safe to dereference as long as the underlying array has a
@@ -156,12 +170,12 @@ where
         self.data.elem_ptr(idx)
     }
 
-    /// Returns whether or not the internal pointer in this array is null
+    /// Returns whether or not the internal pointer in this array is null.
     pub fn is_null(&self) -> bool {
         self.data.is_null()
     }
 
-    /// Returns a reference to the element at the index `idx`
+    /// Returns a reference to the element at the index `idx`.
     ///
     /// # Safety
     /// Safe as long as the underlying array has a length greater than `idx`, and
@@ -170,7 +184,7 @@ where
         &*self.get_ptr(idx)
     }
 
-    /// Returns a mutable reference to the element at the index `idx`
+    /// Returns a mutable reference to the element at the index `idx`.
     ///
     /// # Safety
     /// Safe as long as the underlying array has a length greater than `idx`, and
@@ -179,31 +193,31 @@ where
         &mut *self.get_ptr_mut(idx)
     }
 
-    /// Returns a reference to the label
+    /// Returns a reference to the label.
     pub fn get_label(&self) -> &L {
         unsafe { &*self.data.lbl_ptr() }
     }
 
-    /// Returns a mutable reference to the label
+    /// Returns a mutable reference to the label.
     pub fn get_label_mut(&mut self) -> &mut L {
         unsafe { &mut *self.data.lbl_ptr() }
     }
 
-    /// Returns a reference to a slice into this array
+    /// Returns a reference to a slice into this array.
     ///
     /// The slice is from element 0 to `len - 1` inclusive.
     pub unsafe fn as_slice(&self, len: usize) -> &[E] {
         core::slice::from_raw_parts(self.get(0), len)
     }
 
-    /// Returns a mutable reference to a slice into this array
+    /// Returns a mutable reference to a slice into this array.
     ///
     /// The slice is from element 0 to `len - 1` inclusive.
     pub unsafe fn as_slice_mut(&mut self, len: usize) -> &mut [E] {
         core::slice::from_raw_parts_mut(self.get_mut(0), len)
     }
 
-    /// Returns an iterator into this array, consuming the array in the process
+    /// Returns an iterator into this array, consuming the array in the process.
     pub unsafe fn into_iter(mut self, len: usize) -> BaseArrayIter<E, L, P> {
         let current = self.get_mut(0) as *mut E;
         let end = current.add(len);
@@ -222,7 +236,7 @@ where
     P: BaseArrayPtr<E, L>,
 {
     /// Clones the elements and label of this array into a new array of the same
-    /// size
+    /// size.
     pub unsafe fn clone(&self, len: usize) -> Self {
         Self::new(self.get_label().clone(), len, |_, i| self.get(i).clone())
     }
