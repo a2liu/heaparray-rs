@@ -26,6 +26,8 @@
 /// - `a._init()` is safe to call on the result of `A::alloc(len)`
 /// - `a._drop()` is safe to call on any result of `A::alloc(len)` for which
 ///   `_init()` has been called exactly once
+/// - `A::from_ptr(A::alloc(len).as_ptr())` is safe; i.e. `A::from_ptr` and
+///   `A::as_ptr` must agree on the raw pointer representation of `A`
 ///
 /// # Use of API by `BaseArray`
 /// Let `A` be a concrete implementation of `BaseArrayPtr`. At initialization via
@@ -59,7 +61,10 @@ pub unsafe trait BaseArrayPtr<E, L>: Sized {
     /// destructors
     unsafe fn dealloc(&mut self, len: usize);
 
-    /// Creates a new reference of this type without doing any checks
+    /// Creates a new reference of this type without doing any checks.
+    ///
+    /// # Safety
+    /// This function is not *ever* guarranteed to be safe.
     unsafe fn from_ptr(ptr: *mut u8) -> Self;
 
     /// Returns the value of the internal raw pointer in this array pointer

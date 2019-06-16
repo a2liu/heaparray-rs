@@ -1,11 +1,12 @@
 /*!
 Implementations of safe APIs to the `BaseArray` struct.
 
-`BaseArray` is defined in [`heaparray::base`](../base/index.html)
+`BaseArray` is defined in [`heaparray::base`](../base/index.html).
 */
 
 mod generic;
+mod p_types;
 
 pub use crate::api_prelude::*;
-pub use crate::base::BaseArrayPtr;
 pub use generic::*;
+pub use p_types::{FatPtrArray, ThinPtrArray};

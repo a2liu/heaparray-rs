@@ -22,7 +22,7 @@ pub unsafe trait SafeArrayPtr<E, L>: BaseArrayPtr<E, L> {
     fn get_len(&self) -> usize;
 }
 
-/// Safe interface to [`BaseArray`](../base/struct.BaseArray.html).
+/// Safe, generic interface to [`BaseArray`](../base/struct.BaseArray.html).
 ///
 /// Uses length information to guarrantee memory safety, and excludes operations
 /// that cannot be performed safely from its API.

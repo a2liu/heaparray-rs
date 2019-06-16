@@ -1,31 +1,3 @@
-use core::mem::ManuallyDrop;
-
-/// Trait for a struct that wraps another struct of some kind
-pub trait LabelWrapper<L>: Sized {
-    fn get_inner(&self) -> &L;
-    fn get_inner_mut(&mut self) -> &mut L;
-}
-
-impl<L> LabelWrapper<L> for L {
-    #[inline(always)]
-    fn get_inner(&self) -> &L {
-        self
-    }
-    #[inline(always)]
-    fn get_inner_mut(&mut self) -> &mut L {
-        self
-    }
-}
-
-impl<L> LabelWrapper<L> for ManuallyDrop<L> {
-    fn get_inner(&self) -> &L {
-        &*self
-    }
-    fn get_inner_mut(&mut self) -> &mut L {
-        &mut *self
-    }
-}
-
 /// Array with an optional label struct stored next to the data.
 pub trait LabelledArray<E, L>: containers::CopyMap<usize, E> {
     /// Create a new array, with values initialized using a provided
@@ -51,13 +23,6 @@ pub trait LabelledArrayMut<E, L>: LabelledArray<E, L> {
     /// Get a mutable reference to the element at a specified index.
     /// Implementations of this method shouldn't do any safety checks.
     unsafe fn get_mut_unchecked(&mut self, idx: usize) -> &mut E;
-}
-
-/// Array with optional label struct stored next to the data that can
-/// be conditionally mutated.
-pub trait LabelledArrayRefMut<E, L>: LabelledArray<E, L> {
-    /// Get mutable reference to the label.
-    fn get_label_mut(&mut self) -> Option<&mut L>;
 }
 
 /// Trait for a labelled array with a default value.

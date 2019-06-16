@@ -2,8 +2,7 @@
 //! interactions with memory.
 
 use super::alloc_utils::*;
-use super::traits::BaseArrayPtr;
-use crate::traits::LabelWrapper;
+use super::traits::*;
 use const_utils::{cond, max, safe_div};
 use core::alloc::Layout;
 use core::marker::PhantomData;
@@ -139,10 +138,7 @@ fn get_layout<E, L>(len: usize) -> Layout {
     }
 }
 
-unsafe impl<E, L, W> BaseArrayPtr<E, L> for *mut MemBlock<E, W>
-where
-    W: LabelWrapper<L>,
-{
+unsafe impl<E, L> BaseArrayPtr<E, L> for *mut MemBlock<E, L> {
     unsafe fn alloc(len: usize) -> Self {
         let layout = get_layout::<E, L>(len);
         let ptr = allocate(layout);
@@ -162,7 +158,7 @@ where
         deallocate(*self, layout);
     }
     unsafe fn from_ptr(ptr: *mut u8) -> Self {
-        ptr as *mut MemBlock<E, W>
+        ptr as *mut MemBlock<E, L>
     }
     fn as_ptr(&self) -> *mut u8 {
         self.clone() as *const u8 as *mut u8
@@ -182,10 +178,7 @@ where
     }
 }
 
-unsafe impl<E, L, W> BaseArrayPtr<E, L> for NonNull<MemBlock<E, W>>
-where
-    W: LabelWrapper<L>,
-{
+unsafe impl<E, L> BaseArrayPtr<E, L> for NonNull<MemBlock<E, L>> {
     unsafe fn alloc(len: usize) -> Self {
         NonNull::new_unchecked(MutMB::alloc(len))
     }
@@ -209,10 +202,7 @@ where
     }
 }
 
-unsafe impl<E, L, W> BaseArrayPtr<E, L> for AtomicPtr<MemBlock<E, W>>
-where
-    W: LabelWrapper<L>,
-{
+unsafe impl<E, L> BaseArrayPtr<E, L> for AtomicPtr<MemBlock<E, L>> {
     unsafe fn alloc(len: usize) -> Self {
         AtomicPtr::new(MutMB::alloc(len))
     }

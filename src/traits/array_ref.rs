@@ -1,3 +1,4 @@
+use super::LabelledArray;
 // use core::sync::atomic::Ordering;
 
 /*/// A reference to an array, whose clone points to the same data.
@@ -23,6 +24,13 @@ pub trait ArrayRef: Clone + Sized {
         ptr.clone()
     }
 }*/
+
+/// Array with optional label struct stored next to the data that can
+/// be conditionally mutated.
+pub trait LabelledArrayRefMut<E, L>: LabelledArray<E, L> {
+    /// Get mutable reference to the label.
+    fn get_label_mut(&mut self) -> Option<&mut L>;
+}
 
 /*
 /// Atomically modified array reference.
