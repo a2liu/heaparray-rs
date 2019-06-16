@@ -6,7 +6,7 @@ use std::alloc::{alloc, dealloc};
 
 /// Allocate a block of memory, and then coerce it to type `T`
 pub unsafe fn allocate<T>(layout: Layout) -> *mut T {
-    &mut *(alloc(layout) as *mut T)
+    alloc(layout) as *mut T
 }
 
 /// Deallocate a block of memory using the given size and alignment information.

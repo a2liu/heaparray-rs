@@ -1,5 +1,8 @@
 use crate::prelude::*;
+use core::ptr::NonNull;
 use heaparray::base::MemBlock as HeapArrayMemBlock;
+
+type MemBlock<E, L> = *mut HeapArrayMemBlock<E, L>;
 
 #[test]
 pub fn ref_no_dealloc() {
@@ -7,20 +10,11 @@ pub fn ref_no_dealloc() {
     let info = before_alloc();
     after_alloc(blk, info);
 }
-
 #[test]
 pub fn ref_dealloc_lazy() {
     let info = before_alloc();
     let mut blk = unsafe { MemBlock::<Vec<u8>, ()>::alloc(200) };
-    unsafe { blk.as_mut().dealloc_lazy(200) };
-    after_alloc(blk, info);
-}
-
-#[test]
-pub fn ref_dealloc_normal() {
-    let info = before_alloc();
-    let mut blk = MemBlock::<Vec<u8>, ()>::new_init((), 200, |_, _| Vec::with_capacity(10));
-    unsafe { blk.as_mut().dealloc(200) };
+    unsafe { blk.dealloc(200) };
     after_alloc(blk, info);
 }
 
@@ -28,9 +22,10 @@ pub fn ref_dealloc_normal() {
 pub fn ref_dealloc_lazy_leak() {
     let vec = Vec::with_capacity(10);
     let info = before_alloc();
-    let mut blk = unsafe { MemBlock::<Vec<u8>, Vec<u8>>::new(vec, 200) };
+    let mut blk = unsafe { MemBlock::<Vec<u8>, Vec<u8>>::alloc(200) };
     unsafe {
-        blk.as_mut().dealloc_lazy(200);
+        core::ptr::write(blk.lbl_ptr(), vec);
+        blk.dealloc(200);
     }
     after_alloc(blk, info);
 }
@@ -42,7 +37,7 @@ pub fn ref_alloc_efficient() {
     let alloc_size = 200 * size_of::<Vec<()>>();
     let info = before_alloc();
 
-    let mut blk = MemBlock::<Vec<()>, ()>::new_init((), 200, |_, _| Vec::new());
+    let mut blk = unsafe { MemBlock::<Vec<()>, ()>::alloc(200) };
     let info_2 = before_alloc();
     let info_diff = info_2.relative_to(&info);
 
@@ -61,7 +56,7 @@ pub fn ref_alloc_efficient() {
     );
 
     unsafe {
-        blk.as_mut().dealloc(200);
+        blk.dealloc(200);
     }
     let info_diff = before_alloc().relative_to(&info_2);
 

@@ -145,11 +145,21 @@ where
 {
     unsafe fn alloc(len: usize) -> Self {
         let layout = get_layout::<E, L>(len);
-        allocate(layout)
+        let ptr = allocate(layout);
+        if cfg!(feature = "mem-block-skip-ptr-check") {
+            ptr
+        } else {
+            assert!(
+                !ptr.is_null(),
+                "Allocated a null pointer.\
+                 You may be out of memory.",
+            );
+            ptr
+        }
     }
     unsafe fn dealloc(&mut self, len: usize) {
         let layout = get_layout::<E, L>(len);
-        deallocate(self, layout);
+        deallocate(*self, layout);
     }
     unsafe fn from_ptr(ptr: *mut u8) -> Self {
         ptr as *mut MemBlock<E, W>
@@ -177,15 +187,7 @@ where
     W: LabelWrapper<L>,
 {
     unsafe fn alloc(len: usize) -> Self {
-        let ptr = MutMB::alloc(len);
-        if cfg!(feature = "mem-block-skip-ptr-check") {
-            NonNull::new_unchecked(ptr)
-        } else {
-            NonNull::new(ptr).expect(
-                "Allocated a null pointer.\
-                 You may be out of memory.",
-            )
-        }
+        NonNull::new_unchecked(MutMB::alloc(len))
     }
     unsafe fn dealloc(&mut self, len: usize) {
         self.clone().as_ptr().dealloc(len)
