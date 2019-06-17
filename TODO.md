@@ -2,8 +2,8 @@
 
 ### Producton-Ready Version, MVP
 - [ ] Verify correctness w/ lots and lots of tests on `MemBlock`, `BaseArray`
-- [ ] Raw pointer ops for `MemBlock`
-- [ ] Better docs. Model after Rust stdlib docs, first marking semantic meaning
+- [x] Raw pointer ops for `MemBlock`
+- [x] Better docs. Model after Rust stdlib docs, first marking semantic meaning
   of traits, then overriding trait docs when necessary.
 
   ```
