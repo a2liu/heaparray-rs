@@ -6,7 +6,7 @@ edition = "2018"
 repository = "https://github.com/A1Liu/heaparray-rs"
 description = "Flexible support for dynamically-sized types, using heap-allocated array of structs"
 readme = "README.md"
-keywords = ["array", "heap", "dynamically-sized-types"]
+keywords = ["array", "heap", "dyn-sized-types"]
 categories = ["data-structures", "memory-management"]
 license = "MIT"
 
