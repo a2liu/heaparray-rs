@@ -42,7 +42,7 @@ struct MyLabel {
     pub odd: usize,
 }
 
-let mut array = HeapArray::with_label(
+let array = HeapArray::with_label(
     MyLabel { even: 0, odd: 0 },
     100,
     |label, index| {
