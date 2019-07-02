@@ -26,7 +26,7 @@ assert!(array[1] == 4);
 Indexing works as you would expect:
 
 ```rust
-use heaparray::*;
+# use heaparray::*;
 let mut array = HeapArray::new(10, |_| 0);
 array[3] = 2;
 assert!(array[3] == 2);
@@ -41,11 +41,12 @@ struct MyLabel {
     pub even: usize,
     pub odd: usize,
 }
-
+let my_label = MyLabel { even: 0, odd: 0 };
 let array = HeapArray::with_label(
-    MyLabel { even: 0, odd: 0 },
+    my_label,
     100,
-    |label, index| {
+    |label, index| { // This closure is executed for every
+                     // item in the array to initialize it
         if index % 2 == 0 {
             label.even += 1;
             index
@@ -103,9 +104,14 @@ fn main() {
     println!("{:?}", dynamic);
 }
 ```
+
+## Reference-Counted Arrays
+Using `heaparray::naive_rc`, you can construct reference-counted dynamically-sized
+types. Instead of using an `Arc<Vec<Data>>`, which is two pointer indirections from
+the data you retrieve, you can use `RcArray<Data>`, which has a functionally similar
+interface, but with less indirection overhead at runtime.
 */
 
-extern crate atomic_types;
 extern crate const_utils;
 extern crate containers_rs as containers;
 

@@ -25,7 +25,7 @@ pub unsafe trait SafeArrayPtr<E, L>: BaseArrayPtr<E, L> {
 /// Safe, generic interface to [`BaseArray`](../base/struct.BaseArray.html).
 ///
 /// Uses length information to guarrantee memory safety, and excludes operations
-/// that cannot be performed safely from its API.
+/// that cannot be performed safely from its API. Takes ownership of its contents.
 #[repr(transparent)]
 pub struct SafeArray<E, L, P>
 where
