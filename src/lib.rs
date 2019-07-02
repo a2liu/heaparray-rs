@@ -112,7 +112,7 @@ extern crate containers_rs as containers;
 mod api;
 pub mod base;
 pub mod impls;
-// pub mod naive_rc;
+pub mod naive_rc;
 mod traits;
 
 mod api_prelude {
@@ -120,19 +120,16 @@ mod api_prelude {
     pub use containers::{Container, CopyMap};
 }
 
-/*
 mod api_prelude_rc {
+    pub use crate::api_prelude::*;
     pub use crate::traits::rc::*;
-    pub use api_prelude::*;
 }
-*/
+
 mod prelude {
     pub use crate::api_prelude::*;
     pub(crate) use core::fmt;
     pub(crate) use core::mem;
-    // pub(crate) use core::mem::ManuallyDrop;
     pub(crate) use core::ops::{Index, IndexMut};
-    // pub(crate) use core::ptr;
 }
 
 pub use api::*;

@@ -2,11 +2,9 @@
 //! regular versions; i.e. if you're not careful, you could make a cycle that
 //! never gets deallocated.
 
-mod arc_array;
 pub mod generic;
 pub mod ref_counters;
 mod types;
 
-pub use crate::prelude::*;
-pub use arc_array::*;
+pub use crate::api_prelude_rc::*;
 pub use types::*;

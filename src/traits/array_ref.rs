@@ -1,7 +1,7 @@
 use super::LabelledArray;
 // use core::sync::atomic::Ordering;
 
-/*/// A reference to an array, whose clone points to the same data.
+/// A reference to an array, whose clone points to the same data.
 ///
 /// Allows for idiomatic cloning of array references:
 ///
@@ -23,7 +23,7 @@ pub trait ArrayRef: Clone + Sized {
     fn clone(ptr: &Self) -> Self {
         ptr.clone()
     }
-}*/
+}
 
 /// Array with optional label struct stored next to the data that can
 /// be conditionally mutated.

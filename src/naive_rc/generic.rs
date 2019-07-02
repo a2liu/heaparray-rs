@@ -2,8 +2,11 @@
 //! reference-counted array.
 
 use super::ref_counters::*;
-pub use crate::prelude::*;
+pub use crate::api_prelude_rc::*;
+use crate::prelude::*;
 use core::marker::PhantomData;
+use core::mem::ManuallyDrop;
+use core::ptr;
 
 /// `RcArray` is a generic, implementation-agnositc array. It contains
 /// logic for enforcing type safety.
@@ -21,7 +24,7 @@ use core::marker::PhantomData;
 #[repr(transparent)]
 pub struct RcArray<A, R, E, L = ()>
 where
-    A: LabelledArray<E, R> + BaseArrayRef,
+    A: LabelledArray<E, R>,
     R: RefCounter<L>,
 {
     data: ManuallyDrop<A>,
@@ -30,7 +33,7 @@ where
 
 impl<A, R, E, L> RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef,
+    A: LabelledArray<E, R>,
     R: RefCounter<L>,
 {
     fn from_ref(ptr: A) -> Self {
@@ -44,9 +47,12 @@ where
         mem::forget(self);
         ret
     }
+    /// Returns the reference count of the data this `RcArray` points to.
     pub fn ref_count(&self) -> usize {
         self.data.get_label().counter()
     }
+    /// Returns an owned version of this array if the caller has exclusive access,
+    /// or returns back this reference otherwise.
     pub fn to_owned(self) -> Result<A, Self> {
         if self.ref_count() > 1 {
             Err(self)
@@ -54,20 +60,24 @@ where
             Ok(self.to_ref())
         }
     }
-    pub fn to_mut(&mut self) -> Result<&mut A, ()> {
+    /// Returns a mutable reference to the array if the caller has exclusive access,
+    /// or `None` otherwise.
+    pub fn to_mut(&mut self) -> Option<&mut A> {
         if self.ref_count() > 1 {
-            Err(())
+            None
         } else {
-            Ok(&mut *self.data)
+            Some(&mut *self.data)
         }
     }
 }
 
 impl<A, R, E, L> RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef + Clone,
+    A: LabelledArray<E, R> + Clone,
     R: RefCounter<L>,
 {
+    /// Returns an owned version of this array if the caller has exclusive access,
+    /// or copies the data otherwise.
     pub fn make_owned(self) -> A {
         if self.ref_count() > 1 {
             (*self.data).clone()
@@ -75,6 +85,8 @@ where
             self.to_ref()
         }
     }
+    /// Returns a mutable reference to the array if the caller has exclusive access,
+    /// or copies the data otherwise.
     pub fn make_mut(&mut self) -> &mut A {
         if self.ref_count() > 1 {
             *self = Self::from_ref((*self.data).clone());
@@ -83,34 +95,28 @@ where
     }
 }
 
-impl<A, R, E, L> BaseArrayRef for RcArray<A, R, E, L>
-where
-    A: LabelledArray<E, R> + BaseArrayRef,
-    R: RefCounter<L>,
-{
-}
-
 impl<A, R, E, L> Clone for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef,
+    A: LabelledArray<E, R>,
     R: RefCounter<L>,
 {
     fn clone(&self) -> Self {
+        let ret = unsafe { mem::transmute_copy(self) };
         (*self.data).get_label().increment();
-        unsafe { mem::transmute_copy(self) }
+        ret
     }
 }
 
 impl<A, R, E, L> ArrayRef for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef,
+    A: LabelledArray<E, R>,
     R: RefCounter<L>,
 {
 }
 
 impl<A, R, E, L> Index<usize> for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef + Index<usize, Output = E>,
+    A: LabelledArray<E, R> + Index<usize, Output = E>,
     R: RefCounter<L>,
 {
     type Output = E;
@@ -121,7 +127,7 @@ where
 
 impl<A, R, E, L> Drop for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef,
+    A: LabelledArray<E, R>,
     R: RefCounter<L>,
 {
     fn drop(&mut self) {
@@ -136,7 +142,7 @@ where
 
 impl<A, R, E, L> Container for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef,
+    A: LabelledArray<E, R>,
     R: RefCounter<L>,
 {
     fn len(&self) -> usize {
@@ -146,7 +152,7 @@ where
 
 impl<A, R, E, L> CopyMap<usize, E> for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef,
+    A: LabelledArray<E, R>,
     R: RefCounter<L>,
 {
     /// Get a reference into this array. Returns `None` if:
@@ -182,7 +188,7 @@ where
 
 impl<A, R, E, L> LabelledArray<E, L> for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef,
+    A: LabelledArray<E, R>,
     R: RefCounter<L>,
 {
     fn with_label<F>(label: L, len: usize, mut func: F) -> Self
@@ -194,9 +200,6 @@ where
         });
         Self::from_ref(new_ptr)
     }
-    unsafe fn with_label_unsafe(label: L, len: usize) -> Self {
-        Self::from_ref(A::with_label_unsafe(R::new(label), len))
-    }
     fn get_label(&self) -> &L {
         self.data.get_label().get_data()
     }
@@ -205,23 +208,9 @@ where
     }
 }
 
-impl<A, R, E, L> LabelledArrayRefMut<E, L> for RcArray<A, R, E, L>
-where
-    A: LabelledArray<E, R> + BaseArrayRef + LabelledArrayMut<E, R>,
-    R: RefCounter<L>,
-{
-    fn get_label_mut(&mut self) -> Option<&mut L> {
-        if self.data.get_label().counter() == 1 {
-            Some(self.data.get_label_mut().get_data_mut())
-        } else {
-            None
-        }
-    }
-}
-
 impl<A, R, E> MakeArray<E> for RcArray<A, R, E, ()>
 where
-    A: LabelledArray<E, R> + BaseArrayRef,
+    A: LabelledArray<E, R>,
     R: RefCounter<()>,
 {
     fn new<F>(len: usize, mut func: F) -> Self
@@ -234,7 +223,7 @@ where
 
 impl<A, R, E, L> DefaultLabelledArray<E, L> for RcArray<A, R, E, L>
 where
-    A: DefaultLabelledArray<E, R> + LabelledArray<E, R> + BaseArrayRef,
+    A: DefaultLabelledArray<E, R> + LabelledArray<E, R>,
     R: RefCounter<L>,
     E: Default,
 {
@@ -243,26 +232,19 @@ where
     }
 }
 
-impl<A, R, E, L> SliceArrayRef<E> for RcArray<A, R, E, L>
+impl<A, R, E, L> SliceArray<E> for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
+    A: LabelledArray<E, R> + SliceArray<E>,
     R: RefCounter<L>,
 {
     fn as_slice(&self) -> &[E] {
         self.data.as_slice()
     }
-    fn as_slice_mut(&mut self) -> Option<&mut [E]> {
-        if self.ref_count() > 1 {
-            None
-        } else {
-            Some(self.data.as_slice_mut())
-        }
-    }
 }
 
 impl<'b, A, R, E, L> IntoIterator for &'b RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
+    A: LabelledArray<E, R> + SliceArray<E>,
     R: RefCounter<L>,
 {
     type Item = &'b E;
@@ -274,7 +256,7 @@ where
 
 impl<A, R, E, L> fmt::Debug for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef + SliceArray<E>,
+    A: LabelledArray<E, R> + SliceArray<E>,
     R: RefCounter<L>,
     E: fmt::Debug,
     L: fmt::Debug,
@@ -294,7 +276,7 @@ where
 
 unsafe impl<A, R, E, L> Send for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef + Send + Sync,
+    A: LabelledArray<E, R> + Send + Sync,
     R: RefCounter<L> + Send + Sync,
     E: Send + Sync,
     L: Send + Sync,
@@ -303,7 +285,7 @@ where
 
 unsafe impl<A, R, E, L> Sync for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + BaseArrayRef + Send + Sync,
+    A: LabelledArray<E, R> + Send + Sync,
     R: RefCounter<L> + Send + Sync,
     E: Send + Sync,
     L: Send + Sync,

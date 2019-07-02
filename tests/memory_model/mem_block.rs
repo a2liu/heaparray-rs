@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use core::ptr::NonNull;
 use heaparray::base::MemBlock as HeapArrayMemBlock;
 
 type MemBlock<E, L> = *mut HeapArrayMemBlock<E, L>;

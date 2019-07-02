@@ -4,26 +4,28 @@
 //! i.e. the reference counting itself and associated unsafety is handled here
 //! so that the other reference counting structs can just call the API. Since
 //! all functions are `#[inline]`, this ends up being a zero-cost abstraction.
-use core::marker::PhantomData;
+use core::cell::Cell;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 /// Utility struct that handles reference counting.
 pub trait RefCounter<T> {
-    /// Returns a new instance of this reference counter
+    /// Returns a new instance of this reference counter.
     fn new(data: T) -> Self;
-    /// Decrements the reference counter by one and returns its current value
+    /// Decrements the reference counter by one and returns its current value.
     fn decrement(&self) -> usize;
-    /// Increments the reference counter by one and returns its current value
+    /// Increments the reference counter by one and returns its current value.
     fn increment(&self) -> usize;
+    /// Returns the reference count associated with this struct.
     fn counter(&self) -> usize;
+    /// Returns a reference to the data associated with this struct.
     fn get_data(&self) -> &T;
+    /// Returns a mutable reference to the data associated with this struct.
     fn get_data_mut(&mut self) -> &mut T;
 }
 
 /// Reference counting struct for non-atomic reference counts.
 pub struct RcStruct<T> {
-    phantom: PhantomData<*mut u8>,
-    counter: usize,
+    counter: Cell<usize>,
     pub data: T,
 }
 
@@ -39,27 +41,26 @@ where
 impl<T> RefCounter<T> for RcStruct<T> {
     fn new(data: T) -> Self {
         Self {
-            phantom: PhantomData,
-            counter: 1,
+            counter: Cell::new(1),
             data,
         }
     }
     fn decrement(&self) -> usize {
-        unsafe {
-            *(&self.counter as *const usize as *mut usize) -= 1;
-        }
-        self.counter
+        self.counter.set(self.counter.get() - 1);
+        self.counter.get()
     }
     fn increment(&self) -> usize {
-        #[cfg(not(feature = "no-asserts"))]
-        assert!(self.counter < core::usize::MAX, "Incrementing the reference count of an `RcStruct` past `core::usize::MAX` is unsafe and results in undefined behavior");
-        unsafe {
-            *(&self.counter as *const usize as *mut usize) += 1;
-        }
-        self.counter
+        #[cfg(not(feature = "ref-counter-skip-overflow-check"))]
+        assert!(
+            self.counter.get() < core::usize::MAX,
+            "Incrementing the reference count of an `RcStruct`\
+             past `core::usize::MAX` is unsafe and results in undefined behavior"
+        );
+        self.counter.set(self.counter.get() + 1);
+        self.counter.get()
     }
     fn counter(&self) -> usize {
-        self.counter
+        self.counter.get()
     }
     fn get_data(&self) -> &T {
         &self.data
@@ -95,8 +96,12 @@ impl<T> RefCounter<T> for ArcStruct<T> {
         self.counter.fetch_sub(1, Ordering::AcqRel) - 1
     }
     fn increment(&self) -> usize {
-        #[cfg(not(feature = "no-asserts"))]
-        assert!(self.counter.load(Ordering::Acquire) < core::usize::MAX, "Incrementing the reference count of an `ArcStruct` past `core::usize::MAX` is unsafe and results in undefined behavior");
+        #[cfg(not(feature = "ref-counter-skip-overflow-check"))]
+        assert!(
+            self.counter.load(Ordering::Acquire) < core::usize::MAX,
+            "Incrementing the reference count of an `ArcStruct`\
+             past `core::usize::MAX` is unsafe and results in undefined behavior"
+        );
         self.counter.fetch_add(1, Ordering::Relaxed) + 1
     }
     fn counter(&self) -> usize {

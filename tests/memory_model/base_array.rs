@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use core::ptr::NonNull;
-use heaparray::base::{BaseArray, BaseArrayPtr, MemBlock};
+use heaparray::base::{BaseArray, MemBlock};
 
 type Array<E, L> = BaseArray<E, L, NonNull<MemBlock<E, L>>>;
 
