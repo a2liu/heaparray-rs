@@ -28,8 +28,8 @@ src
 
 tests
 ├── memory_model <------------- Testing the allocation and deallocation methods.
-│   ├── base_array.rs <-------- Tests that `BaseArray` works as expected.
-│   ├── mem_block.rs <--------- Tests that `MemBlock` works as expected.
-│   └── test_utils.rs <-------- Utilities to check for correct deallocation.
+│   ├── base_array.rs <---------- Tests that `BaseArray` works as expected.
+│   ├── mem_block.rs <----------- Tests that `MemBlock` works as expected.
+│   └── test_utils.rs <---------- Utilities to check for correct deallocation.
 └── memory_model_test.rs <----- Imports memory_model module.
 ```
