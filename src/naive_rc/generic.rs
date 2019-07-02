@@ -155,13 +155,13 @@ where
     A: LabelledArray<E, R>,
     R: RefCounter<L>,
 {
-    /// Get a reference into this array. Returns `None` if:
+    /// Get a reference into this array. Returns `None` if and only if:
     ///
     /// - The index given is out-of-bounds
     fn get(&self, key: usize) -> Option<&E> {
         self.data.get(key)
     }
-    /// Get a mutable reference into this array. Returns `None` if:
+    /// Get a mutable reference into this array. Returns `None` if and only if:
     ///
     /// - The array is referenced by another pointer
     /// - The index given is out-of-bounds
@@ -172,7 +172,8 @@ where
             None
         }
     }
-    /// Insert an element into this array. Returns `None` if:
+    /// Insert an element into this array, returning the previous element. Returns
+    /// `None` if and only if:
     ///
     /// - The array is referenced by another pointer
     /// - The index given is out-of-bounds
@@ -242,6 +243,17 @@ where
     }
 }
 
+impl<A, R, E, L> Index<Range<usize>> for RcArray<A, R, E, L>
+where
+    A: LabelledArray<E, R> + SliceArray<E>,
+    R: RefCounter<L>,
+{
+    type Output = [E];
+    fn index(&self, idx: Range<usize>) -> &[E] {
+        &self.as_slice()[idx]
+    }
+}
+
 impl<'b, A, R, E, L> IntoIterator for &'b RcArray<A, R, E, L>
 where
     A: LabelledArray<E, R> + SliceArray<E>,
@@ -251,6 +263,29 @@ where
     type IntoIter = core::slice::Iter<'b, E>;
     fn into_iter(self) -> Self::IntoIter {
         self.as_slice().into_iter()
+    }
+}
+
+impl<'a, A, R, E, L, A2, R2, E2, L2> PartialEq<RcArray<A2, R2, E2, L2>> for RcArray<A, R, E, L>
+where
+    A: LabelledArray<E, R> + SliceArray<E>,
+    R: RefCounter<L>,
+    A2: LabelledArray<E2, R2> + SliceArray<E2>,
+    R2: RefCounter<L2>,
+    E: PartialEq<E2>,
+    L: PartialEq<L2>,
+{
+    fn eq(&self, other: &RcArray<A2, R2, E2, L2>) -> bool {
+        if self.get_label().eq(other.get_label()) {
+            for (e1, e2) in self.into_iter().zip(other.into_iter()) {
+                if e1.ne(e2) {
+                    return false;
+                }
+            }
+            true
+        } else {
+            false
+        }
     }
 }
 

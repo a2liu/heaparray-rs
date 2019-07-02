@@ -210,6 +210,25 @@ where
     }
 }
 
+impl<E, L, P> Index<Range<usize>> for SafeArray<E, L, P>
+where
+    P: SafeArrayPtr<E, L>,
+{
+    type Output = [E];
+    fn index(&self, idx: Range<usize>) -> &[E] {
+        &self.as_slice()[idx]
+    }
+}
+
+impl<E, L, P> IndexMut<Range<usize>> for SafeArray<E, L, P>
+where
+    P: SafeArrayPtr<E, L>,
+{
+    fn index_mut(&mut self, idx: Range<usize>) -> &mut [E] {
+        &mut self.as_slice_mut()[idx]
+    }
+}
+
 impl<'a, E, L, P> IntoIterator for &'a SafeArray<E, L, P>
 where
     P: SafeArrayPtr<E, L>,
@@ -232,6 +251,27 @@ where
     }
 }
 
+impl<'a, E, L, P, E2, L2, P2> PartialEq<SafeArray<E2, L2, P2>> for SafeArray<E, L, P>
+where
+    P: SafeArrayPtr<E, L>,
+    P2: SafeArrayPtr<E2, L2>,
+    E: PartialEq<E2>,
+    L: PartialEq<L2>,
+{
+    fn eq(&self, other: &SafeArray<E2, L2, P2>) -> bool {
+        if self.get_label().eq(other.get_label()) {
+            for (e1, e2) in self.into_iter().zip(other.into_iter()) {
+                if e1.ne(e2) {
+                    return false;
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+}
+
 impl<E, L, P> fmt::Debug for SafeArray<E, L, P>
 where
     P: SafeArrayPtr<E, L>,
@@ -250,7 +290,7 @@ where
 
 unsafe impl<E, L, P> Send for SafeArray<E, L, P>
 where
-    P: SafeArrayPtr<E, L>,
+    P: SafeArrayPtr<E, L> + Send,
     E: Send,
     L: Send,
 {
@@ -258,7 +298,7 @@ where
 
 unsafe impl<E, L, P> Sync for SafeArray<E, L, P>
 where
-    P: SafeArrayPtr<E, L>,
+    P: SafeArrayPtr<E, L> + Sync,
     E: Sync,
     L: Sync,
 {

@@ -129,7 +129,7 @@ mod prelude {
     pub use crate::api_prelude::*;
     pub(crate) use core::fmt;
     pub(crate) use core::mem;
-    pub(crate) use core::ops::{Index, IndexMut};
+    pub(crate) use core::ops::{Index, IndexMut, Range};
 }
 
 pub use api::*;
