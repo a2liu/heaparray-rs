@@ -19,7 +19,7 @@
   └── lib.rs
   ```
 
-- [ ] Begin changelog and yank other versions
+- [X] Begin changelog and yank other versions
 - [X] Use `NonNull` where possible to make API intentions explicit
 - [X] Use `Layout` instead of `(size, align)`
 - [X] Remove `get_label_unsafe`
