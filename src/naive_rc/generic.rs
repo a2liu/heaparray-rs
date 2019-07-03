@@ -268,25 +268,21 @@ where
 
 impl<'a, A, R, E, L, A2, R2, E2, L2> PartialEq<RcArray<A2, R2, E2, L2>> for RcArray<A, R, E, L>
 where
-    A: LabelledArray<E, R> + SliceArray<E>,
+    A: LabelledArray<E, R> + SliceArray<E> + PartialEq<A2>,
     R: RefCounter<L>,
     A2: LabelledArray<E2, R2> + SliceArray<E2>,
     R2: RefCounter<L2>,
-    E: PartialEq<E2>,
-    L: PartialEq<L2>,
 {
     fn eq(&self, other: &RcArray<A2, R2, E2, L2>) -> bool {
-        if self.get_label().eq(other.get_label()) {
-            for (e1, e2) in self.into_iter().zip(other.into_iter()) {
-                if e1.ne(e2) {
-                    return false;
-                }
-            }
-            true
-        } else {
-            false
-        }
+        self.data.eq(&other.data)
     }
+}
+
+impl<'a, A, R, E, L> Eq for RcArray<A, R, E, L>
+where
+    A: LabelledArray<E, R> + SliceArray<E> + Eq,
+    R: RefCounter<L>,
+{
 }
 
 impl<A, R, E, L> fmt::Debug for RcArray<A, R, E, L>

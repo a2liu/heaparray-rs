@@ -1,43 +1,12 @@
 # TODO
-
-### Producton-Ready Version, MVP
-- [ ] Verify correctness w/ lots and lots of tests on `MemBlock`, `BaseArray`
-- [x] Raw pointer ops for `MemBlock`
-- [x] Better docs. Model after Rust stdlib docs, first marking semantic meaning
-  of traits, then overriding trait docs when necessary.
-
-  ```
-  src
-  ├── api.rs
-  ├── base
-  │   ├── alloc_utils.rs -- done
-  │   ├── base.rs
-  │   ├── mem_block.rs
-  │   ├── traits.rs
-  │   └── mod.rs
-  ├── impls
-  └── lib.rs
-  ```
-
-- [X] Begin changelog and yank other versions
-- [X] Use `NonNull` where possible to make API intentions explicit
-- [X] Use `Layout` instead of `(size, align)`
-- [X] Remove `get_label_unsafe`
-- [X] Replace `get_unchecked` with `get_unchecked` and `get_mut_unchecked`
-
-
-### Features
-- [ ] Range indexing
+- [ ] Move to `#![no_std]`
 - [ ] Make pointer of `MemBlock` point to first element instead of label
 - [ ] `cast_into` more flexible
-- [ ] Eq, PartialEq
+- [X] Eq, PartialEq
 - [ ] Add benchmarks, comparing to best standard library equivalents
   - [ ] `Arc<(TestStruct, Vec<AtomicUsize>)>` vs `FpArcArray<...>`
   - [ ] `Rc<(TestStruct, Vec<AtomicUsize>)>` vs `FpRcArray<...>`
 - [ ] Use struct instead of `usize` for return type of `AtomicArrayRef::as_ref`
-- [ ] `get_fast`, that uses `const` functions to test whether the size
-  works and then performs pointer math with a smaller value, like `u8` or
-  `u16`
 - [ ] Try-allocate functions; i.e. `try_new` and `try_new_lazy`
   - [ ] And otherwise use `Result<NonNull<MemBlock<E,L>>, ()>`
 - [ ] From and To `Vec` and `(Label, Vec)`
@@ -47,18 +16,12 @@
   around RcArray that doesn't allow for access unless you first increment the
   reference count.
 - [ ] Add proc macros for trait tests (in separate crate?)
-- [ ] Move to `#![no_std]`
 - [ ] Allow the user to customize allocator
   - [ ] Write tests
-- [ ] Write structs that are reference counted. Use naive Rc structs as weak-pointers  
-  **Status:** *delayed, doesn't seem that useful*
-  - [ ] Write tests
-- [ ] Create `SafeMemBlock` that generalizes a memory block that's labelled with
-  a number  
-  **Status:** *delayed; doesn't seem necessary anymore*
 - [ ] Constant-sized arrays whose size is known at compile time.  
       **Blocked by:** *const generics*
   - [ ] Write tests
+- [X] Range indexing
 - [X] Const functions for calculating constants
 - [X] Completely unchecked arrays whose size is never known and whose state needs
   to be manually handled. Purpose is two-fold: makes it possible to turn `ThinPtrArray`

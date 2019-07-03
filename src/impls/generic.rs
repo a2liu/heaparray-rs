@@ -251,7 +251,7 @@ where
     }
 }
 
-impl<'a, E, L, P, E2, L2, P2> PartialEq<SafeArray<E2, L2, P2>> for SafeArray<E, L, P>
+impl<E, L, P, E2, L2, P2> PartialEq<SafeArray<E2, L2, P2>> for SafeArray<E, L, P>
 where
     P: SafeArrayPtr<E, L>,
     P2: SafeArrayPtr<E2, L2>,
@@ -270,6 +270,14 @@ where
             false
         }
     }
+}
+
+impl<E, L, P> Eq for SafeArray<E, L, P>
+where
+    P: SafeArrayPtr<E, L>,
+    E: Eq,
+    L: Eq,
+{
 }
 
 impl<E, L, P> fmt::Debug for SafeArray<E, L, P>
