@@ -141,7 +141,7 @@ fn get_layout<E, L>(len: usize) -> Layout {
 unsafe impl<E, L> BaseArrayPtr<E, L> for *mut MemBlock<E, L> {
     unsafe fn alloc(len: usize) -> Self {
         let layout = get_layout::<E, L>(len);
-        let ptr = allocate(layout);
+        let ptr = allocate(layout, Global);
         if cfg!(feature = "mem-block-skip-ptr-check") {
             ptr
         } else {
@@ -155,7 +155,7 @@ unsafe impl<E, L> BaseArrayPtr<E, L> for *mut MemBlock<E, L> {
     }
     unsafe fn dealloc(&mut self, len: usize) {
         let layout = get_layout::<E, L>(len);
-        deallocate(*self, layout);
+        deallocate(*self, layout, Global);
     }
     unsafe fn from_ptr(ptr: *mut u8) -> Self {
         ptr as *mut MemBlock<E, L>

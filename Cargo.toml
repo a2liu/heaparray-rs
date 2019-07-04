@@ -20,6 +20,9 @@ interloc = "0.1.0"
 [features]
 default = []
 
+# Builds the crate without using the standard library.
+no-std = []
+
 # does what it says on the tin - removes all assertions; this can cause undefined behavior.
 no-asserts = ["mem-block-skip-all", "ref-counter-skip-all"]
 

@@ -112,6 +112,11 @@ the data you retrieve, you can use `RcArray<Data>`, which has a functionally sim
 interface, but with less indirection overhead at runtime.
 */
 
+#![cfg_attr(feature = "no-std", no_std)]
+
+#[cfg(feature = "no-std")]
+extern crate alloc;
+
 extern crate const_utils;
 extern crate containers_rs as containers;
 
