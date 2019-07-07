@@ -1,5 +1,6 @@
 # TODO
 - [ ] Make pointer of `MemBlock` point to first element instead of label
+  - What should pointer should it return?
 - [ ] `cast_into` more flexible
 - [ ] Add benchmarks, comparing to best standard library equivalents
   - [ ] `Arc<(TestStruct, Vec<AtomicUsize>)>` vs `FpArcArray<...>`
