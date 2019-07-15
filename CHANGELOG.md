@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.2
+## 0.5.2 (upcoming)
 - Added `RcArray::clone` as an intrinsic, which clones the data instead of the reference.
 - Added implementation of `Eq` and `PartialEq` for arrays.
 - Added `RcArray::ref_eq` method to check if two references point to the same data.

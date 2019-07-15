@@ -1,19 +1,16 @@
 # TODO
 - [ ] Make pointer of `MemBlock` point to first element instead of label
-  - What should pointer should it return?
+  - What pointer should it return?
 - [ ] `cast_into` more flexible
 - [ ] Add benchmarks, comparing to best standard library equivalents
   - [ ] `Arc<(TestStruct, Vec<AtomicUsize>)>` vs `FpArcArray<...>`
   - [ ] `Rc<(TestStruct, Vec<AtomicUsize>)>` vs `FpRcArray<...>`
-- [ ] Use struct instead of `usize` for return type of `AtomicArrayRef::as_ref`
 - [ ] Try-allocate functions; i.e. `try_new` and `try_new_lazy`
   - [ ] And otherwise use `Result<NonNull<MemBlock<E,L>>, ()>`
 - [ ] From and To `Vec` and `(Label, Vec)`
 - [ ] From and To `&mut [E]` and `(Label, &mut [E])`
 - [ ] Ability to change size of length and reference counting fields
-- [ ] SharedRcArray, that allows for pointer swapping through RAII stuff. Wrapper
-  around RcArray that doesn't allow for access unless you first increment the
-  reference count.
+  - Might not be that important
 - [ ] Add proc macros for trait tests (in separate crate?)
 - [ ] Allow the user to customize allocator
   - [ ] Write tests
