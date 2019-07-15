@@ -3,5 +3,5 @@
 pub use crate::api_prelude::*;
 pub use crate::impls::FatPtrArray as HeapArray;
 
-// pub use crate::naive_rc::ArcArray;
-// pub use crate::naive_rc::FpRcArray as RcArray;
+pub use crate::naive_rc::FpArcArray as ArcArray;
+pub use crate::naive_rc::FpRcArray as RcArray;
