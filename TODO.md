@@ -1,8 +1,7 @@
 # TODO
-- [ ] Move to `#![no_std]`
 - [ ] Make pointer of `MemBlock` point to first element instead of label
+  - What should pointer should it return?
 - [ ] `cast_into` more flexible
-- [X] Eq, PartialEq
 - [ ] Add benchmarks, comparing to best standard library equivalents
   - [ ] `Arc<(TestStruct, Vec<AtomicUsize>)>` vs `FpArcArray<...>`
   - [ ] `Rc<(TestStruct, Vec<AtomicUsize>)>` vs `FpRcArray<...>`
@@ -21,6 +20,8 @@
 - [ ] Constant-sized arrays whose size is known at compile time.  
       **Blocked by:** *const generics*
   - [ ] Write tests
+- [X] Eq, PartialEq
+- [x] Move to `#![no_std]`
 - [X] Range indexing
 - [X] Const functions for calculating constants
 - [X] Completely unchecked arrays whose size is never known and whose state needs
