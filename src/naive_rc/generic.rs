@@ -69,6 +69,9 @@ where
             Some(&mut *self.data)
         }
     }
+    pub fn ref_eq(&self, other: &Self) -> bool {
+        return ptr::eq(self.data.get_label(), other.data.get_label());
+    }
 }
 
 impl<A, R, E, L> RcArray<A, R, E, L>
