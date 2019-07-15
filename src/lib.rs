@@ -5,7 +5,7 @@ contains metadata about the block itself. This makes it much easier to implement
 Dynamically-Sized Types (DSTs), and also reduces the number of pointer
 indirections necessary to share data between threads.
 
-## Features
+## Crate Features
 - Safe API to dynamically-sized types
 - Generic implementations of common tasks so you can customize the
   implementation of a type without having to write additional boilerplate
@@ -101,6 +101,7 @@ fn main() {
     let info = 17;
     let len = 8;
     let dynamic = MySuperSliceable::with_label(info, len, |_,_| 0);
+    // prints: "Array { label: 17, len: 8, elements: [0, 0, 0, 0, 0, 0, 0, 0] }"
     println!("{:?}", dynamic);
 }
 ```

@@ -6,6 +6,8 @@
 - Added `RcArray::ref_eq` method to check if two references point to the same data.
 - Updated docs of `RefCounter` to reflect a required invariant that wasn't documented
   before.
+- Added `no-std` support, usable through the `no-std` feature. Note that it requires
+  the `alloc` crate.
 
 ## 0.5.1
 - Added `RefCounter` trait for reference counting, and implementations of that
