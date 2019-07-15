@@ -8,6 +8,9 @@ use core::cell::Cell;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 /// Utility struct that handles reference counting.
+///
+/// Implementors should maintain the invariant that clones of a `RefCounter`
+/// create a clone of the internal data with the reference count set to 1.
 pub trait RefCounter<T> {
     /// Returns a new instance of this reference counter.
     fn new(data: T) -> Self;
@@ -72,7 +75,7 @@ impl<T> RefCounter<T> for RcStruct<T> {
 
 /// Reference counting struct for atomic reference counts.
 pub struct ArcStruct<T> {
-    counter: AtomicUsize,
+    ref_count: AtomicUsize,
     pub data: T,
 }
 
@@ -88,24 +91,24 @@ where
 impl<T> RefCounter<T> for ArcStruct<T> {
     fn new(data: T) -> Self {
         Self {
-            counter: AtomicUsize::new(1),
+            ref_count: AtomicUsize::new(1),
             data,
         }
     }
     fn decrement(&self) -> usize {
-        self.counter.fetch_sub(1, Ordering::AcqRel) - 1
+        self.ref_count.fetch_sub(1, Ordering::AcqRel) - 1
     }
     fn increment(&self) -> usize {
         #[cfg(not(feature = "ref-counter-skip-overflow-check"))]
         assert!(
-            self.counter.load(Ordering::Acquire) < core::usize::MAX,
+            self.counter() < core::usize::MAX,
             "Incrementing the reference count of an `ArcStruct`\
              past `core::usize::MAX` is unsafe and results in undefined behavior"
         );
-        self.counter.fetch_add(1, Ordering::Relaxed) + 1
+        self.ref_count.fetch_add(1, Ordering::Relaxed) + 1
     }
     fn counter(&self) -> usize {
-        self.counter.load(Ordering::Acquire)
+        self.ref_count.load(Ordering::Acquire)
     }
     fn get_data(&self) -> &T {
         &self.data

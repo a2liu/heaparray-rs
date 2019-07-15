@@ -85,6 +85,16 @@ where
             self.to_ref()
         }
     }
+    /// Returns a clone of the data in this array.
+    ///
+    /// Behaves differently from `ArrayRef::clone()`, as the result of this operation
+    /// **does not** point to the same data.
+    pub fn clone(&self) -> Self {
+        Self {
+            data: self.data.clone(),
+            phantom: PhantomData,
+        }
+    }
     /// Returns a mutable reference to the array if the caller has exclusive access,
     /// or copies the data otherwise.
     pub fn make_mut(&mut self) -> &mut A {
@@ -101,8 +111,8 @@ where
     R: RefCounter<L>,
 {
     fn clone(&self) -> Self {
-        let ret = unsafe { mem::transmute_copy(self) };
         (*self.data).get_label().increment();
+        let ret = unsafe { mem::transmute_copy(self) };
         ret
     }
 }
