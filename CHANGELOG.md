@@ -4,6 +4,8 @@
 - Added `RcArray::clone` as an intrinsic, which clones the data instead of the reference.
 - Added implementation of `Eq` and `PartialEq` for arrays.
 - Added `RcArray::ref_eq` method to check if two references point to the same data.
+- Updated docs of `RefCounter` to reflect a required invariant that wasn't documented
+  before.
 
 ## 0.5.1
 - Added `RefCounter` trait for reference counting, and implementations of that
