@@ -8,6 +8,9 @@
   before.
 - Added `no-std` support, usable through the `no-std` feature. Note that it requires
   the `alloc` crate.
+- Made `FpArcArray` and `FpRcArray` available through `heaparray::ArcArray` and
+  `heaparray::RcArray` respectively, and made the necessary additional traits for
+  reference counting available in `heaparray::*`.
 
 ## 0.5.1
 - Added `RefCounter` trait for reference counting, and implementations of that
