@@ -16,6 +16,11 @@ const-utils = "0.1.1"
 
 [dev-dependencies]
 interloc = "0.1.0"
+criterion = "0.2.11"
+
+[[bench]]
+name = "arc-labelled-vector"
+harness = false
 
 [features]
 default = []
